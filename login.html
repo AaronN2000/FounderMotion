@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log in | FounderMotion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="index.html">FounderMotion</a><p class="header-note">Strategic decisions, connected.</p></header>
+  <section class="auth-screen">
+    <div class="auth-card">
+      <p class="eyebrow">Secure workspace</p><h1>Welcome back</h1><p class="auth-lede">Sign in to access your saved strategic map.</p>
+      <form id="authForm">
+        <label>Username or email<input id="authIdentity" required autocomplete="username" placeholder="you@company.com" /></label>
+        <label>Password<input id="authPassword" type="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters" /></label>
+        <div class="auth-options"><label class="check-label"><input id="rememberMe" type="checkbox" checked /> Remember me</label><button class="text-button" id="forgotPassword" type="button">Forgot password?</button></div>
+        <button class="primary-button" type="submit">Log in <span>&rarr;</span></button>
+      </form>
+      <p class="auth-switch">New here? <a href="signup.html">Create an account</a></p>
+      <div class="social-divider"><span>or continue with</span></div><div class="social-buttons"><button data-social="Google" type="button">Google</button><button data-social="Apple" type="button">Apple</button><button data-social="Facebook" type="button">Facebook</button></div>
+    </div>
+  </section>
+  <section class="auth-screen" id="forgotScreen" hidden><div class="auth-card"><p class="eyebrow">Account recovery</p><h1>Reset password</h1><p class="auth-lede">Enter your username or email. A hosted version will send a secure reset link.</p><form id="forgotForm"><label>Username or email<input id="forgotIdentity" required /></label><button class="primary-button" type="submit">Request reset <span>&rarr;</span></button></form><p class="auth-switch"><button class="text-button" id="backToLogin" type="button">&larr; Back to login</button></p></div></section>
+  <div id="toast" class="toast" role="status"></div><script src="auth.js"></script>
+</body>
+</html>
