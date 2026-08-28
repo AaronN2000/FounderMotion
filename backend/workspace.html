@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Workspace | FounderMotion</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="workspace-page">
+  <header class="site-header">
+    <a class="brand" href="index.html">FounderMotion</a>
+    <p class="header-note">Strategic decisions, connected.</p>
+  </header>
+
+  <main class="workspace-shell">
+    <div class="workspace-topbar">
+      <div>
+        <p class="eyebrow">Workspace</p>
+        <h1>My Workspace</h1>
+        <p class="workspace-lede" id="workspaceSubtitle">Your strategic validation workspace.</p>
+      </div>
+      <div class="workspace-actions">
+        <a class="secondary-button" href="index.html">← Back to Map</a>
+        <button class="primary-button" id="workspaceLogout" type="button">Log out</button>
+      </div>
+    </div>
+
+    <section class="workspace-stats">
+      <article class="workspace-stat">
+        <span>Process progress</span>
+        <strong id="progressStat">0 / 0</strong>
+      </article>
+      <article class="workspace-stat">
+        <span>Market segments</span>
+        <strong id="segmentStat">0</strong>
+      </article>
+      <article class="workspace-stat">
+        <span>Saved evidence</span>
+        <strong id="evidenceStat">0</strong>
+      </article>
+      <article class="workspace-stat">
+        <span>Saved searches</span>
+        <strong id="historyStat">0</strong>
+      </article>
+    </section>
+
+    <section class="workspace-grid">
+      <article class="workspace-card workspace-card-wide">
+        <div class="workspace-card-heading">
+          <div>
+            <p class="eyebrow">Account</p>
+            <h2>Workspace overview</h2>
+          </div>
+        </div>
+        <div class="account-details">
+          <div>
+            <span>Company</span>
+            <strong id="companyName">—</strong>
+          </div>
+          <div>
+            <span>Account</span>
+            <strong id="accountName">—</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="workspace-card workspace-card-wide">
+        <div class="workspace-card-heading">
+          <div>
+            <p class="eyebrow">Market definition</p>
+            <h2>Market Segments</h2>
+          </div>
+        </div>
+        <div id="segmentsList" class="workspace-list"></div>
+      </article>
+
+      <div id="progressDetails" hidden></div>
+
+
+      <article class="workspace-card">
+        <div class="workspace-card-heading">
+          <div>
+            <p class="eyebrow">Saved history</p>
+            <h2>Previous Searches</h2>
+          </div>
+        </div>
+        <div id="historyList" class="workspace-list"></div>
+      </article>
+
+      <article class="workspace-card">
+        <div class="workspace-card-heading">
+          <div>
+            <p class="eyebrow">Evidence</p>
+            <h2>Saved Documents</h2>
+          </div>
+        </div>
+        <div id="documentsList" class="workspace-list"></div>
+      </article>
+    </section>
+  </main>
+
+  <div id="workspaceToast" class="toast" role="status"></div>
+
+  <script src="workspace.js"></script>
+</body>
+</html>
