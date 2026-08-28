@@ -8,10 +8,14 @@ PostgreSQL environment variables.
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from http import cookies
+import base64
+import binascii
 import hashlib
 import hmac
+import io
 import json
 import os
+import re
 import secrets
 import psycopg
 from psycopg.rows import dict_row
@@ -20,6 +24,8 @@ import urllib.error
 import urllib.request
 import ssl
 import certifi
+import boto3
+import botocore.exceptions
 
 ROOT = Path(__file__).parent
 PORT = 3000
@@ -45,6 +51,19 @@ POSTGRES_DB = os.environ.get("POSTGRES_DB", "foundermotion")
 POSTGRES_USER = os.environ.get("POSTGRES_USER", "foundermotionadmin")
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
 
+AWS_REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
+_s3_client = None
+
+
+def s3_client():
+    """Lazily create the boto3 S3 client (picks up AWS_ACCESS_KEY_ID /
+    AWS_SECRET_ACCESS_KEY from the environment automatically)."""
+    global _s3_client
+    if _s3_client is None:
+        _s3_client = boto3.client("s3", region_name=AWS_REGION)
+    return _s3_client
+
 def database_connection():
     """Return a PostgreSQL connection to the Azure database."""
     missing = [
@@ -68,6 +87,121 @@ def database_connection():
         sslmode="require",
         row_factory=dict_row,
     )
+
+
+MAX_UPLOAD_BYTES = 12_000_000
+SAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def safe_upload_filename(name):
+    """Strip a client-supplied filename down to something safe to write to disk."""
+    name = Path(str(name or "upload")).name
+    name = SAFE_FILENAME_RE.sub("_", name).strip("._") or "upload"
+    return name[:150]
+
+
+def extract_text_from_upload(filename, raw_bytes):
+    """Best-effort text extraction for an uploaded evidence document.
+
+    Returns the extracted text, or a placeholder string when the format
+    isn't one we can read. The raw file is always saved separately by the
+    caller regardless of whether extraction succeeds.
+    """
+    suffix = Path(filename).suffix.lower()
+
+    if suffix in {".txt", ".md", ".csv", ".json"}:
+        try:
+            return raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            return raw_bytes.decode("utf-8", errors="replace")
+
+    if suffix == ".pdf":
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(raw_bytes))
+            pages = [page.extract_text() or "" for page in reader.pages]
+            text = "\n\n".join(pages).strip()
+            return text or f"Attached file: {filename} (no extractable text found in PDF)."
+        except Exception as error:
+            return f"Attached file: {filename} (could not read PDF: {error})."
+
+    if suffix == ".docx":
+        try:
+            import docx
+            document = docx.Document(io.BytesIO(raw_bytes))
+            paragraphs = [p.text for p in document.paragraphs if p.text.strip()]
+            for table in document.tables:
+                for row in table.rows:
+                    cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                    if cells:
+                        paragraphs.append(" | ".join(cells))
+            text = "\n".join(paragraphs).strip()
+            return text or f"Attached file: {filename} (no extractable text found in document)."
+        except Exception as error:
+            return f"Attached file: {filename} (could not read DOCX: {error})."
+
+    if suffix == ".xlsx":
+        try:
+            import openpyxl
+            workbook = openpyxl.load_workbook(io.BytesIO(raw_bytes), data_only=True)
+            lines = []
+            for sheet in workbook.worksheets:
+                lines.append(f"[Sheet: {sheet.title}]")
+                for row in sheet.iter_rows(values_only=True):
+                    cells = [str(value) for value in row if value is not None]
+                    if cells:
+                        lines.append(" | ".join(cells))
+            text = "\n".join(lines).strip()
+            return text or f"Attached file: {filename} (no extractable content found in spreadsheet)."
+        except Exception as error:
+            return f"Attached file: {filename} (could not read XLSX: {error})."
+
+    # Legacy binary formats (.doc, .xls) aren't supported for extraction —
+    # the raw file is still uploaded to S3 so nothing is silently lost.
+    return f"Attached file: {filename} (this file type isn't supported for automatic text extraction; the original file was saved)."
+
+
+def save_uploaded_file(user_id, filename, raw_bytes):
+    """Upload the raw file to S3, namespaced by user, and return its object key."""
+    if not S3_BUCKET_NAME:
+        raise ValueError("S3_BUCKET_NAME is not configured. Add it to .env.local.")
+
+    object_key = f"evidence/{user_id}/{int(time.time())}_{secrets.token_hex(4)}_{safe_upload_filename(filename)}"
+
+    try:
+        s3_client().put_object(
+            Bucket=S3_BUCKET_NAME,
+            Key=object_key,
+            Body=raw_bytes,
+        )
+    except botocore.exceptions.BotoCoreError as error:
+        raise ValueError(f"Could not upload file to S3: {error}") from error
+    except botocore.exceptions.ClientError as error:
+        raise ValueError(f"S3 rejected the upload: {error}") from error
+
+    return object_key
+
+
+def handle_evidence_upload(user_id, payload):
+    """Decode a base64-encoded evidence file, upload it to S3, and extract its text."""
+    filename = safe_upload_filename(payload.get("name"))
+    data_base64 = payload.get("dataBase64", "")
+
+    try:
+        raw_bytes = base64.b64decode(data_base64, validate=True)
+    except (binascii.Error, ValueError) as error:
+        raise ValueError(f"Could not decode uploaded file: {error}") from error
+
+    if not raw_bytes:
+        raise ValueError("Uploaded file is empty.")
+
+    if len(raw_bytes) > MAX_UPLOAD_BYTES:
+        raise ValueError("File is too large (12MB limit).")
+
+    stored_key = save_uploaded_file(user_id, filename, raw_bytes)
+    text = extract_text_from_upload(filename, raw_bytes)
+
+    return {"name": filename, "text": text, "storedPath": stored_key}
 
 
 def initialise_database():
@@ -903,9 +1037,9 @@ class MyRiskHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
-    def read_body(self):
+    def read_body(self, max_size=1_500_000):
         size = int(self.headers.get("Content-Length", "0"))
-        if size > 1_500_000:
+        if size > max_size:
             raise ValueError("Request is too large.")
         return json.loads(self.rfile.read(size).decode("utf-8"))
 
@@ -928,7 +1062,8 @@ class MyRiskHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            payload = self.read_body()
+            upload_body_limit = 16_000_000 if self.path == "/api/evidence/upload" else 1_500_000
+            payload = self.read_body(max_size=upload_body_limit)
             if self.path == "/api/auth/register":
                 self.register(payload)
             elif self.path == "/api/auth/login":
@@ -953,6 +1088,12 @@ class MyRiskHandler(BaseHTTPRequestHandler):
                 if user:
                     evidence = create_evidence(user["id"], payload)
                     self.send_json(201, {"evidence": evidence})
+
+            elif self.path == "/api/evidence/upload":
+                user = self.require_user()
+                if user:
+                    result = handle_evidence_upload(user["id"], payload)
+                    self.send_json(201, result)
 
             elif self.path.startswith("/api/evidence/") and self.path.endswith("/delete"):
                 user = self.require_user()
@@ -1142,6 +1283,11 @@ if __name__ == "__main__":
     if not POSTGRES_PASSWORD:
         raise RuntimeError(
             "POSTGRES_PASSWORD is missing. Add it to .env.local before starting the server."
+        )
+
+    if not S3_BUCKET_NAME:
+        raise RuntimeError(
+            "S3_BUCKET_NAME is missing. Add it to .env.local before starting the server."
         )
 
     initialise_database()

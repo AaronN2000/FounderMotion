@@ -1,2 +1,6 @@
 psycopg[binary]
 certifi
+pypdf
+python-docx
+openpyxl
+boto3

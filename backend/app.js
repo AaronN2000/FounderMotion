@@ -1727,18 +1727,44 @@ $('#fileInput').addEventListener('change', () => addFiles($('#fileInput').files)
 ['dragleave', 'drop'].forEach(type => $('#dropZone').addEventListener(type, event => { event.preventDefault(); $('#dropZone').classList.remove('dragging'); }));
 $('#dropZone').addEventListener('drop', event => addFiles(event.dataTransfer.files));
 
+const MAX_UPLOAD_BYTES = 12_000_000;
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = () => reject(reader.error || new Error('Could not read file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function addFiles(files) {
   invalidateProcessOneOutputs();
-  for (const file of [...files]) {
-    const fileText = /\.(txt|md|csv|json)$/i.test(file.name)
-      ? await file.text()
-      : `Attached file: ${file.name}.`;
+  let failures = 0;
 
-    state.documents.push(
-      createProcessEvidenceRecord(file.name, fileText)
-    );
+  for (const file of [...files]) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      failures++;
+      continue;
+    }
+
+    try {
+      const dataBase64 = await fileToBase64(file);
+      const uploaded = await api('/api/evidence/upload', {
+        method: 'POST',
+        body: JSON.stringify({ name: file.name, dataBase64 })
+      });
+
+      state.documents.push(
+        createProcessEvidenceRecord(uploaded.name, uploaded.text)
+      );
+    } catch (error) {
+      failures++;
+    }
   }
-  $('#fileInput').value = ''; $('#documentDialog').close(); render(); await saveProgress(false); showToast('Information added.');
+
+  $('#fileInput').value = ''; $('#documentDialog').close(); render(); await saveProgress(false);
+  showToast(failures ? `Added with ${failures} file(s) skipped (too large or unreadable).` : 'Information added.');
 }
 
 async function saveProgress(notify) {
