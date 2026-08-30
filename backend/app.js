@@ -11250,6 +11250,13 @@ function syncAuthScreenUI() {
       outputsPanel.style.removeProperty('width');
       outputsPanel.style.removeProperty('max-width');
 
+      /*
+       * Marks that we are NOT on the dedicated Outputs tab, so the
+       * six-tile AI summary renders as the compact vertical preview
+       * next to Inputs instead of the full horizontal Outputs layout.
+       */
+      outputsPanel.classList.remove('fm-outputs-tab-active');
+
       const actions = document.getElementById('processOutputActions');
 
       if (actions) {
@@ -11274,6 +11281,12 @@ function syncAuthScreenUI() {
       outputsPanel.style.gridColumn = '1 / -1';
       outputsPanel.style.width = '100%';
       outputsPanel.style.maxWidth = 'none';
+
+      /*
+       * On the Outputs tab, restore the original full-width,
+       * horizontal six-tile layout.
+       */
+      outputsPanel.classList.add('fm-outputs-tab-active');
 
       const actions = document.getElementById('processOutputActions');
 
@@ -19300,27 +19313,32 @@ function syncAuthScreenUI() {
       line-height: 1.5 !important;
     }
 
-    /* Results stacked vertically, one per row */
+    /* 6 horizontal tiles (this is the ORIGINAL layout, used on the
+       Outputs tab; a separate, later stylesheet block overrides this
+       to a compact vertical list for the always-visible preview
+       shown next to Inputs -- see "SIX TILE OUTPUT — COMPACT PREVIEW
+       MODE (NEXT TO INPUTS)" further down). */
     #${VIEW_ID} .fm-six-output-grid {
       display: grid !important;
 
-      grid-template-columns: minmax(0, 1fr) !important;
+      grid-template-columns:
+        repeat(6, minmax(0, 1fr)) !important;
 
       width: 100% !important;
 
       border-top: 1px solid #eee8f5 !important;
+      border-bottom: 1px solid #eee8f5 !important;
     }
 
     #${VIEW_ID} .fm-six-output-tile {
       min-width: 0 !important;
-      min-height: 0 !important;
+      min-height: 285px !important;
 
-      padding: 22px 30px 24px !important;
+      padding: 22px 20px 24px !important;
 
       box-sizing: border-box !important;
 
-      border-right: 0 !important;
-      border-bottom: 1px solid #eee8f5 !important;
+      border-right: 1px solid #eee8f5 !important;
 
       background: #fff !important;
 
@@ -19328,7 +19346,7 @@ function syncAuthScreenUI() {
     }
 
     #${VIEW_ID} .fm-six-output-tile:last-child {
-      border-bottom: 0 !important;
+      border-right: 0 !important;
     }
 
     #${VIEW_ID} .fm-six-output-number {
@@ -19435,6 +19453,18 @@ function syncAuthScreenUI() {
       line-height: 1.6 !important;
     }
 
+    /* Only affects this Output design on narrower screens */
+    @media (max-width: 1050px) {
+      #${VIEW_ID} .fm-six-output-grid {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr)) !important;
+      }
+
+      #${VIEW_ID} .fm-six-output-tile {
+        border-bottom:
+          1px solid #eee8f5 !important;
+      }
+    }
   `;
 
   document.getElementById(STYLE_ID)?.remove();
@@ -22192,4 +22222,82 @@ function syncAuthScreenUI() {
   console.log(
     '✓ REAL OUTPUT CHILDNODE FIX INSTALLED'
   );
+})();
+
+/* =========================================================
+   SIX TILE OUTPUT — COMPACT PREVIEW MODE (NEXT TO INPUTS)
+   Scope: #fmSixTileOutput ONLY
+
+   The six-tile summary has two presentations, switched by the
+   "fm-outputs-tab-active" class that app.js adds/removes on
+   #outputsPanel when the Outputs tab is opened/closed:
+
+     - Outputs tab open (#outputsPanel.fm-outputs-tab-active):
+       untouched, original horizontal 6-across layout with the
+       fixed tile height / 4-line clamp already defined earlier
+       in this file.
+
+     - Otherwise (Inputs tab, i.e. the always-visible condensed
+       preview next to Inputs): stacked vertically, one result per
+       row, sized to fit its own content -- no fixed tile height
+       and no leftover blank space below the text.
+
+   This block is appended last on purpose so it wins the cascade
+   over the earlier fixed-height / line-clamp rules.
+   ========================================================= */
+(() => {
+  const style = document.createElement('style');
+  style.id = 'fmSixTileCompactPreviewStyle';
+
+  style.textContent = `
+    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-grid {
+      grid-template-columns: minmax(0, 1fr) !important;
+      border-bottom: 0 !important;
+    }
+
+    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-tile {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+
+      display: block !important;
+      overflow: visible !important;
+
+      padding: 20px 26px !important;
+
+      border-right: 0 !important;
+      border-bottom: 1px solid #eee8f5 !important;
+    }
+
+    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-tile:last-child {
+      border-bottom: 0 !important;
+    }
+
+    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-number,
+    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-tile-title,
+    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-divider {
+      min-height: 0 !important;
+      flex: 0 0 auto !important;
+    }
+
+    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-summary {
+      display: block !important;
+      -webkit-line-clamp: unset !important;
+
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+
+      overflow: visible !important;
+      padding: 0 !important;
+      margin-bottom: 0 !important;
+    }
+
+    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-tile::after {
+      margin-top: 8px !important;
+    }
+  `;
+
+  document.getElementById('fmSixTileCompactPreviewStyle')?.remove();
+  document.head.appendChild(style);
 })();

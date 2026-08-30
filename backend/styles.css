@@ -8645,15 +8645,15 @@ body *:has(> #progressDots) > #progressDots {
    .fm-process-body grid. .fm-output-state above already gets an
    explicit column-2 position. The six-tile AI summary
    (#fmSixTileOutput, built by app.js) ships with its own
-   "grid-column: 1 / -1" rule (full width) -- that is NOT what we
-   want here: the right-hand preview should stay next to Inputs, in
-   column 2, stacked vertically, not take over the whole row. This
-   rule (class + id) is more specific than app.js's plain #id rule,
-   so it wins and keeps the summary pinned to the right column at
-   all times.
+   "grid-column: 1 / -1" rule (full width) -- keep that as-is for the
+   real Outputs tab (#outputsPanel.fm-outputs-tab-active, toggled by
+   app.js), but everywhere else (i.e. the compact preview shown next
+   to Inputs) pin it to column 2 so it stays beside Inputs instead of
+   taking over the row. This rule (class + id) is more specific than
+   app.js's plain #id rule, so it wins whenever it applies.
 */
 .fm-process-body .fm-real-output,
-.fm-process-body #fmSixTileOutput {
+.fm-process-body #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput {
   grid-column: 2 !important;
   grid-row: 1 !important;
   width: 100% !important;
