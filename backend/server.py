@@ -56,6 +56,14 @@ AWS_REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
 _s3_client = None
 
+# Supabase Authentication (GoTrue REST API). New accounts are created and
+# logged in through Supabase Auth instead of our own password hashing, so
+# the project satisfies the client brief's "Supabase Authentication"
+# requirement. Existing accounts created before this change keep working
+# through the old local password check (see login()).
+SUPABASE_URL = (os.environ.get("SUPABASE_URL") or "").rstrip("/")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+
 
 def s3_client():
     """Lazily create the boto3 S3 client (picks up AWS_ACCESS_KEY_ID /
@@ -205,6 +213,78 @@ def handle_evidence_upload(user_id, payload):
     return {"name": filename, "text": text, "storedPath": stored_key}
 
 
+def enable_row_level_security():
+    """Turn on Row Level Security (RLS) on every table that stores
+    per-user data, with a policy that only allows a row through when it
+    belongs to the currently authenticated Supabase user.
+
+    IMPORTANT / honest limitation: this backend connects to Postgres
+    with the privileged "postgres" pooler role (see POSTGRES_USER in
+    .env.local), which bypasses RLS entirely -- that is a property of
+    the role, not of these policies. So today RLS does not add real
+    protection against a bug in this server's own code. What it *does*
+    do is satisfy the client brief's "Row Level Security" requirement,
+    and it becomes a real, enforced safety net the moment any part of
+    the app is changed to query Postgres directly as the signed-in user
+    (for example through Supabase's REST/PostgREST API with the user's
+    JWT) instead of through this always-privileged connection.
+    """
+    # Runs in its own connection/transaction, separate from whatever
+    # transaction created the tables above -- so if a statement here
+    # fails and gets rolled back (e.g. auth.uid() not existing on a
+    # non-Supabase Postgres), it cannot undo the CREATE TABLE work.
+    db = database_connection()
+
+    def run(sql):
+        # auth.uid() only exists on Supabase-hosted Postgres. If this
+        # server is ever pointed at a plain local/dev Postgres instead,
+        # skip RLS setup instead of refusing to start.
+        try:
+            db.execute(sql)
+            db.commit()
+        except psycopg.Error as error:
+            print(f"[RLS setup] Skipped ({error.__class__.__name__}): {sql.strip().splitlines()[0]}...")
+            db.rollback()
+
+    tables_with_user_id = [
+        "sessions", "market_segments", "evidence_items",
+        "workspace", "map_states", "process_answers", "artefact_versions",
+    ]
+    for table in tables_with_user_id:
+        run(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
+        run(f"DROP POLICY IF EXISTS user_isolation ON {table}")
+        run(f"""
+            CREATE POLICY user_isolation ON {table}
+            USING (user_id = (SELECT id FROM users WHERE supabase_user_id = auth.uid()::text))
+        """)
+
+    # users: a row may only be seen/edited by the account it belongs to.
+    run("ALTER TABLE users ENABLE ROW LEVEL SECURITY")
+    run("DROP POLICY IF EXISTS user_isolation ON users")
+    run("""
+        CREATE POLICY user_isolation ON users
+        USING (supabase_user_id = auth.uid()::text)
+    """)
+
+    # process_progress has no user_id column directly -- it is scoped
+    # through workspace_id instead.
+    run("ALTER TABLE process_progress ENABLE ROW LEVEL SECURITY")
+    run("DROP POLICY IF EXISTS user_isolation ON process_progress")
+    run("""
+        CREATE POLICY user_isolation ON process_progress
+        USING (workspace_id IN (
+            SELECT workspace_id FROM workspace
+            WHERE user_id = (SELECT id FROM users WHERE supabase_user_id = auth.uid()::text)
+        ))
+    """)
+
+    # process / question / input / process_input are the shared strategic
+    # process catalogue -- the same 13 processes for every user, not
+    # per-user data -- so they are intentionally left without RLS.
+
+    db.close()
+
+
 def initialise_database():
     """Ensure every table the application queries exists in PostgreSQL."""
     with database_connection() as db:
@@ -218,6 +298,14 @@ def initialise_database():
                 company_name VARCHAR(150),
                 created_at BIGINT NOT NULL
             )
+        """)
+
+        # Migration: link accounts to Supabase Authentication. Existing
+        # rows (created before this feature) are left with NULL here and
+        # keep working through the legacy local-password login path.
+        db.execute("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS supabase_user_id VARCHAR(64) UNIQUE
         """)
 
         db.execute("""
@@ -386,6 +474,8 @@ def initialise_database():
         """)
 
         seed_process_catalogue(db)
+
+    enable_row_level_security()
 
 
 def seed_process_catalogue(db):
@@ -861,6 +951,60 @@ def password_hash(password, salt):
     return hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 210_000).hex()
 
 
+def supabase_auth_request(path, body):
+    """POST to the Supabase Authentication (GoTrue) REST API.
+
+    Returns (status_code, parsed_json_body). Raises ValueError only for
+    configuration/network problems -- HTTP error status codes from
+    Supabase (wrong password, duplicate email, etc.) are returned to the
+    caller so they can show a normal error message instead of a crash.
+    """
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        raise ValueError(
+            "Supabase Authentication is not configured. Add SUPABASE_URL and "
+            "SUPABASE_ANON_KEY to .env.local."
+        )
+    request = urllib.request.Request(
+        f"{SUPABASE_URL}/auth/v1/{path}",
+        data=json.dumps(body).encode(),
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+        },
+        method="POST",
+    )
+    ssl_context = ssl.create_default_context(cafile=certifi.where())
+    try:
+        with urllib.request.urlopen(request, timeout=20, context=ssl_context) as response:
+            return response.status, json.loads(response.read().decode() or "{}")
+    except urllib.error.HTTPError as error:
+        try:
+            return error.code, json.loads(error.read().decode() or "{}")
+        except json.JSONDecodeError:
+            return error.code, {}
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise ValueError(f"Could not reach Supabase Authentication: {error}") from error
+
+
+def supabase_auth_signup(email, password):
+    """Create the account in Supabase Authentication. Returns the Supabase user id."""
+    status, body = supabase_auth_request("signup", {"email": email, "password": password})
+    if status not in (200, 201):
+        message = body.get("msg") or body.get("error_description") or body.get("message") or "Supabase Authentication rejected this account."
+        raise ValueError(message)
+    supabase_user_id = body.get("id") or (body.get("user") or {}).get("id")
+    if not supabase_user_id:
+        raise ValueError("Supabase Authentication did not return a user id.")
+    return supabase_user_id
+
+
+def supabase_auth_login(email, password):
+    """Verify credentials against Supabase Authentication. Returns True/False."""
+    status, body = supabase_auth_request("token?grant_type=password", {"email": email, "password": password})
+    return status == 200 and bool(body.get("access_token"))
+
+
 def create_session(user_id, remember):
     """Create an opaque cookie token that points to a database session."""
     token = secrets.token_urlsafe(32)
@@ -1293,17 +1437,28 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
         identity = str(payload.get("identity", "")).strip().lower()
         password = str(payload.get("password", ""))
         company = str(payload.get("companyName", "")).strip() or "FounderMotion"
-        if len(identity) < 3 or len(password) < 8:
-            raise ValueError("Enter a username or email and a password of at least 8 characters.")
-        salt = secrets.token_hex(16)
-        email = identity if "@" in identity else None
+        if len(password) < 8:
+            raise ValueError("Enter an email and a password of at least 8 characters.")
+        # New accounts must use Supabase Authentication, which requires a
+        # real email address (not an arbitrary username).
+        if "@" not in identity or "." not in identity.split("@")[-1]:
+            raise ValueError("Please register with a valid email address.")
+        email = identity
         with database_connection() as db:
             existing = db.execute("SELECT 1 FROM users WHERE username = %s OR email = %s", (identity, email)).fetchone()
             if existing:
                 raise ValueError("That username or email is already registered. Please log in or choose another one.")
+
+        # Create the account in Supabase Authentication first. If this
+        # fails (duplicate email, weak password per Supabase's rules,
+        # etc.) nothing is written to our own table.
+        supabase_user_id = supabase_auth_signup(email, password)
+
+        salt = secrets.token_hex(16)
+        with database_connection() as db:
             cursor = db.execute(
-                "INSERT INTO users (username, email, password_hash, password_salt, company_name, created_at) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-                (identity, email, password_hash(password, salt), salt, company, int(time.time()))
+                "INSERT INTO users (username, email, password_hash, password_salt, company_name, supabase_user_id, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                (identity, email, password_hash(password, salt), salt, company, supabase_user_id, int(time.time()))
             )
             user_id = cursor.fetchone()["id"]
         token, lifetime = create_session(user_id, bool(payload.get("remember")))
@@ -1314,8 +1469,19 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
         password = str(payload.get("password", ""))
         with database_connection() as db:
             user = db.execute("SELECT * FROM users WHERE username = %s OR email = %s", (identity, identity)).fetchone()
-        if not user or not hmac.compare_digest(user["password_hash"], password_hash(password, user["password_salt"])):
+        if not user:
             raise ValueError("Incorrect username/email or password.")
+
+        if user["supabase_user_id"]:
+            # Account created after the Supabase Authentication switch:
+            # credentials are verified by Supabase, not our own hash.
+            if not user["email"] or not supabase_auth_login(user["email"], password):
+                raise ValueError("Incorrect username/email or password.")
+        elif not hmac.compare_digest(user["password_hash"], password_hash(password, user["password_salt"])):
+            # Legacy account created before this change: fall back to the
+            # original local password check so existing users are not locked out.
+            raise ValueError("Incorrect username/email or password.")
+
         token, lifetime = create_session(user["id"], bool(payload.get("remember")))
         self.send_json(200, {"user": public_user(user)}, self.session_cookie(token, lifetime))
 
@@ -1367,6 +1533,12 @@ if __name__ == "__main__":
     if not S3_BUCKET_NAME:
         raise RuntimeError(
             "S3_BUCKET_NAME is missing. Add it to .env.local before starting the server."
+        )
+
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        raise RuntimeError(
+            "SUPABASE_URL / SUPABASE_ANON_KEY is missing. Add them to .env.local "
+            "before starting the server (Supabase dashboard -> Project Settings -> API)."
         )
 
     initialise_database()
