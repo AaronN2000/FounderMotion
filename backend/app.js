@@ -13044,7 +13044,15 @@ function syncAuthScreenUI() {
 
         if (!icon) return;
 
+        // Guard against re-applying: without this check, setting
+        // innerHTML below is itself a DOM mutation that the
+        // MutationObserver below reacts to, which calls this
+        // function again, which mutates again — an infinite loop
+        // that pegs the CPU and freezes the tab.
+        if (icon.dataset.processThreeIconFixed === '1') return;
+
         icon.innerHTML = newIcon;
+        icon.dataset.processThreeIconFixed = '1';
 
         console.log(
           'ICON ONLY FIXED:',
