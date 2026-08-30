@@ -22281,14 +22281,18 @@ function syncAuthScreenUI() {
     }
 
     #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-summary {
-      display: block !important;
-      -webkit-line-clamp: unset !important;
+      /* Short summary only -- same idea as the Outputs tab's own
+         truncated preview, just fewer lines to fit the narrower
+         column next to Inputs. */
+      display: -webkit-box !important;
+      -webkit-box-orient: vertical !important;
+      -webkit-line-clamp: 3 !important;
 
       height: auto !important;
       min-height: 0 !important;
       max-height: none !important;
 
-      overflow: visible !important;
+      overflow: hidden !important;
       padding: 0 !important;
       margin-bottom: 0 !important;
     }
