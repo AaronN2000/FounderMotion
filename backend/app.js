@@ -1621,6 +1621,7 @@ function render() {
     button.disabled = !output;
   });
   $('#generatePdf').disabled = !output;
+  if ($('#generateCsv')) $('#generateCsv').disabled = !output;
   $('#expandOutput').disabled = !output;
   renderHistory();
 
@@ -2121,6 +2122,75 @@ $('#generatePdf').addEventListener('click', () => {
   const fileName = `${(currentUser?.companyName || 'FounderMotion').replace(/[^a-z0-9]+/gi, '-')}-process-${step.number || state.step + 1}.pdf`;
   const link = document.createElement('a');
   link.href = URL.createObjectURL(createPdf([`${currentUser?.companyName || 'Company'} - Process ${step.number || state.step + 1}`, step.title, '', ...answer.split('\n')]));
+  link.download = fileName;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+});
+
+/* =========================================================
+   CSV EXPORT
+   The "Generate CSV" button existed in the HTML/CSS but had
+   no click handler wired up, so clicking it did nothing.
+   ========================================================= */
+
+function csvEscapeCell(value) {
+  const str = String(value ?? '');
+  if (/[",\n]/.test(str)) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function stripMarkdownForCsv(text) {
+  return String(text)
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\r/g, '')
+    .trim();
+}
+
+// Splits a decision-brief answer into (section title, section body)
+// pairs using its "**N. Question**" bold headers, so the CSV has one
+// row per question/section instead of one giant blob of text.
+function answerToCsvRows(answer) {
+  const lines = String(answer || '').split('\n');
+  const rows = [];
+  let currentTitle = 'Summary';
+  let currentBody = [];
+
+  const flush = () => {
+    const body = stripMarkdownForCsv(currentBody.join('\n'));
+    if (body) rows.push([currentTitle, body]);
+    currentBody = [];
+  };
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed === '---') return;
+    const headerMatch = trimmed.match(/^\*\*(.+?)\*\*\s*$/);
+    if (headerMatch) {
+      flush();
+      currentTitle = headerMatch[1].trim();
+    } else {
+      currentBody.push(line);
+    }
+  });
+  flush();
+
+  return rows;
+}
+
+$('#generateCsv')?.addEventListener('click', () => {
+  const answer = state.outputs[state.step];
+  if (!answer) return showToast('Generate this process before creating a CSV.');
+  const step = currentStep();
+  const rows = [['Section', 'Content'], ...answerToCsvRows(answer)];
+  // Leading BOM so Excel opens the UTF-8 file with correct characters.
+  const csvContent = '﻿' + rows.map(row => row.map(csvEscapeCell).join(',')).join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const fileName = `${(currentUser?.companyName || 'FounderMotion').replace(/[^a-z0-9]+/gi, '-')}-process-${step.number || state.step + 1}.csv`;
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
   link.download = fileName;
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
