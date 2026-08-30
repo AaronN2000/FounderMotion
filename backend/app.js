@@ -19300,28 +19300,27 @@ function syncAuthScreenUI() {
       line-height: 1.5 !important;
     }
 
-    /* 6 horizontal tiles */
+    /* Results stacked vertically, one per row */
     #${VIEW_ID} .fm-six-output-grid {
       display: grid !important;
 
-      grid-template-columns:
-        repeat(6, minmax(0, 1fr)) !important;
+      grid-template-columns: minmax(0, 1fr) !important;
 
       width: 100% !important;
 
       border-top: 1px solid #eee8f5 !important;
-      border-bottom: 1px solid #eee8f5 !important;
     }
 
     #${VIEW_ID} .fm-six-output-tile {
       min-width: 0 !important;
-      min-height: 285px !important;
+      min-height: 0 !important;
 
-      padding: 22px 20px 24px !important;
+      padding: 22px 30px 24px !important;
 
       box-sizing: border-box !important;
 
-      border-right: 1px solid #eee8f5 !important;
+      border-right: 0 !important;
+      border-bottom: 1px solid #eee8f5 !important;
 
       background: #fff !important;
 
@@ -19329,7 +19328,7 @@ function syncAuthScreenUI() {
     }
 
     #${VIEW_ID} .fm-six-output-tile:last-child {
-      border-right: 0 !important;
+      border-bottom: 0 !important;
     }
 
     #${VIEW_ID} .fm-six-output-number {
@@ -19436,18 +19435,6 @@ function syncAuthScreenUI() {
       line-height: 1.6 !important;
     }
 
-    /* Only affects this Output design on narrower screens */
-    @media (max-width: 1050px) {
-      #${VIEW_ID} .fm-six-output-grid {
-        grid-template-columns:
-          repeat(3, minmax(0, 1fr)) !important;
-      }
-
-      #${VIEW_ID} .fm-six-output-tile {
-        border-bottom:
-          1px solid #eee8f5 !important;
-      }
-    }
   `;
 
   document.getElementById(STYLE_ID)?.remove();
@@ -19815,23 +19802,14 @@ function syncAuthScreenUI() {
           : ''
       }
     `;
-
     /*
-     * Clicking any tile (or the recommended-decision tile)
-     * opens the full generated answer in the existing
-     * expand modal.
+     * NOTE: tile clicks are NOT wired here. A later block in this
+     * file ("FINAL OUTPUT TILE PREVIEW + FULL ANSWER MODAL") already
+     * installs a document-level delegated click handler for
+     * '#fmSixTileOutput .fm-six-output-tile' that opens a per-tile
+     * "full answer" modal — adding another click handler here would
+     * pop open a second, different modal on top of it.
      */
-    view
-      .querySelectorAll('.fm-six-output-tile')
-      .forEach(tile => {
-        tile.style.cursor = 'pointer';
-
-        tile.addEventListener('click', () => {
-          if (typeof openOutputModal === 'function') {
-            openOutputModal();
-          }
-        });
-      });
   }
 
   /* ---------------------------------------------------------
@@ -19884,18 +19862,14 @@ function syncAuthScreenUI() {
     );
 
     /*
-     * Keep summary synced when AI creates
-     * a new output.
+     * Keep summary synced when AI creates a new output.
+     * This runs regardless of which tab is currently active, so the
+     * condensed right-hand preview shows up as soon as generation
+     * finishes, even while the Inputs tab is still the one showing.
      */
     const observer =
       new MutationObserver(() => {
-        if (
-          outputsTab.classList.contains(
-            'active'
-          )
-        ) {
-          renderSixTileOutput();
-        }
+        renderSixTileOutput();
       });
 
     observer.observe(
@@ -19907,13 +19881,7 @@ function syncAuthScreenUI() {
       }
     );
 
-    if (
-      outputsTab.classList.contains(
-        'active'
-      )
-    ) {
-      renderSixTileOutput();
-    }
+    renderSixTileOutput();
   }
 
   if (
