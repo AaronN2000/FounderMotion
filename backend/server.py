@@ -1,4 +1,4 @@
-"""MyRISK local web server.
+"""FounderMotion local web server.
 
 The server keeps credentials private, provides account sessions, saves map data,
 and sends map requests to the AI service. Database access is configured through
@@ -22,6 +22,7 @@ from psycopg.rows import dict_row
 import time
 import urllib.error
 import urllib.request
+import urllib.parse
 import ssl
 import certifi
 import boto3
@@ -29,7 +30,7 @@ import botocore.exceptions
 
 ROOT = Path(__file__).parent
 PORT = 3000
-SESSION_COOKIE = "myrisk_session"
+SESSION_COOKIE = "foundermotion_session"
 
 
 def load_local_environment():
@@ -368,6 +369,22 @@ def initialise_database():
             )
         """)
 
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS artefact_versions (
+                version_id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL
+                    REFERENCES users(id) ON DELETE CASCADE,
+                process_number INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                created_at BIGINT NOT NULL
+            )
+        """)
+
+        db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_artefact_versions_lookup
+            ON artefact_versions(user_id, process_number, created_at DESC)
+        """)
+
         seed_process_catalogue(db)
 
 
@@ -394,9 +411,9 @@ def seed_process_catalogue(db):
     generic_inputs = ["Previous process outputs", "Customer and market evidence", "Relevant internal documentation"]
 
     process_1_questions = [
-        "Which market should MyRISK target first?",
+        "Which market should FounderMotion target first?",
         "Which buyer feels the problem most urgently?",
-        "Which category should MyRISK avoid being trapped in?",
+        "Which category should FounderMotion avoid being trapped in?",
         "What alternatives does the buyer use today?",
         "Which wedge leads in each priority market?",
     ]
@@ -430,7 +447,7 @@ def seed_process_catalogue(db):
 
     for number, name in enumerate(names, 1):
         purpose = (
-            "Define MyRISK market focus, competitive frame, wedge positioning and market-entry logic."
+            "Define FounderMotion market focus, competitive frame, wedge positioning and market-entry logic."
             if number == 1 else f"Develop the strategic decisions and evidence for {name}."
         )
         process_row = db.execute(
@@ -913,6 +930,45 @@ def create_decision_brief(payload):
         raise ValueError(f"AI service returned {error.code}: {detail}") from error
 
 
+def save_artefact_version(user_id, process_number, content):
+    """Store a new AI-generated document version, keeping only the latest 3 per phase."""
+    with database_connection() as db:
+        db.execute("""
+            INSERT INTO artefact_versions (user_id, process_number, content, created_at)
+            VALUES (%s, %s, %s, %s)
+        """, (user_id, process_number, content, int(time.time())))
+
+        db.execute("""
+            DELETE FROM artefact_versions
+            WHERE version_id IN (
+                SELECT version_id FROM artefact_versions
+                WHERE user_id = %s AND process_number = %s
+                ORDER BY created_at DESC, version_id DESC
+                OFFSET 3
+            )
+        """, (user_id, process_number))
+
+
+def get_artefact_versions(user_id, process_number):
+    """Return the latest saved document versions for one phase, newest first."""
+    with database_connection() as db:
+        rows = db.execute("""
+            SELECT version_id, content, created_at
+            FROM artefact_versions
+            WHERE user_id = %s AND process_number = %s
+            ORDER BY created_at DESC, version_id DESC
+            LIMIT 3
+        """, (user_id, process_number)).fetchall()
+
+    return [
+        {
+            "id": row["version_id"],
+            "content": row["content"],
+            "createdAt": row["created_at"],
+        }
+        for row in rows
+    ]
+
 
 def get_segments(user_id):
     """Return all market segments belonging to the current workspace/user."""
@@ -1024,7 +1080,7 @@ def delete_segment(user_id, segment_id):
     if cursor.rowcount == 0:
         raise ValueError("Segment not found.")
 
-class MyRiskHandler(BaseHTTPRequestHandler):
+class FounderMotionHandler(BaseHTTPRequestHandler):
     """HTTP routes for account actions, saved map data, AI analysis, and web files."""
 
     def send_json(self, status, body, cookie=None):
@@ -1075,7 +1131,15 @@ class MyRiskHandler(BaseHTTPRequestHandler):
             elif self.path == "/api/analyze":
                 user = self.require_user()
                 if user:
-                    self.send_json(200, {"answer": create_decision_brief(payload) or "No answer was returned."})
+                    answer = create_decision_brief(payload) or "No answer was returned."
+                    process_number = payload.get("step", {}).get("number")
+                    if process_number:
+                        try:
+                            save_artefact_version(user["id"], int(process_number), answer)
+                        except Exception:
+                            import traceback
+                            traceback.print_exc()
+                    self.send_json(200, {"answer": answer})
 
             elif self.path == "/api/segments":
                 user = self.require_user()
@@ -1149,6 +1213,21 @@ class MyRiskHandler(BaseHTTPRequestHandler):
                 )
             return
 
+        if self.path.startswith("/api/artefact-versions"):
+            user = self.require_user()
+            if user:
+                query = urllib.parse.urlsplit(self.path).query
+                params = urllib.parse.parse_qs(query)
+                try:
+                    process_number = int(params.get("processNumber", ["0"])[0])
+                except ValueError:
+                    process_number = 0
+                if not 1 <= process_number <= 13:
+                    self.send_json(400, {"error": "Invalid process number."})
+                    return
+                self.send_json(200, {"versions": get_artefact_versions(user["id"], process_number)})
+            return
+
         if self.path == "/api/state":
             user = self.require_user()
             if user:
@@ -1213,7 +1292,7 @@ class MyRiskHandler(BaseHTTPRequestHandler):
     def register(self, payload):
         identity = str(payload.get("identity", "")).strip().lower()
         password = str(payload.get("password", ""))
-        company = str(payload.get("companyName", "")).strip() or "MyRISK"
+        company = str(payload.get("companyName", "")).strip() or "FounderMotion"
         if len(identity) < 3 or len(password) < 8:
             raise ValueError("Enter a username or email and a password of at least 8 characters.")
         salt = secrets.token_hex(16)
@@ -1292,5 +1371,5 @@ if __name__ == "__main__":
 
     initialise_database()
 
-    print(f"MyRISK is running at http://localhost:{PORT}")
-    ThreadingHTTPServer(("", PORT), MyRiskHandler).serve_forever()
+    print(f"FounderMotion is running at http://localhost:{PORT}")
+    ThreadingHTTPServer(("", PORT), FounderMotionHandler).serve_forever()

@@ -1,5 +1,5 @@
 {
-  "name": "myrisk",
+  "name": "foundermotion",
   "private": true,
   "scripts": {
     "start": "python server.py"

@@ -1,6 +1,6 @@
 // Map definitions live together so new map points can be added without changing UI code.
 let mapSteps = [
-  { title: 'Market Positioning Analysis', category: 'Market strategy', purpose: 'Define MyRISK market focus, competitive frame, wedge positioning and market-entry logic.', inputs: ['Gartner PMF & target-market prioritisation', 'Brand handbook & wedge definitions', 'Sector / competitive-category research', 'Early customer / beta feedback & buyer language', 'Trace vs Essentials use-case logic'], questions: ['Which market should MyRISK target first?', 'Which buyer feels the problem most urgently?', 'Which category should MyRISK avoid being trapped in?', 'What alternatives does the buyer use today?', 'Which wedge leads in each priority market?'], outputs: 'Priority ICPs and segments; competitive frame of reference; positioning statement and differentiation themes; Trace / Essentials market-entry logic.', feeds: '2, 3, 6, 9, 15, 19, 22, 27, 28' },
+  { title: 'Market Positioning Analysis', category: 'Market strategy', purpose: 'Define FounderMotion market focus, competitive frame, wedge positioning and market-entry logic.', inputs: ['Gartner PMF & target-market prioritisation', 'Brand handbook & wedge definitions', 'Sector / competitive-category research', 'Early customer / beta feedback & buyer language', 'Trace vs Essentials use-case logic'], questions: ['Which market should FounderMotion target first?', 'Which buyer feels the problem most urgently?', 'Which category should FounderMotion avoid being trapped in?', 'What alternatives does the buyer use today?', 'Which wedge leads in each priority market?'], outputs: 'Priority ICPs and segments; competitive frame of reference; positioning statement and differentiation themes; Trace / Essentials market-entry logic.', feeds: '2, 3, 6, 9, 15, 19, 22, 27, 28' },
   { title: 'Ideal Customer Profile', category: 'Customer strategy', purpose: 'Turn the market-positioning decision into a clear, prioritised ideal-customer profile.', inputs: ['Previous market positioning output', 'Customer research', 'Sales and beta feedback'], questions: ['Which customer profile should be prioritised first?', 'What firmographic and behavioural signals define the best-fit buyer?', 'Which customer profiles should be deprioritised?'], outputs: 'Prioritised ICP, buying triggers and qualification criteria.', feeds: '3, 6, 9, 15, 19, 22, 27, 28' },
   { title: 'Buyer Problem & Urgency', category: 'Customer strategy', purpose: 'Clarify the priority buyer problem, urgency and language that should guide messaging.', inputs: ['Previous outputs', 'Buyer interviews and feedback', 'Current workarounds'], questions: ['What job is the buyer trying to complete?', 'What makes the problem urgent now?', 'What language does the buyer use to describe the pain?'], outputs: 'Priority problem statement, urgency signals and buyer-language themes.', feeds: '6, 9, 15, 19, 22, 27, 28' }
 ];
@@ -3169,7 +3169,7 @@ function createPdf(lines) {
 })();
 
 
-function companyText(text) { return String(text).replace(/myrisk/gi, currentUser?.companyName || 'MyRISK'); }
+function companyText(text) { return String(text).replace(/foundermotion/gi, currentUser?.companyName || 'FounderMotion'); }
 function archiveCurrentOutput() {
   const answer = state.outputs?.[state.step];
 
