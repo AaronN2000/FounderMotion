@@ -8639,6 +8639,25 @@ body *:has(> #progressDots) > #progressDots {
   padding: 40px 48px !important;
 }
 
+/*
+   FIX: because .fm-output-column is "display: contents" (see above),
+   its children lay out as if they were direct children of the
+   .fm-process-body grid. .fm-output-state above already gets an
+   explicit column-2 position, but the REAL generated output
+   (.fm-real-output) and the six-tile AI summary (#fmSixTileOutput,
+   built by app.js) were never given one — so CSS grid auto-placement
+   dropped them into the next free cell, which is column 1 / row 2,
+   i.e. visually underneath the Inputs column instead of the Outputs
+   side. Pin them to the same cell as .fm-output-state.
+*/
+.fm-process-body .fm-real-output,
+.fm-process-body #fmSixTileOutput {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
 /* ---------- INPUT SECTION ---------- */
 
 .fm-inputs-column .map-section {

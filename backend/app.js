@@ -15298,10 +15298,6 @@ function syncAuthScreenUI() {
   style.id = 'outputEmptyGridCenterOnly';
 
   style.textContent = `
-    .fm-process-body > #outputsPanel {
-      display: contents !important;
-    }
-
     #outputsPanel .fm-output-state.fm-output-empty-centered {
       grid-column: 1 / -1 !important;
       grid-row: auto !important;
@@ -19819,6 +19815,23 @@ function syncAuthScreenUI() {
           : ''
       }
     `;
+
+    /*
+     * Clicking any tile (or the recommended-decision tile)
+     * opens the full generated answer in the existing
+     * expand modal.
+     */
+    view
+      .querySelectorAll('.fm-six-output-tile')
+      .forEach(tile => {
+        tile.style.cursor = 'pointer';
+
+        tile.addEventListener('click', () => {
+          if (typeof openOutputModal === 'function') {
+            openOutputModal();
+          }
+        });
+      });
   }
 
   /* ---------------------------------------------------------
