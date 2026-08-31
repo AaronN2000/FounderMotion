@@ -693,17 +693,24 @@ function getProcessProgressStatus(processNumber) {
 
 
 function getPhaseStatus(startProcess, endProcess) {
+  // "Done" / completion counts below key off hasSavedProcessOutput(),
+  // the same signal that already drives the checkmarks on the step
+  // dots and the unlock logic (getHighestUnlockedProcessIndex()) --
+  // process_progress.status alone can lag behind it (e.g. older saved
+  // generations that only exist in Previous History), which is why the
+  // "X of N processes completed" message could previously show a
+  // smaller count than the number of checked-off steps.
   const firstStatus =
     getProcessProgressStatus(startProcess);
 
-  const lastStatus =
-    getProcessProgressStatus(endProcess);
-
-  if (lastStatus === 'Completed') {
+  if (hasSavedProcessOutput(endProcess - 1)) {
     return 'Done';
   }
 
-  if (firstStatus !== 'Not Started') {
+  if (
+    firstStatus !== 'Not Started' ||
+    hasSavedProcessOutput(startProcess - 1)
+  ) {
     return 'In Progress';
   }
 
@@ -719,9 +726,7 @@ function getCompletedCount(startProcess, endProcess) {
     processNumber <= endProcess;
     processNumber++
   ) {
-    if (
-      getProcessProgressStatus(processNumber) === 'Completed'
-    ) {
+    if (hasSavedProcessOutput(processNumber - 1)) {
       completed++;
     }
   }
