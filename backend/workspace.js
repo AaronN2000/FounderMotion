@@ -2138,6 +2138,12 @@ async function loadWorkspaceManager() {
 
 function attachWorkspaceManagerListeners() {
   $('#createWorkspaceButton')?.addEventListener('click', () => openWorkspaceSetup());
+  $('#editSegmentsButton')?.addEventListener('click', () => {
+    // "Edit segments" on the Market Segments card just opens the setup
+    // form for the currently active workspace -- segments are edited
+    // there rather than through a separate segment dialog.
+    openWorkspaceSetup(activeWorkspace);
+  });
   $('#addInitialSegmentButton')?.addEventListener('click', () => createInitialSegmentField());
   $('#closeWorkspaceSetup')?.addEventListener('click', closeWorkspaceSetup);
   $('#cancelWorkspaceSetup')?.addEventListener('click', closeWorkspaceSetup);

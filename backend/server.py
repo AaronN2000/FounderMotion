@@ -652,6 +652,131 @@ def initialise_database():
             ON artefact_versions(user_id, process_number, created_at DESC)
         """)
 
+        # Saved map state (current step, uploaded documents, previous-search
+        # history), process outputs and their version history all used to
+        # be scoped to the whole account. Now that an account can hold
+        # several workspaces, each of these needs its own row per
+        # workspace -- otherwise switching workspaces would leave old
+        # outputs/history/documents from a different workspace still
+        # showing. Existing rows are backfilled onto that user's earliest
+        # workspace so nothing already saved goes missing.
+        db.execute("""
+            ALTER TABLE map_states
+            ADD COLUMN IF NOT EXISTS workspace_id INTEGER
+        """)
+
+        db.execute("""
+            UPDATE map_states ms
+            SET workspace_id = (
+                SELECT w.workspace_id
+                FROM workspace w
+                WHERE w.user_id = ms.user_id
+                ORDER BY w.workspace_id
+                LIMIT 1
+            )
+            WHERE workspace_id IS NULL
+        """)
+
+        db.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_map_states_workspace
+            ON map_states(workspace_id)
+        """)
+
+        db.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'fk_map_states_workspace'
+                ) THEN
+                    ALTER TABLE map_states
+                    ADD CONSTRAINT fk_map_states_workspace
+                    FOREIGN KEY (workspace_id)
+                    REFERENCES workspace(workspace_id)
+                    ON DELETE CASCADE;
+                END IF;
+            END $$;
+        """)
+
+        db.execute("""
+            ALTER TABLE process_answers
+            ADD COLUMN IF NOT EXISTS workspace_id INTEGER
+        """)
+
+        db.execute("""
+            UPDATE process_answers pa
+            SET workspace_id = (
+                SELECT w.workspace_id
+                FROM workspace w
+                WHERE w.user_id = pa.user_id
+                ORDER BY w.workspace_id
+                LIMIT 1
+            )
+            WHERE workspace_id IS NULL
+        """)
+
+        db.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_process_answers_workspace_process
+            ON process_answers(workspace_id, process_number)
+        """)
+
+        db.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'fk_process_answers_workspace'
+                ) THEN
+                    ALTER TABLE process_answers
+                    ADD CONSTRAINT fk_process_answers_workspace
+                    FOREIGN KEY (workspace_id)
+                    REFERENCES workspace(workspace_id)
+                    ON DELETE CASCADE;
+                END IF;
+            END $$;
+        """)
+
+        db.execute("""
+            ALTER TABLE artefact_versions
+            ADD COLUMN IF NOT EXISTS workspace_id INTEGER
+        """)
+
+        db.execute("""
+            UPDATE artefact_versions av
+            SET workspace_id = (
+                SELECT w.workspace_id
+                FROM workspace w
+                WHERE w.user_id = av.user_id
+                ORDER BY w.workspace_id
+                LIMIT 1
+            )
+            WHERE workspace_id IS NULL
+        """)
+
+        db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_artefact_versions_workspace_lookup
+            ON artefact_versions(workspace_id, process_number, created_at DESC)
+        """)
+
+        db.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'fk_artefact_versions_workspace'
+                ) THEN
+                    ALTER TABLE artefact_versions
+                    ADD CONSTRAINT fk_artefact_versions_workspace
+                    FOREIGN KEY (workspace_id)
+                    REFERENCES workspace(workspace_id)
+                    ON DELETE CASCADE;
+                END IF;
+            END $$;
+        """)
+
         seed_process_catalogue(db)
         seed_process_output_dependencies(db)
 
@@ -1368,35 +1493,39 @@ def create_decision_brief(payload):
         raise ValueError(f"AI service returned {error.code}: {detail}") from error
 
 
-def save_artefact_version(user_id, process_number, content):
-    """Store a new AI-generated document version, keeping only the latest 3 per phase."""
+def save_artefact_version(user, process_number, content):
+    """Store a new AI-generated document version, keeping only the latest 3 per phase in the current workspace."""
+    workspace = ensure_user_workspace(user)
+
     with database_connection() as db:
         db.execute("""
-            INSERT INTO artefact_versions (user_id, process_number, content, created_at)
-            VALUES (%s, %s, %s, %s)
-        """, (user_id, process_number, content, int(time.time())))
+            INSERT INTO artefact_versions (user_id, workspace_id, process_number, content, created_at)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (user["id"], workspace["workspace_id"], process_number, content, int(time.time())))
 
         db.execute("""
             DELETE FROM artefact_versions
             WHERE version_id IN (
                 SELECT version_id FROM artefact_versions
-                WHERE user_id = %s AND process_number = %s
+                WHERE workspace_id = %s AND process_number = %s
                 ORDER BY created_at DESC, version_id DESC
                 OFFSET 3
             )
-        """, (user_id, process_number))
+        """, (workspace["workspace_id"], process_number))
 
 
-def get_artefact_versions(user_id, process_number):
-    """Return the latest saved document versions for one phase, newest first."""
+def get_artefact_versions(user, process_number):
+    """Return the latest saved document versions for one phase in the current workspace, newest first."""
+    workspace = ensure_user_workspace(user)
+
     with database_connection() as db:
         rows = db.execute("""
             SELECT version_id, content, created_at
             FROM artefact_versions
-            WHERE user_id = %s AND process_number = %s
+            WHERE workspace_id = %s AND process_number = %s
             ORDER BY created_at DESC, version_id DESC
             LIMIT 3
-        """, (user_id, process_number)).fetchall()
+        """, (workspace["workspace_id"], process_number)).fetchall()
 
     return [
         {
@@ -1903,7 +2032,7 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
                     process_number = payload.get("step", {}).get("number")
                     if process_number:
                         try:
-                            save_artefact_version(user["id"], int(process_number), answer)
+                            save_artefact_version(user, int(process_number), answer)
                         except Exception:
                             import traceback
                             traceback.print_exc()
@@ -2026,15 +2155,16 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
                 if not 1 <= process_number <= 13:
                     self.send_json(400, {"error": "Invalid process number."})
                     return
-                self.send_json(200, {"versions": get_artefact_versions(user["id"], process_number)})
+                self.send_json(200, {"versions": get_artefact_versions(user, process_number)})
             return
 
         if self.path == "/api/state":
             user = self.require_user()
             if user:
+                workspace = ensure_user_workspace(user)
                 with database_connection() as db:
-                    row = db.execute("SELECT state_json FROM map_states WHERE user_id = %s", (user["id"],)).fetchone()
-                    answers = db.execute("SELECT process_number, answer FROM process_answers WHERE user_id = %s", (user["id"],)).fetchall()
+                    row = db.execute("SELECT state_json FROM map_states WHERE workspace_id = %s", (workspace["workspace_id"],)).fetchone()
+                    answers = db.execute("SELECT process_number, answer FROM process_answers WHERE workspace_id = %s", (workspace["workspace_id"],)).fetchall()
                 state = json.loads(row["state_json"]) if row else {"step": 0, "documents": []}
                 state["outputs"] = (state.get("outputs", []) + [""] * 13)[:13]
                 for answer in answers:
@@ -2066,17 +2196,24 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
                 return
 
             if self.path == "/api/state":
+                workspace = ensure_user_workspace(user)
                 with database_connection() as db:
                     state_for_storage = {
                         "step": payload.get("step", 0),
                         "documents": payload.get("documents", []),
                         "history": payload.get("history", [])[:3]
                     }
-                    db.execute("INSERT INTO map_states (user_id, state_json, updated_at) VALUES (%s, %s, %s) ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at", (user["id"], json.dumps(state_for_storage), int(time.time())))
-                    db.execute("DELETE FROM process_answers WHERE user_id = %s", (user["id"],))
+                    db.execute(
+                        "INSERT INTO map_states (user_id, workspace_id, state_json, updated_at) VALUES (%s, %s, %s, %s) ON CONFLICT(workspace_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at",
+                        (user["id"], workspace["workspace_id"], json.dumps(state_for_storage), int(time.time()))
+                    )
+                    db.execute("DELETE FROM process_answers WHERE workspace_id = %s", (workspace["workspace_id"],))
                     for index, answer in enumerate(payload.get("outputs", []), 1):
                         if answer:
-                            db.execute("INSERT INTO process_answers (user_id, process_number, answer, updated_at) VALUES (%s, %s, %s, %s) ON CONFLICT(user_id, process_number) DO UPDATE SET answer = excluded.answer, updated_at = excluded.updated_at", (user["id"], index, answer, int(time.time())))
+                            db.execute(
+                                "INSERT INTO process_answers (user_id, workspace_id, process_number, answer, updated_at) VALUES (%s, %s, %s, %s, %s) ON CONFLICT(workspace_id, process_number) DO UPDATE SET answer = excluded.answer, updated_at = excluded.updated_at",
+                                (user["id"], workspace["workspace_id"], index, answer, int(time.time()))
+                            )
                 self.send_json(200, {"saved": True})
             elif self.path == "/api/company":
                 name = str(payload.get("companyName", "")).strip()
