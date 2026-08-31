@@ -2132,8 +2132,49 @@ async function loadWorkspaceManager() {
     null;
 
   renderWorkspaceManager();
+  renderHeaderWorkspaceSwitcher();
 
   return activeWorkspace;
+}
+
+// Header dropdown (mirrors the one on the main map page) so a workspace
+// can be switched from any page without scrolling to the list below.
+function renderHeaderWorkspaceSwitcher() {
+  const select = $('#headerWorkspaceSelect');
+  if (!select) return;
+
+  if (workspaceManagerItems.length <= 1) {
+    select.hidden = true;
+    select.innerHTML = '';
+    return;
+  }
+
+  select.innerHTML = workspaceManagerItems.map(workspace => `
+    <option value="${workspace.id}" ${workspace.isActive ? 'selected' : ''}>
+      ${escapeHtml(workspace.workspaceName || 'Untitled Workspace')}
+    </option>
+  `).join('');
+
+  select.hidden = false;
+
+  select.onchange = async () => {
+    const workspaceId = Number(select.value);
+    select.disabled = true;
+
+    try {
+      await api('/api/workspaces/select', {
+        method: 'POST',
+        body: JSON.stringify({ workspaceId })
+      });
+
+      await loadWorkspace();
+    } catch (error) {
+      select.disabled = false;
+      showToast(error.message);
+    } finally {
+      select.disabled = false;
+    }
+  };
 }
 
 function attachWorkspaceManagerListeners() {

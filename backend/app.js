@@ -567,6 +567,13 @@ async function restoreAccount() {
     }
 
     $('#headerAuth').innerHTML = `
+      <select
+        id="headerWorkspaceSelect"
+        class="header-workspace-select"
+        aria-label="Switch workspace"
+        hidden
+      ></select>
+
       <span>
         Signed in as ${escapeHtml(
           currentUser.email || currentUser.username
@@ -598,6 +605,10 @@ async function restoreAccount() {
 
     applyCompanyName(currentUser.companyName);
 
+    // Loaded after the rest of the header so a slow /api/workspaces call
+    // never blocks Save/Log out from appearing.
+    loadHeaderWorkspaceSwitcher();
+
   } catch (error) {
     console.error('Unable to restore saved workspace:', error);
     showToast('Unable to restore your saved workspace.');
@@ -613,6 +624,57 @@ async function restoreAccount() {
 function applyCompanyName(name) {
   document.querySelectorAll('.company-name').forEach(element => { element.textContent = name; });
   document.title = `${name} | FounderMotion`;
+}
+
+// Header workspace switcher: lets the user jump between their workspaces
+// from any page without going to My Workspace first. Kept deliberately
+// simple -- selecting a different workspace just calls the same
+// /api/workspaces/select endpoint the My Workspace page uses, then
+// reloads, so every bit of state on the page (process progress, outputs,
+// evidence, segments, history) is re-fetched fresh for the newly active
+// workspace instead of being patched in place.
+async function loadHeaderWorkspaceSwitcher() {
+  const select = $('#headerWorkspaceSelect');
+  if (!select || !currentUser) return;
+
+  try {
+    const response = await api('/api/workspaces');
+    const workspaces = Array.isArray(response.workspaces) ? response.workspaces : [];
+
+    if (workspaces.length <= 1) {
+      // Nothing to switch between -- keep the control out of the way.
+      select.hidden = true;
+      select.innerHTML = '';
+      return;
+    }
+
+    select.innerHTML = workspaces.map(workspace => `
+      <option value="${workspace.id}" ${workspace.isActive ? 'selected' : ''}>
+        ${escapeHtml(workspace.workspaceName || 'Untitled Workspace')}
+      </option>
+    `).join('');
+
+    select.hidden = false;
+
+    select.addEventListener('change', async () => {
+      const workspaceId = Number(select.value);
+      select.disabled = true;
+
+      try {
+        await api('/api/workspaces/select', {
+          method: 'POST',
+          body: JSON.stringify({ workspaceId })
+        });
+
+        location.reload();
+      } catch (error) {
+        select.disabled = false;
+        showToast(error.message || 'Unable to switch workspace.');
+      }
+    });
+  } catch (error) {
+    console.error('Unable to load workspaces for the header switcher:', error);
+  }
 }
 async function logout() {
   if (currentUser) {
