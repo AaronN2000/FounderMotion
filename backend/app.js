@@ -2164,12 +2164,6 @@ function createPdf(lines) {
 
     anchor.insertAdjacentElement('afterend', section);
 
-    // Per-request, this card no longer appears anywhere on the main
-    // Process Map page. Hide it immediately on creation (rather than
-    // relying solely on the later relocation/hide pass) so it never
-    // flashes visible, right after the header, before that pass runs.
-    section.style.setProperty('display', 'none', 'important');
-
     const toggle = section.querySelector('#fmEvidenceToggle');
     const body = section.querySelector('#fmEvidenceBody');
     const label = section.querySelector('.fm-evidence-toggle-label');
@@ -16317,41 +16311,28 @@ function syncAuthScreenUI() {
     // tracks, sized for sharing the row with Key Questions).
     restoreHistoryRowStyle();
 
-    // 2. Mini market-segments summary (built once, then just re-rendered).
-    let miniSegments = document.getElementById(MINI_SEGMENTS_ID);
-    if (!miniSegments) {
-      miniSegments = document.createElement('div');
-      miniSegments.id = MINI_SEGMENTS_ID;
-      miniSegments.innerHTML = `
-        <p class="fm-mini-eyebrow">Business setup</p>
-        <h3>Market segments</h3>
-        <p class="fm-mini-sub">The market segments defined for this workspace.</p>
-        <div class="fm-mini-segment-list"></div>
-        <a class="fm-mini-manage-link" href="workspace.html">Manage in workspace →</a>
-      `;
-      stack.appendChild(miniSegments);
-    } else if (miniSegments.parentElement !== stack) {
-      stack.appendChild(miniSegments);
+    // 2. Mini market-segments summary -- per-request, this no longer
+    // appears on the main Process Map page (the Evidence card above
+    // stays; this "Business setup / Market segments" card is the one
+    // being removed here). If an earlier build of this stack already
+    // created it, take it back out too.
+    const existingMiniSegments = document.getElementById(MINI_SEGMENTS_ID);
+    if (existingMiniSegments) {
+      existingMiniSegments.remove();
     }
-
-    renderMiniSegments();
-    loadMiniSegments();
   }
 
   // The Customer & Market Evidence card is created lazily (only once a
-  // user is signed in). Per-request, it no longer appears anywhere on
-  // the main Process Map page (the per-input "+ Upload evidence"
-  // buttons are a separate, unrelated feature and are unaffected) --
-  // so instead of relocating it into the right-hand stack, just keep
-  // it hidden wherever it gets created. Left in place (rather than
-  // removed from the DOM) so nothing that still references
-  // #fmDashboardEvidence / #fmDashboardEvidenceGrid elsewhere in this
-  // file breaks.
+  // user is signed in), so poll for it and relocate it into the stack
+  // the moment it exists.
   function watchEvidence(attemptsLeft = 60) {
     const evidence = document.getElementById('fmDashboardEvidence');
+    const stack = document.getElementById(STACK_ID);
 
-    if (evidence) {
-      evidence.style.setProperty('display', 'none', 'important');
+    if (evidence && stack) {
+      if (evidence.parentElement !== stack) {
+        stack.appendChild(evidence);
+      }
       return;
     }
 
