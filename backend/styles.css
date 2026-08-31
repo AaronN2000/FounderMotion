@@ -11467,3 +11467,332 @@ body *:has(> #progressDots) > #progressDots {
   color: #54208f !important;
   text-decoration: underline !important;
 }
+
+/* =========================================================
+   PHASE VALIDATION PANEL (Phase 1 / Phase 2 cards)
+   Single clean implementation — replaces every earlier
+   .fm-gate-* / .fm-process-* / .map-progress patch.
+   ========================================================= */
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fm-phases {
+  margin: 34px 0 28px;
+  padding: 26px 28px 28px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(37, 24, 84, .035);
+}
+
+.fm-phases-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.fm-phases-head-text { min-width: 0; }
+
+.fm-phases-eyebrow {
+  margin: 0 0 8px;
+  color: #876ea9;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.fm-phases-head-text h2 {
+  margin: 0;
+  font: 700 24px/1.15 "Playfair Display", serif;
+  letter-spacing: -.6px;
+  color: var(--ink);
+}
+
+.fm-phases-intro {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.55;
+  max-width: 620px;
+}
+
+.fm-phases-legend {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  list-style: none;
+  margin: 0 0 3px;
+  padding: 0;
+  flex: none;
+}
+
+.fm-phases-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.fm-legend-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #fff;
+  border: 2px solid #d6cee0;
+}
+
+.fm-legend-dot.is-complete { background: var(--purple); border-color: var(--purple); }
+.fm-legend-dot.is-current { background: #fff; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245, 198, 79, .28); }
+.fm-legend-dot.is-upcoming { background: #fff; border-color: #d6cee0; }
+
+.fm-phases-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+.fm-phase-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #faf8fc;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 20px 22px 22px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.fm-phase-card.is-done { border-color: #cfe6da; background: #f7fbf9; }
+
+.fm-phase-card.is-locked {
+  background: #faf9fb;
+}
+
+.fm-phase-card.is-locked .fm-phase-card-title,
+.fm-phase-card.is-locked .fm-phase-card-desc {
+  opacity: .6;
+}
+
+.fm-phase-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fm-phase-badge {
+  display: inline-flex;
+  align-items: center;
+  background: var(--purple);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: 999px;
+}
+
+.fm-phase-state {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #fff5d9;
+  color: #8a6a12;
+  border: 1px solid #f0dfa6;
+}
+
+.fm-phase-card[data-state="done"] .fm-phase-state {
+  background: #e4f4ec;
+  color: #1f7a52;
+  border-color: #bfe3cf;
+}
+
+.fm-phase-card[data-state="not-started"] .fm-phase-state,
+.fm-phase-card[data-state="locked"] .fm-phase-state {
+  background: #f1eef4;
+  color: #8b8393;
+  border-color: #e3ddea;
+}
+
+.fm-phase-card-title {
+  margin: 0 0 8px;
+  font: 700 19px/1.2 "Playfair Display", serif;
+  letter-spacing: -.3px;
+  color: var(--ink);
+}
+
+.fm-phase-card-desc {
+  margin: 0 0 18px;
+  color: #6b6272;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.fm-phase-card-progress { margin-bottom: 20px; }
+
+.fm-phase-card-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.fm-phase-card-progress-row strong {
+  color: var(--purple);
+  font-size: 12.5px;
+}
+
+.fm-phase-card-bar {
+  height: 5px;
+  border-radius: 8px;
+  background: #ece7f0;
+  overflow: hidden;
+}
+
+.fm-phase-card-bar span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--gold);
+  border-radius: inherit;
+  transition: width .3s ease;
+}
+
+.fm-phase-card.is-done .fm-phase-card-bar span { background: #2fa872; }
+
+/* Step track — the process buttons, now living inside the phase card */
+.fm-phase-steps {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px;
+  margin: 4px 0 16px;
+  padding-top: 17px;
+}
+
+.fm-phase-steps::before {
+  content: '';
+  position: absolute;
+  top: 34px;
+  left: 17px;
+  right: 17px;
+  height: 2px;
+  background: var(--line);
+  z-index: 0;
+}
+
+.fm-phase-step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.fm-phase-step-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 2px solid #ddd6e4;
+  color: #948aa0;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: .18s ease;
+}
+
+.fm-phase-step:hover:not(:disabled) .fm-phase-step-mark {
+  border-color: var(--purple);
+  color: var(--purple);
+}
+
+.fm-phase-step.is-complete .fm-phase-step-mark {
+  background: var(--purple);
+  border-color: var(--purple);
+  color: #fff;
+}
+
+.fm-phase-step.is-current .fm-phase-step-mark {
+  background: #fff;
+  border-color: var(--gold);
+  color: var(--purple);
+  box-shadow: 0 0 0 4px rgba(245, 198, 79, .28);
+}
+
+.fm-phase-step:disabled {
+  cursor: not-allowed;
+}
+
+.fm-phase-step:disabled .fm-phase-step-mark {
+  opacity: .55;
+}
+
+.fm-phase-step-title {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fm-phase-card-message {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .fm-phases-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fm-phases-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 560px) {
+  .fm-phases { padding: 20px 18px 22px; }
+  .fm-phase-step-mark { width: 28px; height: 28px; font-size: 11px; }
+  .fm-phase-steps::before { top: 28px; }
+}

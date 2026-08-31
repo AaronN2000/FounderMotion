@@ -36,15 +36,21 @@ function emptyState(message) {
   return `<div class="workspace-empty">${escapeHtml(message)}</div>`;
 }
 
+let currentSegments = [];
+
 function renderSegments(segments) {
+  currentSegments = Array.isArray(segments) ? segments : [];
+
   const list = $('#segmentsList');
 
-  if (!segments.length) {
-    list.innerHTML = emptyState('No market segments have been defined yet.');
+  $('#segmentStat').textContent = `${currentSegments.length}`;
+
+  if (!currentSegments.length) {
+    list.innerHTML = emptyState('No market segments have been defined yet. Add priority segments to continue.');
     return;
   }
 
-  list.innerHTML = segments.map((segment, index) => `
+  list.innerHTML = currentSegments.map((segment, index) => `
     <div class="workspace-list-item">
       <span class="workspace-index">SEGMENT ${String(index + 1).padStart(2, '0')}</span>
       <strong>${escapeHtml(segment.name)}</strong>
@@ -54,8 +60,84 @@ function renderSegments(segments) {
         ${segment.companySize ? `<span>${escapeHtml(segment.companySize)}</span>` : ''}
         ${segment.wedge ? `<span>${escapeHtml(segment.wedge)}</span>` : ''}
       </div>
+      <div class="workspace-list-item-footer">
+        <button class="delete-segment" type="button" data-delete-segment="${segment.id}">
+          Remove
+        </button>
+      </div>
     </div>
   `).join('');
+
+  list.querySelectorAll('[data-delete-segment]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const id = Number(button.dataset.deleteSegment);
+      if (!confirm('Remove this market segment?')) return;
+
+      try {
+        await api(`/api/segments/${id}/delete`, {
+          method: 'POST',
+          body: '{}'
+        });
+
+        renderSegments(currentSegments.filter(segment => segment.id !== id));
+        showToast('Segment removed.');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+  });
+}
+
+function initSegmentDialog() {
+  const addButton = $('#addSegmentButton');
+  const dialog = $('#segmentDialog');
+  const form = $('#segmentForm');
+
+  if (!addButton || !dialog || !form) return;
+
+  addButton.addEventListener('click', event => {
+    event.preventDefault();
+    form.reset();
+    dialog.showModal();
+  });
+
+  $('#cancelSegment').addEventListener('click', () => dialog.close());
+  $('#closeSegmentDialog').addEventListener('click', () => dialog.close());
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+
+    const payload = {
+      name: $('#segmentName').value.trim(),
+      description: $('#segmentDescription').value.trim(),
+      geography: $('#segmentGeography').value.trim(),
+      companySize: $('#segmentCompanySize').value.trim(),
+      wedge: $('#segmentWedge').value
+    };
+
+    if (!payload.name) {
+      showToast('Enter a segment name.');
+      return;
+    }
+
+    const submitButton = form.querySelector('.primary-button');
+    submitButton.disabled = true;
+
+    try {
+      const response = await api('/api/segments', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      renderSegments([...currentSegments, response.segment]);
+      dialog.close();
+      showToast('Market segment saved.');
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
 }
 
 function renderProgress(state, processCount) {
@@ -582,6 +664,233 @@ function renderStyles() {
       background: #fcfbfd;
       color: rgba(42, 34, 47, .55);
       font-size: .88rem;
+    }
+
+    /* ---------- Market segments ---------- */
+
+    .add-segment-button {
+      flex: 0 0 auto;
+      min-height: 40px;
+      border: 0;
+      border-radius: 9px;
+      padding: 0 16px;
+      background: #3c1778;
+      color: #fff;
+      font: inherit;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .add-segment-button:hover {
+      background: #2f1260;
+    }
+
+    .workspace-list-item-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
+    .delete-segment {
+      border: 0;
+      background: transparent;
+      color: #8a7d95;
+      font-size: .74rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 2px;
+    }
+
+    .delete-segment:hover {
+      color: #a4293f;
+    }
+
+    /* ---------- Segment dialog ---------- */
+
+    #segmentDialog {
+      width: min(560px, calc(100vw - 32px));
+      max-width: 560px;
+      padding: 0;
+      border: 0;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 24px 80px rgba(35, 20, 60, .24);
+      overflow: hidden;
+    }
+
+    #segmentDialog::backdrop {
+      background: rgba(35, 25, 55, .38);
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+    }
+
+    #segmentDialog form {
+      padding: 30px 32px 28px;
+    }
+
+    #segmentDialog .dialog-heading {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    #segmentDialog .dialog-heading h2 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+      color: #29222f;
+    }
+
+    #segmentDialog .dialog-heading .eyebrow {
+      margin-bottom: 7px;
+    }
+
+    #segmentDialog .close {
+      flex: 0 0 auto;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: #4b3a57;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    #segmentDialog .close:hover {
+      background: rgba(0,0,0,.05);
+    }
+
+    #segmentDialog label {
+      display: block;
+      margin: 0 0 14px;
+      font-size: 12px;
+      font-weight: 650;
+      color: #3c3442;
+    }
+
+    #segmentDialog input,
+    #segmentDialog textarea,
+    #segmentDialog select {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 7px;
+      border: 1px solid #ddd8e5;
+      border-radius: 9px;
+      background: #fff;
+      padding: 11px 12px;
+      font: inherit;
+      font-size: 13px;
+      color: #28232d;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    #segmentDialog input {
+      height: 43px;
+    }
+
+    #segmentDialog textarea {
+      min-height: 90px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    #segmentDialog select {
+      height: 43px;
+      cursor: pointer;
+    }
+
+    #segmentDialog input:focus,
+    #segmentDialog textarea:focus,
+    #segmentDialog select:focus {
+      border-color: #4b1b8f;
+      box-shadow: 0 0 0 3px rgba(75,27,143,.10);
+    }
+
+    #segmentDialog .segment-two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    #segmentDialog .segment-dialog-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      padding-top: 20px;
+      border-top: 1px solid #eeeaf1;
+    }
+
+    #segmentDialog .segment-dialog-actions button {
+      min-height: 44px;
+      border-radius: 9px;
+      padding: 0 18px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    #segmentDialog .secondary-button {
+      border: 1px solid #ddd8e5;
+      background: #fff;
+      color: #4a4350;
+    }
+
+    #segmentDialog .secondary-button:hover {
+      background: #f8f6fa;
+    }
+
+    #segmentDialog .primary-button {
+      min-width: 190px;
+      border: 0;
+      background: #3c1778;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    #segmentDialog .primary-button:hover {
+      background: #2f1260;
+    }
+
+    #segmentDialog .primary-button span {
+      color: #f4c94d;
+    }
+
+    @media (max-width: 600px) {
+      #segmentDialog {
+        width: calc(100vw - 24px);
+      }
+
+      #segmentDialog form {
+        padding: 24px 20px 22px;
+      }
+
+      #segmentDialog .segment-two-column {
+        grid-template-columns: 1fr;
+      }
+
+      #segmentDialog .segment-dialog-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+      }
+
+      #segmentDialog .segment-dialog-actions button {
+        width: 100%;
+      }
     }
 
     /* ---------- Progress ---------- */
@@ -1288,14 +1597,13 @@ async function loadWorkspace() {
     $('#accountName').textContent = accountName;
     $('#workspaceSubtitle').textContent = `${companyName} · Strategic validation workspace`;
 
-    $('#segmentStat').textContent = `${segments.length}`;
-
     renderSegments(segments);
     renderProgress(state, processes.length);
     renderHistory(state);
     renderDocuments(state);
 
     createViewModal();
+    initSegmentDialog();
     attachViewListeners(state, processes);
   } catch (error) {
     showToast(error.message);

@@ -70,6 +70,9 @@
             <p class="eyebrow">Market definition</p>
             <h2>Market Segments</h2>
           </div>
+          <button class="add-segment-button" id="addSegmentButton" type="button">
+            + Add segment
+          </button>
         </div>
         <div id="segmentsList" class="workspace-list"></div>
       </article>
@@ -100,6 +103,58 @@
   </main>
 
   <div id="workspaceToast" class="toast" role="status"></div>
+
+  <dialog id="segmentDialog" class="segment-dialog">
+    <form id="segmentForm" method="dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Market segment</p>
+          <h2>Add segment</h2>
+        </div>
+        <button class="close" id="closeSegmentDialog" type="button">×</button>
+      </div>
+
+      <label>
+        Segment name
+        <input id="segmentName" type="text" maxlength="150"
+               placeholder="e.g. Early-stage technology startups" required>
+      </label>
+
+      <label>
+        Description
+        <textarea id="segmentDescription"
+          placeholder="Describe the customers, problem context and why this segment matters."></textarea>
+      </label>
+
+      <div class="segment-two-column">
+        <label>
+          Geography
+          <input id="segmentGeography" type="text"
+                 placeholder="e.g. Australia">
+        </label>
+
+        <label>
+          Company size
+          <input id="segmentCompanySize" type="text"
+                 placeholder="e.g. 10–50 employees">
+        </label>
+      </div>
+
+      <label>
+        Primary wedge
+        <select id="segmentWedge">
+          <option value="">Select a wedge</option>
+          <option value="Essentials">Essentials</option>
+          <option value="Trace">Trace</option>
+        </select>
+      </label>
+
+      <div class="segment-dialog-actions">
+        <button type="button" class="secondary-button" id="cancelSegment">Cancel</button>
+        <button type="submit" class="primary-button">Save segment <span>→</span></button>
+      </div>
+    </form>
+  </dialog>
 
   <script src="workspace.js"></script>
 </body>
