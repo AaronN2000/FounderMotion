@@ -1,6 +1,6 @@
 // Map definitions live together so new map points can be added without changing UI code.
 let mapSteps = [
-  { title: 'Market Positioning Analysis', category: 'Market strategy', purpose: 'Define FounderMotion market focus, competitive frame, wedge positioning and market-entry logic.', inputs: ['Gartner PMF & target-market prioritisation', 'Brand handbook & wedge definitions', 'Sector / competitive-category research', 'Early customer / beta feedback & buyer language', 'Trace vs Essentials use-case logic'], questions: ['Which market should FounderMotion target first?', 'Which buyer feels the problem most urgently?', 'Which category should FounderMotion avoid being trapped in?', 'What alternatives does the buyer use today?', 'Which wedge leads in each priority market?'], outputs: 'Priority ICPs and segments; competitive frame of reference; positioning statement and differentiation themes; Trace / Essentials market-entry logic.', feeds: '2, 3, 6, 9, 15, 19, 22, 27, 28' },
+  { title: 'Market Positioning Analysis', category: 'Market strategy', purpose: 'Define FounderMotion market focus, competitive frame, wedge positioning and market-entry logic.', inputs: ['PMF & target-market prioritisation', 'Brand handbook & wedge definitions', 'Sector / competitive-category research', 'Early customer / beta feedback & buyer language', 'Trace vs Essentials use-case logic'], questions: ['Which market should FounderMotion target first?', 'Which buyer feels the problem most urgently?', 'Which category should FounderMotion avoid being trapped in?', 'What alternatives does the buyer use today?', 'Which wedge leads in each priority market?'], outputs: 'Priority ICPs and segments; competitive frame of reference; positioning statement and differentiation themes; Trace / Essentials market-entry logic.', feeds: '2, 3, 6, 9, 15, 19, 22, 27, 28' },
   { title: 'Ideal Customer Profile', category: 'Customer strategy', purpose: 'Turn the market-positioning decision into a clear, prioritised ideal-customer profile.', inputs: ['Previous market positioning output', 'Customer research', 'Sales and beta feedback'], questions: ['Which customer profile should be prioritised first?', 'What firmographic and behavioural signals define the best-fit buyer?', 'Which customer profiles should be deprioritised?'], outputs: 'Prioritised ICP, buying triggers and qualification criteria.', feeds: '3, 6, 9, 15, 19, 22, 27, 28' },
   { title: 'Buyer Problem & Urgency', category: 'Customer strategy', purpose: 'Clarify the priority buyer problem, urgency and language that should guide messaging.', inputs: ['Previous outputs', 'Buyer interviews and feedback', 'Current workarounds'], questions: ['What job is the buyer trying to complete?', 'What makes the problem urgent now?', 'What language does the buyer use to describe the pain?'], outputs: 'Priority problem statement, urgency signals and buyer-language themes.', feeds: '6, 9, 15, 19, 22, 27, 28' }
 ];
@@ -1154,7 +1154,7 @@ async function restoreAccount() {
 
 function applyCompanyName(name) {
   document.querySelectorAll('.company-name').forEach(element => { element.textContent = name; });
-  document.title = `${name} | Linear Gartner Map`;
+  document.title = `${name} | FounderMotion`;
 }
 async function logout() {
   if (currentUser) {
@@ -1963,7 +1963,7 @@ $('#runAnalysis').addEventListener('click', async () => {
         ? `Process ${completedProcessNumber} completed. Process ${completedProcessNumber + 1} is now in progress.`
         : `Process ${completedProcessNumber} completed.`
     );
-  } catch (error) { showToast(error.message); } finally { button.disabled = false; button.innerHTML = 'Generate this process <span>→</span>'; }
+  } catch (error) { showToast(error.message); } finally { button.disabled = false; button.innerHTML = 'Run the process <span>→</span>'; }
 });
 
 function isCurrentProcessComplete() {
@@ -2117,7 +2117,7 @@ $('#nextStep').addEventListener('click', () => moveStep(1));
 
 $('#generatePdf').addEventListener('click', () => {
   const answer = state.outputs[state.step];
-  if (!answer) return showToast('Generate this process before creating a PDF.');
+  if (!answer) return showToast('Run the process before creating a PDF.');
   const step = currentStep();
   const fileName = `${(currentUser?.companyName || 'FounderMotion').replace(/[^a-z0-9]+/gi, '-')}-process-${step.number || state.step + 1}.pdf`;
   const link = document.createElement('a');
@@ -2182,7 +2182,7 @@ function answerToCsvRows(answer) {
 
 $('#generateCsv')?.addEventListener('click', () => {
   const answer = state.outputs[state.step];
-  if (!answer) return showToast('Generate this process before creating a CSV.');
+  if (!answer) return showToast('Run the process before creating a CSV.');
   const step = currentStep();
   const rows = [['Section', 'Content'], ...answerToCsvRows(answer)];
   // Leading BOM so Excel opens the UTF-8 file with correct characters.
@@ -11579,6 +11579,14 @@ function syncAuthScreenUI() {
 
     if (!questionCard) return;
 
+    // 2026-08-31: once Key Questions has been relocated into the
+    // Inputs-tab right-hand stack, its old sibling ("history") is no
+    // longer in the same parent, so `parent.insertBefore(wrapper,
+    // questionCard)` below would throw (the captured `parent` no longer
+    // contains `questionCard`). Step aside the same way the other
+    // question/history layout fix does.
+    if (questionCard.closest('#fmInputsRightStack')) return;
+
     /*
      * Try to find the generated history section by its
      * visible heading text.
@@ -11650,9 +11658,29 @@ function syncAuthScreenUI() {
     const questionCard = document.querySelector('.question-card');
     const history = document.querySelector('#previousSearches');
 
-    if (!questionCard || !history) {
+    if (!history) {
       return;
     }
+
+    // 2026-08-31: Key Questions now lives in the Inputs-tab right-hand
+    // stack (#fmInputsRightStack), replacing the old side-by-side
+    // "Key questions / Previous history" layout this function builds.
+    // Once relocated there, skip only the part that re-parents/re-grids
+    // the question card and its old wrapper row -- otherwise this
+    // function's own MutationObserver (which reacts to every DOM change,
+    // including the moves that built the new stack) would keep yanking
+    // the question card back out of the stack and into a two-column grid
+    // with Previous history, fighting the relocation forever. The history
+    // panel itself still lives in its original spot and still needs the
+    // sizing further down, so that part keeps running either way.
+    const questionRelocated = !!(
+      questionCard && questionCard.closest('#fmInputsRightStack')
+    );
+
+    if (!questionRelocated) {
+      if (!questionCard) {
+        return;
+      }
 
     /* -----------------------------------------
        Create the REAL wrapper
@@ -11842,6 +11870,8 @@ function syncAuthScreenUI() {
         'important'
       );
     }
+
+    } // end if (!questionRelocated)
 
 
     /* -----------------------------------------
@@ -12063,7 +12093,7 @@ function syncAuthScreenUI() {
       {
         questionCard,
         history,
-        row,
+        questionRelocated,
         questionParent: questionCard.parentElement,
         historyParent: history.parentElement
       }
@@ -16182,6 +16212,14 @@ function syncAuthScreenUI() {
 
     if (!segment || !mapLayout || !questions || !history) return;
 
+    // 2026-08-31: Key Questions now lives inside the Inputs-tab right-hand
+    // stack, nested several levels down from .map-layout rather than as a
+    // direct child of it. `questions` above is still found (it's a
+    // descendant search), but it's no longer a valid anchor for
+    // mapLayout.insertBefore below -- only a direct child of mapLayout can
+    // be used as a reference node there.
+    if (questions.parentElement !== mapLayout) return;
+
     /*
       Move ONLY the segment panel into the main two-column grid.
       Put it immediately after the Question / History row.
@@ -16269,6 +16307,12 @@ function syncAuthScreenUI() {
     const questions = mapLayout?.querySelector('.question-card');
 
     if (!segment || !mapLayout || !questions) return;
+
+    // 2026-08-31: same reasoning as placeSegmentFullWidth above -- Key
+    // Questions is now nested inside the Inputs-tab right-hand stack, not
+    // a direct child of .map-layout, so it can no longer be used as an
+    // insertBefore reference node here.
+    if (questions.parentElement !== mapLayout) return;
 
     if (segment.parentElement !== mapLayout) {
       mapLayout.insertBefore(segment, questions.nextElementSibling);
@@ -16378,6 +16422,14 @@ function syncAuthScreenUI() {
     const list = history?.querySelector('#historyList');
 
     if (!questions || !history || !header || !list) return;
+
+    // 2026-08-31: Key Questions now lives in the Inputs-tab right-hand
+    // stack, nowhere near Previous history any more, so matching this
+    // panel's height to it no longer makes sense -- the fallback
+    // (unscoped) lookup above still finds the relocated card and would
+    // otherwise force Previous history down to that card's much shorter
+    // height in its new, narrower context, clipping its own content.
+    if (questions.closest('#fmInputsRightStack')) return;
 
     const questionHeight = Math.round(
       questions.getBoundingClientRect().height
@@ -22366,4 +22418,796 @@ function syncAuthScreenUI() {
   } else {
     ensureButton();
   }
+})();
+
+/* =========================================================
+   2026-08-31 CLIENT FOLLOW-UP CHANGES
+   Appended last on purpose so these rules/moves win the
+   cascade over every earlier block that touched the same
+   elements.
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   Key Questions + Market Segments (mini) + Customer & Market
+   Evidence now live together as a right-hand stack on the
+   Inputs tab, replacing the old empty-state / "View Results"
+   button. On the Outputs tab this stack is hidden and the
+   full six-tile output takes over the full width exactly as
+   before.
+   --------------------------------------------------------- */
+(() => {
+  const STACK_ID = 'fmInputsRightStack';
+  const STYLE_ID = 'fmInputsRightStackStyle';
+  const MINI_SEGMENTS_ID = 'fmMiniSegments';
+  const BUTTON_ID_LEGACY = 'fmViewOutputButton';
+
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    /* The old right-column content is fully superseded by the stack. */
+    #outputsPanel:not(.fm-outputs-tab-active) > .fm-output-state,
+    #outputsPanel:not(.fm-outputs-tab-active) > .fm-real-output,
+    #outputsPanel:not(.fm-outputs-tab-active) > #fmSixTileOutput,
+    #outputsPanel:not(.fm-outputs-tab-active) > #fmViewOutputButton {
+      display: none !important;
+    }
+
+    #${STACK_ID} {
+      display: none;
+    }
+
+    #outputsPanel:not(.fm-outputs-tab-active) > #${STACK_ID} {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 20px !important;
+
+      grid-column: 2 !important;
+      grid-row: 1 !important;
+
+      width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    #outputsPanel.fm-outputs-tab-active > #${STACK_ID} {
+      display: none !important;
+    }
+
+    /* Key Questions, once relocated into the stack, sizes to its own
+       content instead of matching a "Previous history" column height. */
+    #${STACK_ID} > .question-card {
+      width: 100% !important;
+      max-width: none !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    /* The Evidence card, once relocated into the stack, sits flush like
+       the other cards instead of its old full-page-width styling. */
+    #${STACK_ID} > #fmDashboardEvidence {
+      width: 100% !important;
+      margin: 0 !important;
+    }
+
+    /* ---------------- Mini market-segments summary ---------------- */
+    #${MINI_SEGMENTS_ID} {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--line, #e9e5eb);
+      border-radius: 15px;
+      padding: 22px 24px;
+      background: #fff;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-eyebrow {
+      margin: 0 0 8px;
+      color: #876ea9;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+    }
+
+    #${MINI_SEGMENTS_ID} h3 {
+      margin: 0 0 6px;
+      font-size: 17px;
+      letter-spacing: -.02em;
+      color: #251f2b;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-sub {
+      margin: 0 0 14px;
+      color: #746d7a;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-segment-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-segment-item {
+      padding: 9px 11px;
+      border-radius: 8px;
+      background: #faf8fb;
+      font-size: 12.5px;
+      color: #51475b;
+      line-height: 1.5;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-segment-item strong {
+      display: block;
+      color: #251f2b;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-segment-tags {
+      margin-top: 4px;
+      color: #876ea9;
+      font-size: 11px;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-empty {
+      color: #948c97;
+      font-size: 12.5px;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-manage-link {
+      display: inline-block;
+      margin-top: 14px;
+      color: var(--purple, #351568);
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-manage-link:hover {
+      text-decoration: underline;
+    }
+  `;
+
+  document.getElementById(STYLE_ID)?.remove();
+  document.head.appendChild(style);
+
+  function renderMiniSegments() {
+    const card = document.getElementById(MINI_SEGMENTS_ID);
+    if (!card) return;
+
+    const list = card.querySelector('.fm-mini-segment-list');
+    if (!list) return;
+
+    const segments = Array.isArray(state.segments) ? state.segments : [];
+
+    if (!segments.length) {
+      list.innerHTML = `<div class="fm-mini-empty">No market segments defined yet.</div>`;
+      return;
+    }
+
+    list.innerHTML = segments.map(segment => {
+      const tags = [segment.geography, segment.companySize, segment.wedge]
+        .filter(Boolean)
+        .join(' · ');
+
+      return `
+        <div class="fm-mini-segment-item">
+          <strong>${escapeHtml(segment.name)}</strong>
+          ${segment.description ? escapeHtml(segment.description) : ''}
+          ${tags ? `<div class="fm-mini-segment-tags">${escapeHtml(tags)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function ensureStack() {
+    const outputsPanel = document.getElementById('outputsPanel');
+    const questionCard = document.querySelector('.question-card');
+
+    if (!outputsPanel || !questionCard) {
+      setTimeout(ensureStack, 150);
+      return;
+    }
+
+    let stack = document.getElementById(STACK_ID);
+
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.id = STACK_ID;
+      outputsPanel.appendChild(stack);
+    }
+
+    // 1. Key Questions -- moved here, replacing the old right-side content.
+    if (questionCard.parentElement !== stack) {
+      stack.appendChild(questionCard);
+    }
+
+    // The history row now only holds "Previous history" -- drop its
+    // two-column grid so that one remaining child doesn't leave a
+    // lopsided empty column next to it, and force it to span the full
+    // width of .map-layout (it used to occupy just one of two grid
+    // tracks, sized for sharing the row with Key Questions).
+    restoreHistoryRowStyle();
+
+    // 2. Mini market-segments summary (built once, then just re-rendered).
+    let miniSegments = document.getElementById(MINI_SEGMENTS_ID);
+    if (!miniSegments) {
+      miniSegments = document.createElement('div');
+      miniSegments.id = MINI_SEGMENTS_ID;
+      miniSegments.innerHTML = `
+        <p class="fm-mini-eyebrow">Business setup</p>
+        <h3>Market segments</h3>
+        <p class="fm-mini-sub">The market segments defined for this workspace.</p>
+        <div class="fm-mini-segment-list"></div>
+        <a class="fm-mini-manage-link" href="workspace.html">Manage in workspace →</a>
+      `;
+      stack.appendChild(miniSegments);
+    } else if (miniSegments.parentElement !== stack) {
+      stack.appendChild(miniSegments);
+    }
+
+    renderMiniSegments();
+  }
+
+  // Keep the mini segments summary in sync whenever the real segments
+  // list (the top-of-page Business Setup card) changes.
+  function watchSegments(attemptsLeft = 40) {
+    const list = document.getElementById('segmentsList');
+
+    if (!list) {
+      if (attemptsLeft <= 0) return;
+      setTimeout(() => watchSegments(attemptsLeft - 1), 250);
+      return;
+    }
+
+    const observer = new MutationObserver(renderMiniSegments);
+    observer.observe(list, { childList: true, subtree: true, characterData: true });
+  }
+
+  // The Customer & Market Evidence card is created lazily (only once a
+  // user is signed in), so poll for it and relocate it into the stack
+  // the moment it exists.
+  function watchEvidence(attemptsLeft = 60) {
+    const evidence = document.getElementById('fmDashboardEvidence');
+    const stack = document.getElementById(STACK_ID);
+
+    if (evidence && stack) {
+      if (evidence.parentElement !== stack) {
+        stack.appendChild(evidence);
+      }
+      return;
+    }
+
+    if (attemptsLeft <= 0) return;
+    setTimeout(() => watchEvidence(attemptsLeft - 1), 250);
+  }
+
+  // 2026-08-31: #previousSearches ("Previous history") has since been
+  // relocated entirely out of .question-history-row and into the
+  // Outputs tab (see the "Move Previous History onto the Outputs tab"
+  // block at the very end of this file) -- that row is now permanently
+  // empty, and the #historyList/.history-empty anti-clipping fix that
+  // used to live in this function has moved there too, re-anchored
+  // directly via #previousSearches instead of via this row.
+  //
+  // A stylesheet rule alone can't hide the now-empty row: a much
+  // earlier script (applyFinalQuestionHistoryDesign) only checks that
+  // .question-card / #previousSearches exist ANYWHERE in the document
+  // (true even after both are relocated elsewhere) before forcing this
+  // row's inline display back to 'grid' on every mutation -- inline
+  // !important always beats a stylesheet rule. Reassert display:none
+  // inline here instead, registered (further below) after that
+  // script's own observer so we always run later in any given
+  // mutation batch and our value wins.
+  function restoreHistoryRowStyle() {
+    const historyRow = document.querySelector('.question-history-row');
+    if (!historyRow) return;
+    historyRow.style.setProperty('display', 'none', 'important');
+  }
+
+  // The pre-existing "View Results" button (from the earlier "OUTPUTS ON
+  // THE INPUTS TAB" block) is fully superseded by this stack. Its own
+  // show-rule (`#outputsPanel.fm-six-output-ready:not(.fm-outputs-tab-active)
+  // #fmViewOutputButton`) has higher CSS specificity than any class-only
+  // selector we could add here, so a stylesheet override can't beat it --
+  // force it hidden via inline style instead, which beats any external
+  // stylesheet rule regardless of specificity.
+  function hideOldViewButton(attemptsLeft = 60) {
+    const button = document.getElementById(BUTTON_ID_LEGACY);
+    if (button) {
+      button.style.setProperty('display', 'none', 'important');
+      return;
+    }
+    if (attemptsLeft <= 0) return;
+    setTimeout(() => hideOldViewButton(attemptsLeft - 1), 150);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      ensureStack();
+      watchSegments();
+      watchEvidence();
+      hideOldViewButton();
+    });
+  } else {
+    ensureStack();
+    watchSegments();
+    watchEvidence();
+    hideOldViewButton();
+  }
+
+  new MutationObserver(() => {
+    requestAnimationFrame(restoreHistoryRowStyle);
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  // A much earlier script (forceHistoryExactCenter) re-asserts absolute
+  // positioning on the empty-state block specifically at 1200ms/1600ms
+  // after load (and again on window resize), later than any mutation
+  // our own setup triggers -- explicitly out-run it at the same delays.
+  setTimeout(restoreHistoryRowStyle, 1300);
+  setTimeout(restoreHistoryRowStyle, 1700);
+  setTimeout(restoreHistoryRowStyle, 2200);
+  window.addEventListener('resize', () => {
+    setTimeout(restoreHistoryRowStyle, 50);
+  });
+})();
+
+/* ---------------------------------------------------------
+   Merge the Phase 1/2 validation cards and the Process
+   Tracking timeline into a single bordered box, and remove
+   the per-phase progress bar (redundant with the tick/circle
+   timeline already shown underneath it).
+   --------------------------------------------------------- */
+(() => {
+  const STYLE_ID = 'fmGateTrackingMergeStyle';
+
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    #fmGatePanel {
+      margin-bottom: 28px !important;
+    }
+
+    /* The tracking timeline no longer needs its own outer card -- it
+       now lives inside #fmGatePanel's box, right below the phase cards. */
+    #progressDots .fm-process-tracking {
+      border: 0 !important;
+      border-top: 1px solid #e8e5eb !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      padding: 22px 0 0 !important;
+      margin-top: 22px !important;
+    }
+
+    /* This wrapper used to hold just the tracking box and is now empty
+       (its "Process N of M" label is already hidden elsewhere) --
+       strip its now-leftover border. */
+    .map-progress {
+      border: 0 !important;
+      margin: 0 !important;
+    }
+
+    /* Redundant with the tick/circle timeline below it -- remove the
+       per-phase progress bar, keep the "N / M" completion text above it. */
+    .fm-gate-bar {
+      display: none !important;
+    }
+  `;
+
+  document.getElementById(STYLE_ID)?.remove();
+  document.head.appendChild(style);
+
+  function ensureMerged() {
+    const gatePanel = document.getElementById('fmGatePanel');
+    const gateGrid = gatePanel?.querySelector('.fm-gate-grid');
+    const progressDots = document.getElementById('progressDots');
+
+    if (!gatePanel || !gateGrid || !progressDots) {
+      setTimeout(ensureMerged, 150);
+      return;
+    }
+
+    if (progressDots.parentElement !== gatePanel) {
+      gatePanel.appendChild(progressDots);
+    }
+
+    // The old outer "Phase Progress" wrapper (.map-progress) now holds
+    // nothing but a leftover legacy "Process N of M" label -- its real
+    // content (progressDots) lives inside #fmGatePanel now. A much
+    // earlier script continuously re-asserts a purple border on this
+    // wrapper via inline style on every DOM mutation (a MutationObserver
+    // watching document.body), which beats any stylesheet rule we add
+    // here regardless of specificity or append order. Hide the whole
+    // wrapper the same way -- inline + important -- so it disappears for
+    // good instead of leaving a bordered sliver behind.
+    const mapProgress = document.querySelector('.map-progress');
+    if (mapProgress) {
+      mapProgress.style.setProperty('display', 'none', 'important');
+    }
+
+    restoreGatePanelStyle();
+  }
+
+  // A much earlier "clean process flow" script walks up to 4 ancestors
+  // starting at #progressDots.parentElement and unconditionally strips
+  // border/background/box-shadow/border-radius/padding/margin from every
+  // one of them (plain, non-!important property assignment), on every
+  // DOM mutation under <body>. That used to be harmless because
+  // #progressDots' parent was the (already invisible) .fm-process-tracking
+  // wrapper -- but now that #progressDots lives directly inside
+  // #fmGatePanel, #fmGatePanel itself is "ancestor #0" and gets wiped
+  // back to no border/padding/background on every mutation, undoing the
+  // merged box look. Restore #fmGatePanel's intended styling (matching
+  // its last stylesheet definition) via inline !important, and redo it
+  // on every subsequent mutation the same way that script does, so ours
+  // -- registered after it -- always runs second and wins.
+  function restoreGatePanelStyle() {
+    const panel = document.getElementById('fmGatePanel');
+    if (!panel) return;
+
+    panel.style.setProperty('border', '1px solid #e5e7f2', 'important');
+    panel.style.setProperty('border-radius', '14px', 'important');
+    panel.style.setProperty('background', '#ffffff', 'important');
+    panel.style.setProperty('box-shadow', '0 8px 30px rgba(37, 24, 84, .035)', 'important');
+    panel.style.setProperty('padding', '22px 24px', 'important');
+    panel.style.setProperty('margin', '0 0 28px', 'important');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureMerged);
+  } else {
+    ensureMerged();
+  }
+
+  new MutationObserver(() => {
+    requestAnimationFrame(restoreGatePanelStyle);
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+})();
+
+/* ---------------------------------------------------------
+   Move "Generate PDF" / "Generate CSV" onto the Outputs tab,
+   underneath the six generated results. "Run" (Generate this
+   process) stays on the Inputs tab where it already is.
+   --------------------------------------------------------- */
+(() => {
+  const STYLE_ID = 'fmExportButtonsOnOutputsStyle';
+  const WRAP_ID = 'fmExportButtonsWrap';
+
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    /* Only "Run" (#runAnalysis) is left in the original actions row --
+       collapse it back to a single column so it doesn't leave two
+       empty ghost tracks where the export buttons used to sit. */
+    #processOutputActions {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    #${WRAP_ID} {
+      display: none;
+    }
+
+    #outputsPanel.fm-outputs-tab-active > #${WRAP_ID} {
+      display: flex !important;
+      grid-column: 1 / -1 !important;
+
+      justify-content: flex-end !important;
+      gap: 14px !important;
+
+      width: 100% !important;
+      margin: 24px 0 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    #${WRAP_ID} .fm-export-button {
+      width: auto !important;
+      min-width: 160px !important;
+      height: 48px !important;
+      padding: 0 22px !important;
+    }
+  `;
+
+  document.getElementById(STYLE_ID)?.remove();
+  document.head.appendChild(style);
+
+  function ensureMoved() {
+    const outputsPanel = document.getElementById('outputsPanel');
+    const pdfButton = document.getElementById('generatePdf');
+    const csvButton = document.getElementById('generateCsv');
+
+    if (!outputsPanel || !pdfButton || !csvButton) {
+      setTimeout(ensureMoved, 150);
+      return;
+    }
+
+    let wrap = document.getElementById(WRAP_ID);
+
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.id = WRAP_ID;
+      outputsPanel.appendChild(wrap);
+    }
+
+    if (pdfButton.parentElement !== wrap) wrap.appendChild(pdfButton);
+    if (csvButton.parentElement !== wrap) wrap.appendChild(csvButton);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureMoved);
+  } else {
+    ensureMoved();
+  }
+})();
+
+/* ---------------------------------------------------------
+   Rename "Generate this process" -> "Run the process" and
+   right-size the button now that it's the only thing left in
+   #processOutputActions (Generate PDF/CSV moved to the Outputs
+   tab above, leaving two empty ghost grid tracks next to it).
+   Both the button and its row carry INLINE styles set directly
+   in index.html (width:100%!important, display:grid!important,
+   etc.) -- only another inline write can reliably beat those,
+   so everything here goes through .style.setProperty(...)
+   rather than a stylesheet rule.
+   --------------------------------------------------------- */
+(() => {
+  function resizeRunButton() {
+    const actions = document.getElementById('processOutputActions');
+    const button = document.getElementById('runAnalysis');
+
+    if (!actions || !button) {
+      setTimeout(resizeRunButton, 150);
+      return;
+    }
+
+    // Stop the row from reserving its old 3-fr / 1-fr / 1-fr track
+    // layout for buttons that are no longer here -- size the single
+    // remaining column to the button's own content instead of
+    // stretching it across most of the row.
+    actions.style.setProperty('grid-template-columns', 'max-content', 'important');
+    actions.style.setProperty('justify-items', 'start', 'important');
+    actions.style.setProperty('justify-content', 'start', 'important');
+
+    button.style.setProperty('width', 'auto', 'important');
+    button.style.setProperty('min-width', '240px', 'important');
+    button.style.setProperty('padding', '0 30px', 'important');
+
+    // Defensive: a couple of other scripts write this button's
+    // innerHTML too (the loading state and the success/failure reset
+    // in the click handler) -- keep the idle-state label current if
+    // either of them ever race back in with the old copy.
+    if (button.innerHTML.indexOf('Generate this process') !== -1) {
+      button.innerHTML = button.innerHTML.replace(
+        'Generate this process',
+        'Run the process'
+      );
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', resizeRunButton);
+  } else {
+    resizeRunButton();
+  }
+
+  setTimeout(resizeRunButton, 800);
+  setTimeout(resizeRunButton, 1600);
+})();
+
+/* ---------------------------------------------------------
+   Move "Previous history" onto the Outputs tab, stacked
+   between the six-tile decision brief and the Generate PDF /
+   Generate CSV buttons (same tab-visibility pattern used just
+   above for those buttons). It used to sit in its own full-
+   width strip on the Inputs tab, inside what is now an empty
+   .question-history-row (Key Questions was relocated out of it
+   earlier in this file) -- hide that leftover row and give
+   #previousSearches a permanent home inside #outputsPanel
+   instead.
+   --------------------------------------------------------- */
+(() => {
+  const STYLE_ID = 'fmHistoryOnOutputsStyle';
+
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    /* Now permanently empty (Key Questions was relocated out of it
+       earlier, Previous history is relocated out of it here) --
+       hide the leftover strip instead of showing a blank gap on
+       the Inputs tab. */
+    .question-history-row {
+      display: none !important;
+    }
+  `;
+
+  document.getElementById(STYLE_ID)?.remove();
+  document.head.appendChild(style);
+
+  function ensureHistoryInOutputs() {
+    const outputsPanel = document.getElementById('outputsPanel');
+    const history = document.getElementById('previousSearches');
+
+    if (!outputsPanel || !history) {
+      setTimeout(ensureHistoryInOutputs, 150);
+      return;
+    }
+
+    if (history.parentElement !== outputsPanel) {
+      outputsPanel.appendChild(history);
+    }
+
+    // Keep it directly before the export buttons -- six-tile output,
+    // then history, then Generate PDF/CSV -- even if a sibling gets
+    // rebuilt and re-appended elsewhere in the panel later.
+    const exportWrap = document.getElementById('fmExportButtonsWrap');
+    if (exportWrap && history.nextElementSibling !== exportWrap) {
+      outputsPanel.insertBefore(history, exportWrap);
+    }
+
+    restoreRelocatedHistoryStyle();
+  }
+
+  // Only write a style property when it would actually change something.
+  // This function is wired up (further below) to a MutationObserver that
+  // watches these same elements' own style attribute -- so it can be
+  // retriggered by ITS OWN writes. Unconditional .setProperty(...) calls
+  // queue a new attribute-mutation record every time regardless of
+  // whether the value actually changed, which would fire that observer
+  // again forever. Skipping the write once the value already matches
+  // breaks the loop after a single pass.
+  function setImportant(el, prop, value) {
+    if (
+      el.style.getPropertyValue(prop) !== value ||
+      el.style.getPropertyPriority(prop) !== 'important'
+    ) {
+      el.style.setProperty(prop, value, 'important');
+    }
+  }
+
+  // A much earlier script (fixQuestionHistoryLayout, elsewhere in this
+  // file) unconditionally keeps #previousSearches' own display / width
+  // / margin / padding asserted inline on every DOM mutation,
+  // regardless of which tab is active -- left alone, that would make
+  // it visible even on the Inputs tab. Reassert its display (block
+  // only while the Outputs tab is actually active) plus its position
+  // in the new grid parent here, registered after that script so we
+  // always run later in any given mutation batch and our values win.
+  // The #historyList/.history-empty anti-clipping fix (previously
+  // anchored via .question-history-row, see restoreHistoryRowStyle
+  // above) is re-anchored directly via #previousSearches here.
+  function restoreRelocatedHistoryStyle() {
+    const outputsPanel = document.getElementById('outputsPanel');
+    const history = document.getElementById('previousSearches');
+    if (!outputsPanel || !history) return;
+
+    const active = outputsPanel.classList.contains('fm-outputs-tab-active');
+
+    setImportant(history, 'display', active ? 'block' : 'none');
+    setImportant(history, 'grid-column', '1 / -1');
+    setImportant(history, 'width', '100%');
+    setImportant(history, 'max-width', 'none');
+    setImportant(history, 'margin', '28px 0 0');
+    setImportant(history, 'box-sizing', 'border-box');
+
+    const historyList = history.querySelector('#historyList');
+    if (historyList) {
+      setImportant(historyList, 'display', 'flex');
+      setImportant(historyList, 'flex-direction', 'column');
+      setImportant(historyList, 'align-items', 'stretch');
+      setImportant(historyList, 'justify-content', 'center');
+      setImportant(historyList, 'min-height', '260px');
+      // NOT height/max-height: a much earlier script
+      // (installHistoryListHeightGuard) permanently strips those two
+      // specific properties off #historyList the instant either is
+      // set (its whole purpose is keeping this list's height auto),
+      // via its own style-attribute MutationObserver. Setting them
+      // here -- even to 'auto'/'none', values that would look like a
+      // no-op -- still queues an attribute mutation and re-triggers
+      // that guard, which fights back. Leaving them alone entirely
+      // gets the same effective result (natural auto height) without
+      // the fight, since that's what the guard forces anyway.
+      setImportant(historyList, 'box-sizing', 'border-box');
+
+      const empty = historyList.querySelector(':scope > .history-empty');
+      if (empty) {
+        setImportant(empty, 'position', 'static');
+        setImportant(empty, 'inset', 'auto');
+        setImportant(empty, 'transform', 'none');
+        setImportant(empty, 'width', '100%');
+        setImportant(empty, 'height', 'auto');
+        setImportant(empty, 'min-height', '0');
+        setImportant(empty, 'max-height', 'none');
+        setImportant(empty, 'display', 'flex');
+        setImportant(empty, 'flex-direction', 'column');
+        setImportant(empty, 'align-items', 'center');
+        setImportant(empty, 'justify-content', 'center');
+        setImportant(empty, 'margin', 'auto');
+      }
+    }
+  }
+
+  // classList toggling (switching tabs) is an attribute mutation, not
+  // a childList one -- the childList/subtree observer below won't see
+  // it. Watch #outputsPanel's class directly, and back it up with a
+  // direct listener on the tab buttons themselves.
+  function watchOutputsTabState(attemptsLeft = 60) {
+    const outputsPanel = document.getElementById('outputsPanel');
+    if (!outputsPanel) {
+      if (attemptsLeft <= 0) return;
+      setTimeout(() => watchOutputsTabState(attemptsLeft - 1), 150);
+      return;
+    }
+    new MutationObserver(restoreRelocatedHistoryStyle).observe(outputsPanel, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  function watchTabButtons(attemptsLeft = 60) {
+    const inputsTab = document.getElementById('inputsTab');
+    const outputsTab = document.getElementById('outputsTab');
+    if (!inputsTab || !outputsTab) {
+      if (attemptsLeft <= 0) return;
+      setTimeout(() => watchTabButtons(attemptsLeft - 1), 150);
+      return;
+    }
+    const reassert = () => {
+      setTimeout(restoreRelocatedHistoryStyle, 20);
+      setTimeout(restoreRelocatedHistoryStyle, 200);
+      setTimeout(restoreRelocatedHistoryStyle, 600);
+    };
+    inputsTab.addEventListener('click', reassert);
+    outputsTab.addEventListener('click', reassert);
+  }
+
+  // NOTE: a style-attribute-scoped MutationObserver was tried here to
+  // reassert these styles the instant any other script changed them
+  // (the same technique installHistoryHeightGuard uses above for
+  // #previousSearches' own height) -- but #historyList's height/
+  // max-height are exactly what installHistoryListHeightGuard
+  // (elsewhere in this file) strips back out the instant either is
+  // set, via its own style-attribute observer on the same element.
+  // The two reactive observers ping-ponged forever (mine sets height
+  // -> theirs strips it -> mine sets it again -> ...), an infinite
+  // microtask loop that hung the page before it ever finished
+  // loading. Stick to the same non-reactive pattern already used
+  // elsewhere in this file instead: a body-wide childList observer,
+  // a handful of fixed timeouts spaced past every legacy script's own
+  // delayed passes, and a reassert on tab clicks / resize.
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      ensureHistoryInOutputs();
+      watchOutputsTabState();
+      watchTabButtons();
+    });
+  } else {
+    ensureHistoryInOutputs();
+    watchOutputsTabState();
+    watchTabButtons();
+  }
+
+  new MutationObserver(() => {
+    requestAnimationFrame(ensureHistoryInOutputs);
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  setTimeout(restoreRelocatedHistoryStyle, 1300);
+  setTimeout(restoreRelocatedHistoryStyle, 1700);
+  setTimeout(restoreRelocatedHistoryStyle, 2200);
+  setTimeout(restoreRelocatedHistoryStyle, 3000);
+  window.addEventListener('resize', () => {
+    setTimeout(restoreRelocatedHistoryStyle, 50);
+  });
 })();
