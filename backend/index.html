@@ -1,0 +1,1041 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="FounderMotion Strategic Validation Calculator" /><title>FounderMotion | Strategic Map</title><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" /><link rel="stylesheet" href="styles.css" />
+<style id="auth-screen-ui">
+  /* Logged-out state: minimal FounderMotion landing */
+  body.auth-logged-out {
+    overflow: hidden;
+    background: #4B1D95 !important;
+  }
+
+  body.auth-logged-out .site-header,
+  body.auth-logged-out #appScreen {
+    display: none !important;
+  }
+
+  .logged-out-screen {
+    display: none;
+    min-height: 100vh;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at 50% 45%, rgba(255,255,255,.72), transparent 34%),
+      #f5effc;
+  }
+
+  body.auth-logged-out .logged-out-screen {
+    display: flex;
+  }
+
+  .logged-out-brand {
+    color: #F5C64F !important;
+    text-decoration: none;
+    font-size: clamp(34px, 5vw, 58px);
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+  }
+
+  .logged-out-brand:hover {
+    color: #4f1b8f;
+  }
+
+  body.auth-logged-in .logged-out-screen {
+    display: none !important;
+  }
+
+/* Keep dashboard content hidden behind the logged-out splash screen. */
+body.auth-logged-out #appScreen,
+body.auth-logged-out #segmentsPanel,
+body.auth-logged-out #fmDashboardEvidence,
+body.auth-logged-out #supportingResources {
+  display: none !important;
+}
+
+</style>
+
+
+
+
+<style id="foundermotion-logout-splash">
+/* LOGGED-OUT SPLASH ONLY */
+body:has(#appScreen[hidden]) {
+  background: #3B126F !important;
+}
+
+/* Keep the dashboard background unchanged after login */
+body:has(#appScreen:not([hidden])) {
+  background: initial !important;
+}
+
+/* Logout splash branding */
+body:has(#appScreen[hidden]) .logout-splash,
+body:has(#appScreen[hidden]) #logoutSplash,
+body:has(#appScreen[hidden]) #loggedOutSplash,
+body:has(#appScreen[hidden]) .logged-out-splash {
+  background: #3B126F !important;
+}
+
+body:has(#appScreen[hidden]) .logout-splash *,
+body:has(#appScreen[hidden]) #logoutSplash *,
+body:has(#appScreen[hidden]) #loggedOutSplash *,
+body:has(#appScreen[hidden]) .logged-out-splash * {
+  color: #F5C64F !important;
+}
+</style>
+
+
+
+
+</head>
+<body class="auth-logged-out"><header class="site-header"><a class="brand" href="index.html" aria-label="FounderMotion home">FounderMotion</a><p class="header-note">Strategic decisions, connected.</p><nav class="header-auth" id="headerAuth"><a href="login.html">Log in</a><a class="header-signup" href="signup.html">Sign up</a></nav><div class="header-orb orb-one"></div><div class="header-orb orb-two"></div></header>
+
+<div id="loggedOutScreen" class="logged-out-screen" aria-hidden="true">
+  <a href="login.html" class="logged-out-brand">FounderMotion</a>
+</div>
+<main class="workspace map-workspace" id="appScreen"><section class="map-intro"><div><p class="eyebrow"><span class="company-name">FounderMotion</span> strategic calculator</p><h1>Process Map</h1><p class="lede">Work through each process in sequence. Every completed output becomes evidence for the next process.</p></div></section>
+
+
+
+<section class="fm-phases" id="fmPhasesPanel" aria-label="Phase validation">
+  <div class="fm-phases-head">
+    <div class="fm-phases-head-text">
+      <p class="fm-phases-eyebrow">Phase validation</p>
+      <h2>Validation phases</h2>
+      <p class="fm-phases-intro">Complete each phase in sequence to move from market validation to product, offer and pricing. <span id="stepLabel" class="sr-only">Process 1</span><span id="progressLabel" class="sr-only">1 of 13</span></p>
+    </div>
+
+    <ul class="fm-phases-legend" aria-hidden="true">
+      <li><i class="fm-legend-dot is-complete"></i>Completed</li>
+      <li><i class="fm-legend-dot is-current"></i>Current</li>
+      <li><i class="fm-legend-dot is-upcoming"></i>Upcoming</li>
+    </ul>
+  </div>
+
+  <div class="fm-phases-grid">
+
+    <article class="fm-phase-card" id="fmPhase1" data-state="in-progress">
+      <div class="fm-phase-card-top">
+        <span class="fm-phase-badge">Phase 1</span>
+        <span class="fm-phase-state" id="fmPhase1State">In Progress</span>
+      </div>
+
+      <h3 class="fm-phase-card-title">Market and buyer validation</h3>
+
+      <p class="fm-phase-card-desc">
+        Validate the priority market, ideal customer, buyer problem and urgency before moving into product, offer and pricing decisions.
+      </p>
+
+      <div class="fm-phase-card-progress">
+        <div class="fm-phase-card-progress-row">
+          <span>Completion</span>
+          <strong id="fmPhase1Progress">0 / 5</strong>
+        </div>
+
+        <div class="fm-phase-card-bar">
+          <span id="fmPhase1Bar"></span>
+        </div>
+      </div>
+
+      <nav class="fm-phase-steps" id="fmPhase1Steps" aria-label="Phase 1 processes"></nav>
+
+      <p class="fm-phase-card-message" id="fmPhase1Message">
+        Complete the five Phase 1 processes.
+      </p>
+    </article>
+
+
+    <article class="fm-phase-card is-locked" id="fmPhase2" data-state="locked">
+      <div class="fm-phase-card-top">
+        <span class="fm-phase-badge">Phase 2</span>
+        <span class="fm-phase-state" id="fmPhase2State">Locked</span>
+      </div>
+
+      <h3 class="fm-phase-card-title">Product, offer and pricing</h3>
+
+      <p class="fm-phase-card-desc">
+        Validate the product, offer, messaging and pricing logic before the startup is considered fully validated.
+      </p>
+
+      <div class="fm-phase-card-progress">
+        <div class="fm-phase-card-progress-row">
+          <span>Completion</span>
+          <strong id="fmPhase2Progress">0 / 8</strong>
+        </div>
+
+        <div class="fm-phase-card-bar">
+          <span id="fmPhase2Bar"></span>
+        </div>
+      </div>
+
+      <nav class="fm-phase-steps" id="fmPhase2Steps" aria-label="Phase 2 processes"></nav>
+
+      <p class="fm-phase-card-message" id="fmPhase2Message">
+        Phase 1 must be completed before starting Phase 2.
+      </p>
+    </article>
+
+  </div>
+</section>
+
+<section class="map-layout">
+
+  <article class="map-card fm-process-workspace">
+
+    <div class="fm-process-header">
+      <p class="eyebrow" id="stepCategory">Market strategy</p>
+      <h2 id="stepTitle">Market Positioning Analysis</h2>
+      <p class="purpose" id="stepPurpose"></p>
+    </div>
+
+    <div class="fm-io-tabs" role="tablist" aria-label="Process information">
+      <button
+        type="button"
+        class="fm-io-tab active"
+        id="inputsTab"
+        role="tab"
+        aria-selected="true">
+        Inputs
+      </button>
+
+      <button
+        type="button"
+        class="fm-io-tab"
+        id="outputsTab"
+        role="tab"
+        aria-selected="false">
+        Outputs
+      </button>
+    </div>
+
+    <div class="fm-process-body">
+
+      <div class="fm-inputs-column" id="inputsPanel">
+
+        <div class="map-section">
+          <h3>Inputs to use</h3>
+          <div id="inputList" class="input-list"></div>
+        </div>
+
+      </div>
+
+      <div class="fm-output-column" id="outputsPanel">
+
+        <div class="fm-output-state">
+
+          <div class="fm-output-icon">✦</div>
+
+          <h3>No output generated yet</h3>
+
+          <p>
+            Complete the inputs on the left, then generate this process
+            to see the AI-powered results here.
+          </p>
+
+          <div class="fm-output-preview">
+            <div class="fm-output-preview-title">
+              Outputs will include:
+            </div>
+
+            <div>Priority ICPs and segments</div>
+            <div>Competitive frame of reference</div>
+            <div>Positioning statement</div>
+            <div>Trace / Essentials market-entry logic</div>
+            <div>Recommended next steps</div>
+          </div>
+
+        </div>
+
+        <div
+          class="output-panel fm-real-output"
+          aria-live="polite">
+
+          <p class="eyebrow">Generated output</p>
+
+          <h2>Decision brief</h2>
+
+          <p
+            class="output-empty"
+            id="outputEmpty">
+            Complete the inputs, then generate the decision brief for this process.
+          </p>
+
+          <div id="analysisOutput"></div>
+
+        </div>
+
+        
+
+      </div>
+
+    </div>
+
+    <div
+      class="fm-output-actions"
+      id="processOutputActions"
+      style="
+        display: grid !important;
+        grid-template-columns: minmax(0, 3fr) minmax(120px, 1fr) minmax(120px, 1fr) !important;
+        gap: 18px !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 28px 0 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        align-items: stretch !important;
+      ">
+
+      <button
+        class="analyse-button fm-generate-process"
+        id="runAnalysis"
+        type="button"
+        style="
+          width: 100% !important;
+          min-width: 0 !important;
+          height: 56px !important;
+          margin: 0 !important;
+          box-sizing: border-box !important;
+        ">
+        <span aria-hidden="true">✦</span>
+        Run the process
+        <span aria-hidden="true">&rarr;</span>
+      </button>
+
+      <button
+        class="fm-export-button"
+        id="generatePdf"
+        type="button"
+        style="
+          width: 100% !important;
+          min-width: 0 !important;
+          height: 56px !important;
+          margin: 0 !important;
+          box-sizing: border-box !important;
+        ">
+        Generate PDF
+      </button>
+
+      <button
+        class="fm-export-button"
+        id="generateCsv"
+        type="button"
+        style="
+          width: 100% !important;
+          min-width: 0 !important;
+          height: 56px !important;
+          margin: 0 !important;
+          box-sizing: border-box !important;
+        ">
+        Generate CSV
+      </button>
+
+    </div>
+
+  </article>
+
+  <section class="question-card">
+    <div class="question-card-header">
+
+      <div>
+        <p class="eyebrow">Questions to answer</p>
+        <h3>Key questions</h3>
+      </div>
+
+      <span class="question-count">5 questions</span>
+
+    </div>
+
+    <div
+      id="questionList"
+      class="question-list">
+    </div>
+
+  </section>
+
+</section><nav class="map-navigation" aria-label="Process navigation"><button class="previous-button" id="prevStep" type="button">&larr; Previous process</button><button class="next-button" id="nextStep" type="button">Next process <span>&rarr;</span></button></nav></main>
+<dialog id="documentDialog" class="dialog"><form method="dialog" class="dialog-card" id="documentForm"><button class="close" type="button" aria-label="Close">&times;</button><p class="eyebrow">Documentation</p><h2 id="documentDialogTitle">Add a source</h2><p class="dialog-lede">Add evidence for the selected required input.</p><div class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="Upload documentation files"><input id="fileInput" type="file" multiple accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,.xls,.xlsx" hidden /><span class="upload-icon">Upload</span><span class="drop-copy"><strong>Drop files here</strong><small>or choose files from your computer</small></span><button class="choose-file" id="chooseFile" type="button">Choose files</button></div><p class="file-help">Supported: TXT, MD, CSV, JSON, PDF, Word, and Excel files.</p><label>Document name<input id="documentName" required placeholder="e.g. Customer interview notes" /></label><label>Documentation<textarea id="documentText" required rows="7" placeholder="Paste or write the documentation here…"></textarea></label><button class="primary-button" type="submit">Add documentation <span>&rarr;</span></button></form></dialog><div id="toast" class="toast" role="status" aria-live="polite"></div><script src="app.js"></script>
+
+
+
+
+
+
+<script id="segment-evidence-exact-grid">
+(function () {
+
+  function applyExactWidths() {
+
+    const row = document.getElementById("fmSegmentEvidenceRow");
+    const segment = document.getElementById("segmentsPanel");
+    const evidence = document.getElementById("fmDashboardEvidence");
+
+    if (!row || !segment || !evidence) return;
+
+    const sections = [...document.querySelectorAll("section")];
+
+    const strategic = sections.find(el =>
+      el.textContent.includes("STRATEGIC PROCESS") &&
+      !el.closest("#fmSegmentEvidenceRow")
+    );
+
+    const generated = sections.find(el =>
+      el.textContent.includes("GENERATED OUTPUT") &&
+      !el.closest("#fmSegmentEvidenceRow")
+    );
+
+    if (!strategic || !generated) return;
+
+    const strategicWidth =
+      Math.round(strategic.getBoundingClientRect().width);
+
+    const generatedWidth =
+      Math.round(generated.getBoundingClientRect().width);
+
+    const gap = 24;
+
+    /*
+     * ONLY change the GRID of the Segment/Evidence row.
+     */
+    row.style.setProperty(
+      "grid-template-columns",
+      strategicWidth + "px " + generatedWidth + "px",
+      "important"
+    );
+
+    row.style.setProperty(
+      "column-gap",
+      gap + "px",
+      "important"
+    );
+
+    row.style.setProperty(
+      "width",
+      (strategicWidth + generatedWidth + gap) + "px",
+      "important"
+    );
+
+    row.style.setProperty(
+      "max-width",
+      "none",
+      "important"
+    );
+
+    /*
+     * Make the two cards fill ONLY their assigned grid columns.
+     */
+    segment.style.setProperty(
+      "width",
+      "100%",
+      "important"
+    );
+
+    segment.style.setProperty(
+      "max-width",
+      "none",
+      "important"
+    );
+
+    evidence.style.setProperty(
+      "width",
+      "100%",
+      "important"
+    );
+
+    evidence.style.setProperty(
+      "max-width",
+      "none",
+      "important"
+    );
+
+    console.log(
+      "EXACT WIDTHS:",
+      "Segment =", strategicWidth,
+      "| Evidence =", generatedWidth
+    );
+  }
+
+  /*
+   * Run after the app finishes rendering.
+   */
+  window.addEventListener("load", applyExactWidths);
+
+  setTimeout(applyExactWidths, 300);
+  setTimeout(applyExactWidths, 1000);
+  setTimeout(applyExactWidths, 2000);
+
+})();
+</script>
+
+
+<script id="force-question-layout">
+(function () {
+
+  function fixQuestionLayout() {
+    const map = document.querySelector('.map-layout');
+    const process = document.querySelector('.map-layout > .map-card');
+    const questions = document.querySelector('.map-layout > .question-card');
+
+    if (!map || !process || !questions) return;
+
+    /*
+     * FINAL LAYOUT
+     *
+     * Strategic Process = full width
+     * Key Questions     = full width underneath
+     */
+
+    map.style.setProperty(
+      'display',
+      'grid',
+      'important'
+    );
+
+    map.style.setProperty(
+      'grid-template-columns',
+      'minmax(0, 1fr)',
+      'important'
+    );
+
+    map.style.setProperty(
+      'gap',
+      '28px',
+      'important'
+    );
+
+    map.style.setProperty(
+      'align-items',
+      'start',
+      'important'
+    );
+
+    process.style.setProperty(
+      'grid-column',
+      '1',
+      'important'
+    );
+
+    process.style.setProperty(
+      'width',
+      '100%',
+      'important'
+    );
+
+    process.style.setProperty(
+      'max-width',
+      'none',
+      'important'
+    );
+
+    questions.style.setProperty(
+      'grid-column',
+      '1',
+      'important'
+    );
+
+    questions.style.setProperty(
+      'grid-row',
+      'auto',
+      'important'
+    );
+
+    questions.style.setProperty(
+      'width',
+      '100%',
+      'important'
+    );
+
+    questions.style.setProperty(
+      'max-width',
+      'none',
+      'important'
+    );
+
+    questions.style.setProperty(
+      'margin',
+      '0',
+      'important'
+    );
+  }
+
+  function run() {
+    fixQuestionLayout();
+    setTimeout(fixQuestionLayout, 100);
+    setTimeout(fixQuestionLayout, 500);
+    setTimeout(fixQuestionLayout, 1000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+
+  const observer = new MutationObserver(() => {
+    fixQuestionLayout();
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+})();
+</script>
+
+
+
+
+
+<style id="question-history-final-fix">
+
+/* =========================================================
+   QUESTIONS + GENERATED HISTORY
+   FINAL CLEAN TWO-COLUMN DESIGN
+   ========================================================= */
+
+.question-history-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr) !important;
+  gap: 24px !important;
+
+  width: 100% !important;
+  max-width: none !important;
+
+  margin: 24px 0 0 !important;
+  padding: 0 !important;
+
+  align-items: start !important;
+  box-sizing: border-box !important;
+}
+
+
+/* =========================================================
+   KEY QUESTIONS — LEFT
+   ========================================================= */
+
+.question-history-row > .question-card {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+
+  margin: 0 !important;
+  padding: 26px 28px !important;
+
+  min-height: 430px !important;
+
+  box-sizing: border-box !important;
+
+  border-radius: 20px !important;
+}
+
+
+/* Header */
+
+.question-history-row .question-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+
+  margin: 0 0 12px !important;
+}
+
+
+/* Title */
+
+.question-history-row .question-card-header h3 {
+  margin: 4px 0 0 !important;
+
+  font-size: 27px !important;
+  line-height: 1.15 !important;
+}
+
+
+/* Question count */
+
+.question-history-row .question-count {
+  flex: 0 0 auto !important;
+  margin-top: 2px !important;
+}
+
+
+/* Question list */
+
+.question-history-row .question-list {
+  display: grid !important;
+  gap: 0 !important;
+}
+
+.question-history-row .question-list > * {
+  padding: 15px 0 !important;
+}
+
+
+/* =========================================================
+   GENERATED HISTORY — RIGHT
+   ========================================================= */
+
+.question-history-row > .previous-searches {
+  display: block !important;
+
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+
+  margin: 0 !important;
+  padding: 24px !important;
+
+  box-sizing: border-box !important;
+
+  background: #ffffff !important;
+
+  border: 1px solid rgba(118, 70, 205, 0.18) !important;
+  border-radius: 20px !important;
+
+  min-height: 430px !important;
+
+  box-shadow: 0 8px 24px rgba(70, 30, 120, 0.05) !important;
+}
+
+
+/* History header stays INSIDE the card */
+
+.question-history-row .previous-searches-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+
+  width: 100% !important;
+
+  margin: 0 0 18px !important;
+  padding: 0 !important;
+
+  border: 0 !important;
+}
+
+
+/* Generated History */
+
+.question-history-row .previous-searches-header .eyebrow {
+  margin: 0 !important;
+}
+
+
+/* Previous generations */
+
+.question-history-row .previous-searches-header h3 {
+  margin: 4px 0 0 !important;
+
+  font-size: 22px !important;
+  line-height: 1.2 !important;
+}
+
+
+/* 3 / 3 */
+
+.question-history-row .history-count {
+  flex: 0 0 auto !important;
+
+  margin-top: 2px !important;
+
+  font-size: 12px !important;
+}
+
+
+/* History list */
+
+.question-history-row .history-list {
+  display: grid !important;
+  gap: 10px !important;
+
+  width: 100% !important;
+}
+
+
+/* Individual history item */
+
+.question-history-row .history-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  width: 100% !important;
+
+  padding: 15px 14px !important;
+
+  box-sizing: border-box !important;
+
+  border: 1px solid rgba(118, 70, 205, 0.10) !important;
+  border-radius: 13px !important;
+
+  background: #faf8ff !important;
+
+  gap: 12px !important;
+}
+
+
+/* History title */
+
+.question-history-row .history-item-title {
+  margin: 0 0 4px !important;
+
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+}
+
+
+/* Date */
+
+.question-history-row .history-item-meta {
+  margin: 0 !important;
+
+  font-size: 11px !important;
+}
+
+
+/* View result */
+
+.question-history-row .history-view {
+  flex: 0 0 auto !important;
+
+  padding: 0 !important;
+
+  color: #5725b8 !important;
+
+  font-size: 12px !important;
+  font-weight: 700 !important;
+
+  white-space: nowrap !important;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .question-history-row {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+
+  .question-history-row > .question-card,
+  .question-history-row > .previous-searches {
+    min-height: auto !important;
+  }
+
+}
+
+</style>
+
+<script id="question-history-final-move">
+(function () {
+
+  function arrangeQuestionHistory() {
+
+    const mapLayout =
+      document.querySelector('.map-layout');
+
+    const questionCard =
+      document.querySelector('.map-layout > .question-card');
+
+    const history =
+      document.querySelector('#previousSearches');
+
+    if (!mapLayout || !questionCard || !history) {
+      return;
+    }
+
+    let row =
+      document.querySelector('.question-history-row');
+
+    if (!row) {
+
+      row = document.createElement('div');
+
+      row.className =
+        'question-history-row';
+
+      questionCard.parentNode.insertBefore(
+        row,
+        questionCard
+      );
+    }
+
+    /*
+     * Question = LEFT
+     */
+    if (questionCard.parentElement !== row) {
+      row.appendChild(questionCard);
+    }
+
+    /*
+     * History = RIGHT
+     */
+    if (history.parentElement !== row) {
+      row.appendChild(history);
+    }
+
+    /*
+     * Make sure the heading is correct.
+     */
+    const eyebrow =
+      history.querySelector('.eyebrow');
+
+    const heading =
+      history.querySelector('h3');
+
+    if (eyebrow) {
+      eyebrow.textContent =
+        'GENERATED HISTORY';
+    }
+
+    if (heading) {
+      heading.textContent =
+        'Previous generations';
+    }
+
+    console.log(
+      'FINAL LAYOUT: Questions LEFT / History RIGHT'
+    );
+  }
+
+  setTimeout(arrangeQuestionHistory, 100);
+  setTimeout(arrangeQuestionHistory, 500);
+  setTimeout(arrangeQuestionHistory, 1000);
+  setTimeout(arrangeQuestionHistory, 2000);
+
+  const observer =
+    new MutationObserver(() => {
+      arrangeQuestionHistory();
+    });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+})();
+</script>
+
+
+<script id="evidence-full-width-under-segments">
+(function () {
+  function applyEvidenceFullWidth() {
+    const row = document.getElementById("fmSegmentEvidenceRow");
+    const segment = document.getElementById("segmentsPanel");
+    const evidence = document.getElementById("fmDashboardEvidence");
+
+    if (!row || !segment || !evidence) return;
+
+    /*
+     * Only change the Segment / Evidence row.
+     * No other page layout is touched.
+     */
+    row.style.setProperty(
+      "grid-template-columns",
+      "minmax(0, 1fr)",
+      "important"
+    );
+
+    row.style.setProperty(
+      "grid-template-rows",
+      "auto auto",
+      "important"
+    );
+
+    row.style.setProperty(
+      "row-gap",
+      "20px",
+      "important"
+    );
+
+    row.style.setProperty(
+      "column-gap",
+      "0",
+      "important"
+    );
+
+    row.style.setProperty(
+      "width",
+      "100%",
+      "important"
+    );
+
+    row.style.setProperty(
+      "max-width",
+      "none",
+      "important"
+    );
+
+    segment.style.setProperty(
+      "grid-column",
+      "1",
+      "important"
+    );
+
+    segment.style.setProperty(
+      "grid-row",
+      "1",
+      "important"
+    );
+
+    segment.style.setProperty(
+      "width",
+      "100%",
+      "important"
+    );
+
+    segment.style.setProperty(
+      "max-width",
+      "none",
+      "important"
+    );
+
+    evidence.style.setProperty(
+      "grid-column",
+      "1",
+      "important"
+    );
+
+    evidence.style.setProperty(
+      "grid-row",
+      "2",
+      "important"
+    );
+
+    evidence.style.setProperty(
+      "width",
+      "100%",
+      "important"
+    );
+
+    evidence.style.setProperty(
+      "max-width",
+      "none",
+      "important"
+    );
+
+    evidence.style.setProperty(
+      "margin",
+      "0",
+      "important"
+    );
+  }
+
+  window.addEventListener("load", function () {
+    applyEvidenceFullWidth();
+
+    /*
+     * Re-apply after the existing Segment / Evidence sizing
+     * script has finished its delayed updates.
+     */
+    setTimeout(applyEvidenceFullWidth, 2100);
+    setTimeout(applyEvidenceFullWidth, 2400);
+  });
+
+  window.addEventListener("resize", applyEvidenceFullWidth);
+})();
+</script>
+
+</body></html>
