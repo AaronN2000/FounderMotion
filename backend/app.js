@@ -15588,9 +15588,21 @@ function syncAuthScreenUI() {
       bottomPadding -
       gap * (items.length - 1);
 
-    const itemHeight = Math.max(
-      96,
-      Math.floor(availableHeight / items.length)
+    /*
+     * FIX: this used to have no upper bound, so with fewer than 3
+     * saved results (often just 1) the leftover vertical space
+     * (stretched to match the height of the Key Questions column on
+     * the left) all got assigned to that one card, producing a huge
+     * block of blank space inside it. Cap the per-item height so a
+     * card never grows past a sensible size -- any leftover space
+     * in the panel just stays empty below the list instead.
+     */
+    const itemHeight = Math.min(
+      140,
+      Math.max(
+        96,
+        Math.floor(availableHeight / items.length)
+      )
     );
 
     list.style.setProperty('display', 'grid', 'important');
