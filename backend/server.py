@@ -421,6 +421,23 @@ def initialise_database():
         """)
 
         db.execute("""
+            CREATE TABLE IF NOT EXISTS process_output_dependency (
+                dependency_id SERIAL PRIMARY KEY,
+                process_id INTEGER NOT NULL
+                    REFERENCES process(process_id) ON DELETE CASCADE,
+                source_process_id INTEGER NOT NULL
+                    REFERENCES process(process_id) ON DELETE CASCADE,
+                dependency_order INTEGER NOT NULL,
+                UNIQUE (process_id, source_process_id)
+            )
+        """)
+
+        db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_process_output_dependency_process
+            ON process_output_dependency(process_id)
+        """)
+
+        db.execute("""
             CREATE TABLE IF NOT EXISTS process_progress (
                 progress_id SERIAL PRIMARY KEY,
                 workspace_id INTEGER NOT NULL
@@ -474,6 +491,7 @@ def initialise_database():
         """)
 
         seed_process_catalogue(db)
+        seed_process_output_dependencies(db)
 
     enable_row_level_security()
 
@@ -562,6 +580,72 @@ def seed_process_catalogue(db):
                 (process_id, input_id, True)
             )
 
+
+# Which earlier processes' outputs feed into each process as input evidence,
+# keyed and valued by process_number (not process_id -- those are looked up
+# below). This is the fixed strategic dependency graph confirmed against the
+# original, customer-approved UI: process 1 has no dependencies (it is the
+# starting point); every other process lists the processes whose generated
+# output it should be able to draw on.
+PROCESS_OUTPUT_DEPENDENCIES = {
+    1: [],
+    2: [1],
+    3: [1, 2],
+    4: [3],
+    5: [4],
+    6: [1, 2, 3],
+    7: [3],
+    8: [6, 3],
+    9: [3, 4, 6],
+    10: [4, 6, 7, 8],
+    11: [7, 8, 10],
+    12: [4, 6, 7, 8, 10],
+    13: [12, 7, 8, 10],
+}
+
+
+def seed_process_output_dependencies(db):
+    """Populate which earlier processes feed each process, once.
+
+    Kept separate from seed_process_catalogue() (and its own table, checked
+    independently) because the process/question/input catalogue was already
+    seeded once in production before this dependency graph existed -- the
+    catalogue's own "only seed if the process table is empty" guard would
+    otherwise skip this forever.
+    """
+    if db.execute(
+        "SELECT 1 FROM process_output_dependency LIMIT 1"
+    ).fetchone():
+        return
+
+    process_id_by_number = {
+        row["process_number"]: row["process_id"]
+        for row in db.execute(
+            "SELECT process_id, process_number FROM process"
+        ).fetchall()
+    }
+
+    for process_number, source_numbers in PROCESS_OUTPUT_DEPENDENCIES.items():
+        process_id = process_id_by_number.get(process_number)
+
+        if not process_id:
+            continue
+
+        for order, source_number in enumerate(source_numbers, 1):
+            source_process_id = process_id_by_number.get(source_number)
+
+            if not source_process_id:
+                continue
+
+            db.execute(
+                """
+                INSERT INTO process_output_dependency
+                    (process_id, source_process_id, dependency_order)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (process_id, source_process_id) DO NOTHING
+                """,
+                (process_id, source_process_id, order)
+            )
 
 
 def seed_sample_evidence(user_id, company_name):
@@ -917,6 +1001,16 @@ def all_processes():
             ORDER BY pi.process_id, pi.process_input_id
         """).fetchall()
 
+        output_dependencies = db.execute("""
+            SELECT
+                pod.process_id,
+                source.process_number AS source_process_number
+            FROM process_output_dependency pod
+            JOIN process source
+                ON source.process_id = pod.source_process_id
+            ORDER BY pod.process_id, pod.dependency_order
+        """).fetchall()
+
     questions_by_process = {}
 
     for row in questions:
@@ -931,6 +1025,13 @@ def all_processes():
             row["process_id"], []
         ).append(row["input_name"])
 
+    output_sources_by_process = {}
+
+    for row in output_dependencies:
+        output_sources_by_process.setdefault(
+            row["process_id"], []
+        ).append(row["source_process_number"])
+
     return [
         {
             "number": row["process_number"],
@@ -939,7 +1040,7 @@ def all_processes():
             "purpose": row["purpose"],
             "inputs": inputs_by_process.get(row["process_id"], []),
             "questions": questions_by_process.get(row["process_id"], []),
-            "outputSources": [],
+            "outputSources": output_sources_by_process.get(row["process_id"], []),
             "outputs": "",
             "feeds": ""
         }

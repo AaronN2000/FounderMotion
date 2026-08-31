@@ -7324,7 +7324,7 @@ body *:has(> #progressDots) > #progressDots {
    INPUT CARDS
    ========================================================= */
 
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   position: relative !important;
 
   width: 100% !important;
@@ -7359,7 +7359,7 @@ body *:has(> #progressDots) > #progressDots {
     transform .15s ease !important;
 }
 
-.fm-inputs-column .input-list > *:hover {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):hover {
   border-color: #cfc0df !important;
 
   box-shadow:
@@ -7369,7 +7369,7 @@ body *:has(> #progressDots) > #progressDots {
 
 /* ICON CONTAINER */
 
-.fm-inputs-column .input-list > *::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::before {
   content: "" !important;
 
   position: absolute !important;
@@ -7390,7 +7390,7 @@ body *:has(> #progressDots) > #progressDots {
 
 /* ICONS */
 
-.fm-inputs-column .input-list > *::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::after {
   position: absolute !important;
 
   left: 23px !important;
@@ -7407,30 +7407,30 @@ body *:has(> #progressDots) > #progressDots {
   z-index: 2 !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(1)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(1)::after {
   content: "⌕" !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(2)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(2)::after {
   content: "▥" !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(3)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(3)::after {
   content: "◔" !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(4)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(4)::after {
   content: "♧" !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(5)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(5)::after {
   content: "◯" !important;
 }
 
 
 /* INPUT TEXT */
 
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   font-size: 14px !important;
 
   line-height: 1.4 !important;
@@ -7906,7 +7906,7 @@ body *:has(> #progressDots) > #progressDots {
   width: 100% !important;
 }
 
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   position: relative !important;
 
   width: 100% !important;
@@ -7927,7 +7927,7 @@ body *:has(> #progressDots) > #progressDots {
 
 /* icon background */
 
-.fm-inputs-column .input-list > *::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::before {
   content: "" !important;
 
   position: absolute !important;
@@ -7948,7 +7948,7 @@ body *:has(> #progressDots) > #progressDots {
 
 /* icon */
 
-.fm-inputs-column .input-list > *::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::after {
   position: absolute !important;
 
   left: 23px !important;
@@ -7961,23 +7961,23 @@ body *:has(> #progressDots) > #progressDots {
   z-index: 2 !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(1)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(1)::after {
   content: "⌕" !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(2)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(2)::after {
   content: "▥" !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(3)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(3)::after {
   content: "◔" !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(4)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(4)::after {
   content: "♧" !important;
 }
 
-.fm-inputs-column .input-list > *:nth-child(5)::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(5)::after {
   content: "◯" !important;
 }
 
@@ -8229,7 +8229,7 @@ body *:has(> #progressDots) > #progressDots {
 }
 
 /* Card */
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   position: relative !important;
 
   min-height: 78px !important;
@@ -8254,7 +8254,7 @@ body *:has(> #progressDots) > #progressDots {
 }
 
 /* subtle hover */
-.fm-inputs-column .input-list > *:hover {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):hover {
   border-color: #d4c3e5 !important;
 
   background: #fff !important;
@@ -8267,7 +8267,7 @@ body *:has(> #progressDots) > #progressDots {
    ICON CONTAINER
    ========================================================= */
 
-.fm-inputs-column .input-list > *::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::before {
   content: "" !important;
 
   position: absolute !important;
@@ -8297,7 +8297,7 @@ body *:has(> #progressDots) > #progressDots {
 
 
 /* REMOVE THE OLD UGLY TEXT ICONS */
-.fm-inputs-column .input-list > *::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::after {
   content: none !important;
   display: none !important;
 }
@@ -8307,7 +8307,7 @@ body *:has(> #progressDots) > #progressDots {
    01 — RESEARCH / SEARCH
    ========================================================= */
 
-.fm-inputs-column .input-list > *:nth-child(1)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(1)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235522aa' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.8' cy='10.8' r='5.8'/%3E%3Cpath d='m15.2 15.2 4.2 4.2'/%3E%3Cpath d='M8.5 10.8h4.6M10.8 8.5v4.6' opacity='.65'/%3E%3C/svg%3E") !important;
 }
 
@@ -8316,7 +8316,7 @@ body *:has(> #progressDots) > #progressDots {
    02 — COMPANY / BUSINESS
    ========================================================= */
 
-.fm-inputs-column .input-list > *:nth-child(2)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(2)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235522aa' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20V8.5L12 5l8 3.5V20'/%3E%3Cpath d='M8 20v-5h3v5M14 20v-5h3v5'/%3E%3Cpath d='M8 10h.01M12 10h.01M16 10h.01' stroke-width='2.4'/%3E%3C/svg%3E") !important;
 }
 
@@ -8325,7 +8325,7 @@ body *:has(> #progressDots) > #progressDots {
    03 — MARKET / INDUSTRY
    ========================================================= */
 
-.fm-inputs-column .input-list > *:nth-child(3)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(3)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235522aa' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 12V4a8 8 0 1 1-7.1 11.7'/%3E%3Cpath d='M12 12 18.9 8'/%3E%3Cpath d='M12 12 5.1 15.7'/%3E%3C/svg%3E") !important;
 }
 
@@ -8334,7 +8334,7 @@ body *:has(> #progressDots) > #progressDots {
    04 — CUSTOMERS / USERS
    ========================================================= */
 
-.fm-inputs-column .input-list > *:nth-child(4)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(4)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235522aa' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M3.5 19c.5-3.2 2.3-5 5.5-5s5 1.8 5.5 5'/%3E%3Ccircle cx='17' cy='9' r='2.2'/%3E%3Cpath d='M15.5 14.5c2.4.2 4 1.6 4.5 4'/%3E%3C/svg%3E") !important;
 }
 
@@ -8343,7 +8343,7 @@ body *:has(> #progressDots) > #progressDots {
    05 — OTHER INFORMATION / NOTES
    ========================================================= */
 
-.fm-inputs-column .input-list > *:nth-child(5)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(5)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235522aa' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 6.5A3.5 3.5 0 0 1 8.5 3h7A3.5 3.5 0 0 1 19 6.5v6A3.5 3.5 0 0 1 15.5 16H10l-4.5 4v-4.5A3.5 3.5 0 0 1 5 12.5z'/%3E%3Cpath d='M9 8h6M9 11h4'/%3E%3C/svg%3E") !important;
 }
 
@@ -8352,31 +8352,31 @@ body *:has(> #progressDots) > #progressDots {
    TEXT — cleaner hierarchy
    ========================================================= */
 
-.fm-inputs-column .input-list > * > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) > * {
   box-sizing: border-box !important;
 }
 
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   font-size: 13.5px !important;
   line-height: 1.45 !important;
 }
 
-.fm-inputs-column .input-list > * strong,
-.fm-inputs-column .input-list > * .input-title {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) strong,
+.fm-inputs-column .input-list > *:not(.outputs-to-use) .input-title {
   font-weight: 500 !important;
 }
 
 
 /* Add information */
-.fm-inputs-column .input-list > * a,
-.fm-inputs-column .input-list > * button {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) a,
+.fm-inputs-column .input-list > *:not(.outputs-to-use) button {
   font-size: 12.5px !important;
 }
 
 
 /* Required label */
-.fm-inputs-column .input-list > * .required,
-.fm-inputs-column .input-list > * [class*="required"] {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) .required,
+.fm-inputs-column .input-list > *:not(.outputs-to-use) [class*="required"] {
   font-size: 10px !important;
   letter-spacing: .05em !important;
 }
@@ -8685,7 +8685,7 @@ body *:has(> #progressDots) > #progressDots {
 }
 
 /* Input cards */
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   position: relative !important;
   width: 100% !important;
   min-height: 92px !important;
@@ -8705,7 +8705,7 @@ body *:has(> #progressDots) > #progressDots {
     background .18s ease !important;
 }
 
-.fm-inputs-column .input-list > *:hover {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):hover {
   border-color: #cdb8e9 !important;
   background: #ffffff !important;
   box-shadow: 0 5px 16px rgba(75, 43, 135, .08) !important;
@@ -8713,7 +8713,7 @@ body *:has(> #progressDots) > #progressDots {
 
 /* ---------- INPUT ICON AREA ---------- */
 
-.fm-inputs-column .input-list > *::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::before {
   content: "" !important;
   position: absolute !important;
   left: 16px !important;
@@ -8734,7 +8734,7 @@ body *:has(> #progressDots) > #progressDots {
 }
 
 /* Small clean icon mark */
-.fm-inputs-column .input-list > *::after {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::after {
   content: "✦" !important;
   position: absolute !important;
   left: 16px !important;
@@ -8756,7 +8756,7 @@ body *:has(> #progressDots) > #progressDots {
 
 /* ---------- INPUT TEXT ---------- */
 
-.fm-inputs-column .input-list > * > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) > * {
   box-sizing: border-box !important;
 }
 
@@ -9040,11 +9040,11 @@ body *:has(> #progressDots) > #progressDots {
    KEEP INPUT ICONS MODERATE
    --------------------------------------------------------- */
 
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   position: relative !important;
 }
 
-.fm-inputs-column .input-list > *::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::before {
   width: 42px !important;
   height: 42px !important;
   left: 14px !important;
@@ -9055,7 +9055,7 @@ body *:has(> #progressDots) > #progressDots {
 }
 
 /* Give the input content enough room beside the icon */
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   padding-left: 68px !important;
 }
 
@@ -9173,7 +9173,7 @@ body *:has(> #progressDots) > #progressDots {
    INPUT ICONS — slightly smaller / cleaner
    ========================================================= */
 
-.fm-inputs-column .input-list > *::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::before {
   width: 42px !important;
   height: 42px !important;
   left: 14px !important;
@@ -9182,7 +9182,7 @@ body *:has(> #progressDots) > #progressDots {
   background-size: 21px 21px !important;
 }
 
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   padding-left: 68px !important;
 }
 
@@ -9380,7 +9380,7 @@ body *:has(> #progressDots) > #progressDots {
    Smaller, simpler, consistent
    --------------------------------------------------------- */
 
-.fm-inputs-column .input-list > *::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use)::before {
   content: "" !important;
 
   position: absolute !important;
@@ -9411,42 +9411,42 @@ body *:has(> #progressDots) > #progressDots {
 
 /* Research */
 
-.fm-inputs-column .input-list > *:nth-child(1)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(1)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b21b6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6'/%3E%3Cpath d='m15 15 5 5'/%3E%3C/svg%3E") !important;
 }
 
 
 /* Company */
 
-.fm-inputs-column .input-list > *:nth-child(2)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(2)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b21b6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 21V7l8-4 8 4v14'/%3E%3Cpath d='M9 21v-5h6v5M8 9h1M8 12h1M15 9h1M15 12h1'/%3E%3C/svg%3E") !important;
 }
 
 
 /* Industry */
 
-.fm-inputs-column .input-list > *:nth-child(3)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(3)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b21b6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v9l7.5 4.3A9 9 0 1 1 12 3Z'/%3E%3Cpath d='M12 3a9 9 0 0 1 8.5 6H12V3Z'/%3E%3C/svg%3E") !important;
 }
 
 
 /* Customers */
 
-.fm-inputs-column .input-list > *:nth-child(4)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(4)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b21b6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Ccircle cx='17' cy='9' r='2.3'/%3E%3Cpath d='M3.5 20c.6-4 3-6 5.5-6s4.9 2 5.5 6'/%3E%3Cpath d='M14.5 15c2.8-.7 5 1.2 6 4'/%3E%3C/svg%3E") !important;
 }
 
 
 /* Other information */
 
-.fm-inputs-column .input-list > *:nth-child(5)::before {
+.fm-inputs-column .input-list > *:not(.outputs-to-use):nth-child(5)::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b21b6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 5h14v11H9l-4 4V5Z'/%3E%3Cpath d='M8 9h8M8 12h5'/%3E%3C/svg%3E") !important;
 }
 
 
 /* Input text spacing */
 
-.fm-inputs-column .input-list > * {
+.fm-inputs-column .input-list > *:not(.outputs-to-use) {
   padding-left: 68px !important;
 }
 
