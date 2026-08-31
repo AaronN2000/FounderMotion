@@ -16092,9 +16092,9 @@ function syncAuthScreenUI() {
    ========================================================= */
 
 /* ---------------------------------------------------------
-   Key Questions + Customer & Market Evidence now live together
-   as a right-hand stack on the Inputs tab, replacing the old
-   empty-state / "View Results"
+   Key Questions + Market Segments (mini) + Customer & Market
+   Evidence now live together as a right-hand stack on the
+   Inputs tab, replacing the old empty-state / "View Results"
    button. On the Outputs tab this stack is hidden and the
    full six-tile output takes over the full width exactly as
    before.
@@ -16102,6 +16102,7 @@ function syncAuthScreenUI() {
 (() => {
   const STACK_ID = 'fmInputsRightStack';
   const STYLE_ID = 'fmInputsRightStackStyle';
+  const MINI_SEGMENTS_ID = 'fmMiniSegments';
   const BUTTON_ID_LEGACY = 'fmViewOutputButton';
 
   const style = document.createElement('style');
@@ -16154,10 +16155,132 @@ function syncAuthScreenUI() {
       margin: 0 !important;
     }
 
+    /* ---------------- Mini market-segments summary ---------------- */
+    #${MINI_SEGMENTS_ID} {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--line, #e9e5eb);
+      border-radius: 15px;
+      padding: 22px 24px;
+      background: #fff;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-eyebrow {
+      margin: 0 0 6px;
+      color: #876ea9;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+    }
+
+    #${MINI_SEGMENTS_ID} h3 {
+      margin: 0 0 6px;
+      font: 700 18px/1.2 "Playfair Display", serif;
+      color: #251f2b;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-sub {
+      margin: 0 0 14px;
+      color: #746d7a;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-segment-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-segment-item {
+      padding: 12px 14px;
+      border: 1px solid var(--line, #e9e5eb);
+      border-radius: 10px;
+      background: #faf8fb;
+      font-size: 12.5px;
+      color: #51475b;
+      line-height: 1.5;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-segment-item strong {
+      display: block;
+      color: #251f2b;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-segment-tags {
+      margin-top: 4px;
+      color: #876ea9;
+      font-size: 11px;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-empty {
+      color: #948c97;
+      font-size: 12.5px;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-manage-link {
+      display: inline-block;
+      margin-top: 14px;
+      color: var(--purple, #351568);
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    #${MINI_SEGMENTS_ID} .fm-mini-manage-link:hover {
+      text-decoration: underline;
+    }
   `;
 
   document.getElementById(STYLE_ID)?.remove();
   document.head.appendChild(style);
+
+  function renderMiniSegments() {
+    const card = document.getElementById(MINI_SEGMENTS_ID);
+    if (!card) return;
+
+    const list = card.querySelector('.fm-mini-segment-list');
+    if (!list) return;
+
+    const segments = Array.isArray(state.segments) ? state.segments : [];
+
+    if (!segments.length) {
+      list.innerHTML = `<div class="fm-mini-empty">No market segments defined yet.</div>`;
+      return;
+    }
+
+    list.innerHTML = segments.map(segment => {
+      const tags = [segment.geography, segment.companySize, segment.wedge]
+        .filter(Boolean)
+        .join(' · ');
+
+      return `
+        <div class="fm-mini-segment-item">
+          <strong>${escapeHtml(segment.name)}</strong>
+          ${segment.description ? escapeHtml(segment.description) : ''}
+          ${tags ? `<div class="fm-mini-segment-tags">${escapeHtml(tags)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function loadMiniSegments(attemptsLeft = 20) {
+    if (!currentUser) {
+      if (attemptsLeft <= 0) return;
+      setTimeout(() => loadMiniSegments(attemptsLeft - 1), 250);
+      return;
+    }
+
+    try {
+      const response = await api('/api/segments');
+      state.segments = response.segments || [];
+      renderMiniSegments();
+    } catch (error) {
+      /* Silently ignore -- the mini summary is non-critical. */
+    }
+  }
 
   function ensureStack() {
     const outputsPanel = document.getElementById('outputsPanel');
@@ -16187,6 +16310,26 @@ function syncAuthScreenUI() {
     // width of .map-layout (it used to occupy just one of two grid
     // tracks, sized for sharing the row with Key Questions).
     restoreHistoryRowStyle();
+
+    // 2. Mini market-segments summary (built once, then just re-rendered).
+    let miniSegments = document.getElementById(MINI_SEGMENTS_ID);
+    if (!miniSegments) {
+      miniSegments = document.createElement('div');
+      miniSegments.id = MINI_SEGMENTS_ID;
+      miniSegments.innerHTML = `
+        <p class="fm-mini-eyebrow">Business setup</p>
+        <h3>Market segments</h3>
+        <p class="fm-mini-sub">The market segments defined for this workspace.</p>
+        <div class="fm-mini-segment-list"></div>
+        <a class="fm-mini-manage-link" href="workspace.html">Manage in workspace →</a>
+      `;
+      stack.appendChild(miniSegments);
+    } else if (miniSegments.parentElement !== stack) {
+      stack.appendChild(miniSegments);
+    }
+
+    renderMiniSegments();
+    loadMiniSegments();
   }
 
   // The Customer & Market Evidence card is created lazily (only once a
@@ -16451,13 +16594,40 @@ function syncAuthScreenUI() {
       outputsPanel.appendChild(history);
     }
 
-    // Keep it directly before the export buttons -- six-tile output,
-    // then history, then Generate PDF/CSV -- even if a sibling gets
-    // rebuilt and re-appended elsewhere in the panel later.
+    // Enforce the full Outputs-tab order every time this runs, since a
+    // sibling can get rebuilt and re-appended elsewhere in the panel
+    // later (in particular #fmSixTileOutput, which is (re)created
+    // whenever a new decision brief is generated -- appendChild()'d at
+    // the very end of #outputsPanel the first time it's created, which
+    // would otherwise leave it stuck below both the export buttons and
+    // Previous history). Desired order: the generated output (or the
+    // empty state before anything is generated) first, then the
+    // Generate PDF / Generate CSV buttons, then Previous history last.
+    //
+    // Walked left-to-right so it converges to the right order in a
+    // single pass no matter how badly things start out scrambled, and
+    // only calls insertBefore() when an element isn't already exactly
+    // where it belongs -- a version that unconditionally re-inserted
+    // every element on every pass would queue a childList mutation each
+    // time even when nothing actually moved, re-triggering the very
+    // MutationObserver this function is wired to and looping forever.
+    const sixTileOutput = document.getElementById('fmSixTileOutput');
     const exportWrap = document.getElementById('fmExportButtonsWrap');
-    if (exportWrap && history.nextElementSibling !== exportWrap) {
-      outputsPanel.insertBefore(history, exportWrap);
-    }
+
+    let previous = null;
+    [sixTileOutput, exportWrap, history].forEach(el => {
+      if (!el) return;
+
+      const referenceNode = previous
+        ? previous.nextElementSibling
+        : outputsPanel.firstElementChild;
+
+      if (referenceNode !== el) {
+        outputsPanel.insertBefore(el, referenceNode);
+      }
+
+      previous = el;
+    });
 
     restoreRelocatedHistoryStyle();
   }
