@@ -2164,6 +2164,12 @@ function createPdf(lines) {
 
     anchor.insertAdjacentElement('afterend', section);
 
+    // Per-request, this card no longer appears anywhere on the main
+    // Process Map page. Hide it immediately on creation (rather than
+    // relying solely on the later relocation/hide pass) so it never
+    // flashes visible, right after the header, before that pass runs.
+    section.style.setProperty('display', 'none', 'important');
+
     const toggle = section.querySelector('#fmEvidenceToggle');
     const body = section.querySelector('#fmEvidenceBody');
     const label = section.querySelector('.fm-evidence-toggle-label');
@@ -16333,16 +16339,19 @@ function syncAuthScreenUI() {
   }
 
   // The Customer & Market Evidence card is created lazily (only once a
-  // user is signed in), so poll for it and relocate it into the stack
-  // the moment it exists.
+  // user is signed in). Per-request, it no longer appears anywhere on
+  // the main Process Map page (the per-input "+ Upload evidence"
+  // buttons are a separate, unrelated feature and are unaffected) --
+  // so instead of relocating it into the right-hand stack, just keep
+  // it hidden wherever it gets created. Left in place (rather than
+  // removed from the DOM) so nothing that still references
+  // #fmDashboardEvidence / #fmDashboardEvidenceGrid elsewhere in this
+  // file breaks.
   function watchEvidence(attemptsLeft = 60) {
     const evidence = document.getElementById('fmDashboardEvidence');
-    const stack = document.getElementById(STACK_ID);
 
-    if (evidence && stack) {
-      if (evidence.parentElement !== stack) {
-        stack.appendChild(evidence);
-      }
+    if (evidence) {
+      evidence.style.setProperty('display', 'none', 'important');
       return;
     }
 
@@ -16614,7 +16623,18 @@ function syncAuthScreenUI() {
     const sixTileOutput = document.getElementById('fmSixTileOutput');
     const exportWrap = document.getElementById('fmExportButtonsWrap');
 
-    let previous = null;
+    // Anchor the reorder to the static content block that ships in the
+    // HTML (.fm-output-state / .fm-real-output) instead of starting from
+    // outputsPanel.firstElementChild. Before anything has been generated
+    // there is no #fmSixTileOutput yet, so without a fixed anchor the
+    // first managed element (the export buttons) would get forced to the
+    // very front of #outputsPanel -- ahead of the "No output generated
+    // yet" message -- which is exactly backwards.
+    const contentAnchor =
+      outputsPanel.querySelector(':scope > .fm-real-output') ||
+      outputsPanel.querySelector(':scope > .fm-output-state');
+
+    let previous = contentAnchor || null;
     [sixTileOutput, exportWrap, history].forEach(el => {
       if (!el) return;
 

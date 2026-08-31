@@ -217,6 +217,67 @@ body:has(#appScreen[hidden]) .logged-out-splash * {
           <div id="inputList" class="input-list"></div>
         </div>
 
+        <div
+          class="fm-output-actions"
+          id="processOutputActions"
+          style="
+            display: grid !important;
+            grid-template-columns: minmax(0, 3fr) minmax(120px, 1fr) minmax(120px, 1fr) !important;
+            gap: 18px !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 28px 0 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            align-items: stretch !important;
+          ">
+
+          <button
+            class="analyse-button fm-generate-process"
+            id="runAnalysis"
+            type="button"
+            style="
+              width: 100% !important;
+              min-width: 0 !important;
+              height: 56px !important;
+              margin: 0 !important;
+              box-sizing: border-box !important;
+            ">
+            <span aria-hidden="true">✦</span>
+            Run the process
+            <span aria-hidden="true">&rarr;</span>
+          </button>
+
+          <button
+            class="fm-export-button"
+            id="generatePdf"
+            type="button"
+            style="
+              width: 100% !important;
+              min-width: 0 !important;
+              height: 56px !important;
+              margin: 0 !important;
+              box-sizing: border-box !important;
+            ">
+            Generate PDF
+          </button>
+
+          <button
+            class="fm-export-button"
+            id="generateCsv"
+            type="button"
+            style="
+              width: 100% !important;
+              min-width: 0 !important;
+              height: 56px !important;
+              margin: 0 !important;
+              box-sizing: border-box !important;
+            ">
+            Generate CSV
+          </button>
+
+        </div>
+
       </div>
 
       <div class="fm-output-column" id="outputsPanel">
@@ -267,67 +328,6 @@ body:has(#appScreen[hidden]) .logged-out-splash * {
         
 
       </div>
-
-    </div>
-
-    <div
-      class="fm-output-actions"
-      id="processOutputActions"
-      style="
-        display: grid !important;
-        grid-template-columns: minmax(0, 3fr) minmax(120px, 1fr) minmax(120px, 1fr) !important;
-        gap: 18px !important;
-        width: 100% !important;
-        max-width: none !important;
-        margin: 28px 0 0 !important;
-        padding: 0 !important;
-        box-sizing: border-box !important;
-        align-items: stretch !important;
-      ">
-
-      <button
-        class="analyse-button fm-generate-process"
-        id="runAnalysis"
-        type="button"
-        style="
-          width: 100% !important;
-          min-width: 0 !important;
-          height: 56px !important;
-          margin: 0 !important;
-          box-sizing: border-box !important;
-        ">
-        <span aria-hidden="true">✦</span>
-        Run the process
-        <span aria-hidden="true">&rarr;</span>
-      </button>
-
-      <button
-        class="fm-export-button"
-        id="generatePdf"
-        type="button"
-        style="
-          width: 100% !important;
-          min-width: 0 !important;
-          height: 56px !important;
-          margin: 0 !important;
-          box-sizing: border-box !important;
-        ">
-        Generate PDF
-      </button>
-
-      <button
-        class="fm-export-button"
-        id="generateCsv"
-        type="button"
-        style="
-          width: 100% !important;
-          min-width: 0 !important;
-          height: 56px !important;
-          margin: 0 !important;
-          box-sizing: border-box !important;
-        ">
-        Generate CSV
-      </button>
 
     </div>
 
