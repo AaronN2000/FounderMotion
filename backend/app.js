@@ -764,18 +764,6 @@ function renderDecisionGates() {
   document.getElementById('fmPhase2State').textContent =
     phase1Done ? phase2Status : 'Locked';
 
-  document.getElementById('fmPhase1Progress').textContent =
-    `${phase1Completed} / 5`;
-
-  document.getElementById('fmPhase2Progress').textContent =
-    `${phase2Completed} / 8`;
-
-  document.getElementById('fmPhase1Bar').style.width =
-    `${(phase1Completed / 5) * 100}%`;
-
-  document.getElementById('fmPhase2Bar').style.width =
-    `${(phase2Completed / 8) * 100}%`;
-
   document.getElementById('fmPhase1Message').textContent =
     `${phase1Completed} of 5 processes completed`;
 
