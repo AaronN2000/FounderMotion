@@ -22237,83 +22237,133 @@ function syncAuthScreenUI() {
 })();
 
 /* =========================================================
-   SIX TILE OUTPUT — COMPACT PREVIEW MODE (NEXT TO INPUTS)
-   Scope: #fmSixTileOutput ONLY
+   OUTPUTS ON THE INPUTS TAB — "VIEW RESULTS" BUTTON ONLY
+   Scope: #outputsPanel ONLY
 
-   The six-tile summary has two presentations, switched by the
-   "fm-outputs-tab-active" class that app.js adds/removes on
-   #outputsPanel when the Outputs tab is opened/closed:
+   Per latest instruction: no generated content (not even a short
+   preview) should be visible while on the Inputs tab. Once a result
+   exists, the right-hand column shows a single button instead;
+   clicking it jumps straight to the Outputs tab, where the existing
+   full six-tile view (untouched, original horizontal layout) is
+   what's actually shown.
 
-     - Outputs tab open (#outputsPanel.fm-outputs-tab-active):
-       untouched, original horizontal 6-across layout with the
-       fixed tile height / 4-line clamp already defined earlier
-       in this file.
-
-     - Otherwise (Inputs tab, i.e. the always-visible condensed
-       preview next to Inputs): stacked vertically, one result per
-       row, sized to fit its own content -- no fixed tile height
-       and no leftover blank space below the text.
+   State is driven by the two classes app.js already toggles on
+   #outputsPanel:
+     - fm-six-output-ready      -> a result exists
+     - fm-outputs-tab-active    -> the Outputs tab is the open one
 
    This block is appended last on purpose so it wins the cascade
-   over the earlier fixed-height / line-clamp rules.
+   over any earlier six-tile styling.
    ========================================================= */
 (() => {
+  const BUTTON_ID = 'fmViewOutputButton';
+  const STYLE_ID = 'fmViewOutputButtonStyle';
+
   const style = document.createElement('style');
-  style.id = 'fmSixTileCompactPreviewStyle';
+  style.id = STYLE_ID;
 
   style.textContent = `
-    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-grid {
-      grid-template-columns: minmax(0, 1fr) !important;
-      border-bottom: 0 !important;
+    /* Hide the six-tile preview entirely while on the Inputs tab --
+       it should only ever be visible on the Outputs tab. */
+    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput {
+      display: none !important;
     }
 
-    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-tile {
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
-
-      display: block !important;
-      overflow: visible !important;
-
-      padding: 20px 26px !important;
-
-      border-right: 0 !important;
-      border-bottom: 1px solid #eee8f5 !important;
+    #${BUTTON_ID} {
+      display: none;
     }
 
-    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-tile:last-child {
-      border-bottom: 0 !important;
+    #outputsPanel.fm-six-output-ready:not(.fm-outputs-tab-active) #${BUTTON_ID} {
+      display: flex !important;
+
+      grid-column: 2 !important;
+      grid-row: 1 !important;
+
+      width: 100% !important;
+      min-width: 0 !important;
+
+      align-items: center !important;
+      justify-content: center !important;
+      flex-direction: column !important;
+      gap: 10px !important;
+
+      min-height: 200px !important;
+      box-sizing: border-box !important;
+      padding: 32px !important;
+
+      border: 1px solid rgba(91, 42, 167, .15) !important;
+      border-radius: 18px !important;
+      background: #fff !important;
+
+      color: #5b25bd !important;
+      font: inherit !important;
+      font-weight: 700 !important;
+      font-size: 15px !important;
+
+      cursor: pointer !important;
+      text-align: center !important;
     }
 
-    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-number,
-    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-tile-title,
-    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-divider {
-      min-height: 0 !important;
-      flex: 0 0 auto !important;
+    #${BUTTON_ID}:hover {
+      background: #f8f4ff !important;
+      border-color: rgba(91, 42, 167, .32) !important;
     }
 
-    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-summary {
-      /* Short summary only -- same idea as the Outputs tab's own
-         truncated preview, just fewer lines to fit the narrower
-         column next to Inputs. */
-      display: -webkit-box !important;
-      -webkit-box-orient: vertical !important;
-      -webkit-line-clamp: 3 !important;
+    #${BUTTON_ID} .fm-view-output-icon {
+      width: 40px !important;
+      height: 40px !important;
 
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
 
-      overflow: hidden !important;
-      padding: 0 !important;
-      margin-bottom: 0 !important;
+      border-radius: 50% !important;
+      background: #f1e9fa !important;
+
+      font-size: 18px !important;
     }
 
-    #outputsPanel:not(.fm-outputs-tab-active) #fmSixTileOutput .fm-six-output-tile::after {
-      margin-top: 8px !important;
+    #${BUTTON_ID} .fm-view-output-sub {
+      color: #7b7485 !important;
+      font-weight: 500 !important;
+      font-size: 13px !important;
     }
   `;
 
-  document.getElementById('fmSixTileCompactPreviewStyle')?.remove();
+  document.getElementById(STYLE_ID)?.remove();
   document.head.appendChild(style);
+
+  function ensureButton() {
+    const outputsPanel = document.getElementById('outputsPanel');
+    const outputsTab = document.getElementById('outputsTab');
+
+    if (!outputsPanel || !outputsTab) {
+      setTimeout(ensureButton, 100);
+      return;
+    }
+
+    if (document.getElementById(BUTTON_ID)) return;
+
+    const button = document.createElement('button');
+    button.id = BUTTON_ID;
+    button.type = 'button';
+
+    button.innerHTML = `
+      <span class="fm-view-output-icon" aria-hidden="true">✦</span>
+      <span>Results generated</span>
+      <span class="fm-view-output-sub">Click to view in Outputs →</span>
+    `;
+
+    button.addEventListener('click', () => {
+      outputsTab.click();
+    });
+
+    outputsPanel.appendChild(button);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureButton, { once: true });
+  } else {
+    ensureButton();
+  }
 })();
