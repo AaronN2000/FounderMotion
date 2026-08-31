@@ -60,85 +60,14 @@ function renderSegments(segments) {
         ${segment.companySize ? `<span>${escapeHtml(segment.companySize)}</span>` : ''}
         ${segment.wedge ? `<span>${escapeHtml(segment.wedge)}</span>` : ''}
       </div>
-      <div class="workspace-list-item-footer">
-        <button class="delete-segment" type="button" data-delete-segment="${segment.id}">
-          Remove
-        </button>
-      </div>
     </div>
   `).join('');
-
-  list.querySelectorAll('[data-delete-segment]').forEach(button => {
-    button.addEventListener('click', async () => {
-      const id = Number(button.dataset.deleteSegment);
-      if (!confirm('Remove this market segment?')) return;
-
-      try {
-        await api(`/api/segments/${id}/delete`, {
-          method: 'POST',
-          body: '{}'
-        });
-
-        renderSegments(currentSegments.filter(segment => segment.id !== id));
-        showToast('Segment removed.');
-      } catch (error) {
-        showToast(error.message);
-      }
-    });
-  });
 }
 
-function initSegmentDialog() {
-  const addButton = $('#addSegmentButton');
-  const dialog = $('#segmentDialog');
-  const form = $('#segmentForm');
-
-  if (!addButton || !dialog || !form) return;
-
-  addButton.addEventListener('click', event => {
-    event.preventDefault();
-    form.reset();
-    dialog.showModal();
-  });
-
-  $('#cancelSegment').addEventListener('click', () => dialog.close());
-  $('#closeSegmentDialog').addEventListener('click', () => dialog.close());
-
-  form.addEventListener('submit', async event => {
-    event.preventDefault();
-
-    const payload = {
-      name: $('#segmentName').value.trim(),
-      description: $('#segmentDescription').value.trim(),
-      geography: $('#segmentGeography').value.trim(),
-      companySize: $('#segmentCompanySize').value.trim(),
-      wedge: $('#segmentWedge').value
-    };
-
-    if (!payload.name) {
-      showToast('Enter a segment name.');
-      return;
-    }
-
-    const submitButton = form.querySelector('.primary-button');
-    submitButton.disabled = true;
-
-    try {
-      const response = await api('/api/segments', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
-
-      renderSegments([...currentSegments, response.segment]);
-      dialog.close();
-      showToast('Market segment saved.');
-    } catch (error) {
-      showToast(error.message);
-    } finally {
-      submitButton.disabled = false;
-    }
-  });
-}
+// Market segments are now managed as part of a workspace's create/edit
+// form (up to two name-only segments per workspace, see
+// openWorkspaceSetup/saveWorkspaceSetup below) rather than through a
+// standalone add/remove-segment dialog.
 
 function renderProgress(state, processCount) {
   const outputs = Array.isArray(state.outputs) ? state.outputs : [];
@@ -1201,6 +1130,363 @@ function renderStyles() {
         flex: 1;
       }
     }
+
+    /* ---------- Workspace manager (list / create / edit / delete) ---------- */
+
+    .workspace-segments-hint {
+      margin: -8px 0 16px;
+      font-size: .82rem;
+      color: rgba(42, 34, 47, .55);
+    }
+
+    .workspace-manager {
+      margin-bottom: 20px;
+    }
+
+    .workspace-manager-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .workspace-manager-heading h2 {
+      margin: 4px 0 0;
+      font-size: 1.3rem;
+      letter-spacing: -.02em;
+      color: #28212f;
+    }
+
+    .workspace-manager-heading span {
+      font-size: .8rem;
+      font-weight: 600;
+      color: #8064a5;
+      white-space: nowrap;
+    }
+
+    .workspace-selection-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .workspace-selection-card {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 20px 22px;
+      border: 1px solid rgba(44, 25, 70, .09);
+      border-radius: 14px;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 8px 26px rgba(33, 19, 49, .04);
+    }
+
+    .workspace-selection-card.is-active {
+      border-color: rgba(60, 23, 120, .35);
+      background: #faf7fd;
+    }
+
+    .workspace-selection-main {
+      min-width: 0;
+    }
+
+    .workspace-selection-title h3 {
+      margin: 4px 0 2px;
+      font-size: 1.1rem;
+      letter-spacing: -.02em;
+      color: #29222f;
+    }
+
+    .workspace-business-name {
+      margin: 0;
+      font-size: .82rem;
+      color: rgba(42, 34, 47, .58);
+    }
+
+    .workspace-selection-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .workspace-selection-meta span {
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #f0ebf6;
+      color: #5b3d82;
+      font-size: .68rem;
+      font-weight: 600;
+    }
+
+    .workspace-card-segments {
+      margin-top: 12px;
+    }
+
+    .workspace-card-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: .66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #8064a5;
+    }
+
+    .workspace-card-segments p {
+      margin: 0;
+      font-size: .82rem;
+      color: rgba(42, 34, 47, .5);
+    }
+
+    .workspace-segment-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .workspace-segment-chips span {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #f0ebf6;
+      color: #5b3d82;
+      font-size: .7rem;
+      font-weight: 600;
+    }
+
+    .workspace-selection-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .workspace-selection-actions button {
+      min-width: 96px;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 9px;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .workspace-card-edit {
+      border: 1px solid rgba(60, 23, 120, .2);
+      background: #fff;
+      color: #3c1778;
+    }
+
+    .workspace-card-edit:hover {
+      background: #f5f0fa;
+    }
+
+    .workspace-card-open {
+      border: 0;
+      background: #3c1778;
+      color: #fff;
+    }
+
+    .workspace-card-open:hover {
+      background: #331263;
+    }
+
+    .workspace-card-open:disabled {
+      background: #ece6f3;
+      color: #8064a5;
+      cursor: default;
+    }
+
+    .workspace-card-delete {
+      border: 1px solid rgba(178, 42, 42, .25);
+      background: #fff;
+      color: #a52424;
+    }
+
+    .workspace-card-delete:hover {
+      background: #fbeeee;
+    }
+
+    /* ---------- Workspace setup dialog ---------- */
+
+    .workspace-setup-dialog {
+      max-width: min(640px, calc(100% - 40px));
+      padding: 0;
+      border: 0;
+      border-radius: 20px;
+      box-shadow: 0 30px 90px rgba(25, 17, 34, .22);
+    }
+
+    .workspace-setup-dialog::backdrop {
+      background: rgba(25, 17, 34, .48);
+      backdrop-filter: blur(7px);
+    }
+
+    .workspace-setup-card {
+      position: relative;
+      padding: 34px 38px 30px;
+    }
+
+    .workspace-dialog-close {
+      position: absolute;
+      top: 18px;
+      right: 20px;
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 50%;
+      background: #f4f0f7;
+      color: #4b3a57;
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .workspace-dialog-close:hover {
+      background: #ebe5ef;
+    }
+
+    .workspace-form-heading h2 {
+      margin: 6px 0 6px;
+      font-size: 1.5rem;
+      letter-spacing: -.03em;
+      color: #29222f;
+    }
+
+    .workspace-form-heading p {
+      margin: 0 0 20px;
+      font-size: .86rem;
+      color: rgba(42, 34, 47, .6);
+    }
+
+    .workspace-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .workspace-form-grid label,
+    .initial-segments-section label {
+      display: grid;
+      gap: 6px;
+      font-size: .78rem;
+      font-weight: 600;
+      color: #4b3a57;
+    }
+
+    .workspace-form-grid input {
+      min-height: 42px;
+      padding: 0 12px;
+      border: 1px solid rgba(44, 25, 70, .16);
+      border-radius: 9px;
+      font-size: .9rem;
+    }
+
+    .initial-segments-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .initial-segments-heading p {
+      margin: 4px 0 0;
+      font-size: .78rem;
+      color: rgba(42, 34, 47, .55);
+    }
+
+    .initial-segments-heading button {
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid rgba(60, 23, 120, .2);
+      border-radius: 8px;
+      background: #fff;
+      color: #3c1778;
+      font-size: .78rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .initial-segments-heading button:disabled {
+      opacity: .45;
+      cursor: default;
+    }
+
+    .initial-segment-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .initial-segment-input {
+      flex: 1;
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid rgba(44, 25, 70, .16);
+      border-radius: 9px;
+      font-size: .88rem;
+    }
+
+    .remove-initial-segment {
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid rgba(178, 42, 42, .2);
+      border-radius: 9px;
+      background: #fff;
+      color: #a52424;
+      font-size: .78rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .workspace-form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .workspace-form-actions button {
+      min-height: 44px;
+      padding: 0 20px;
+      border-radius: 10px;
+      font-size: .86rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .workspace-form-actions #cancelWorkspaceSetup {
+      border: 1px solid rgba(55, 27, 104, .18);
+      background: #fff;
+      color: #35166f;
+    }
+
+    .workspace-form-actions #saveWorkspaceSetup {
+      border: 0;
+      background: #3c1778;
+      color: #fff;
+    }
+
+    @media (max-width: 700px) {
+      .workspace-selection-card {
+        flex-direction: column;
+      }
+
+      .workspace-selection-actions {
+        flex-direction: row;
+      }
+
+      .workspace-form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   `;
 
   document.head.appendChild(style);
@@ -1572,6 +1858,294 @@ function attachViewListeners(state, processes) {
   });
 }
 
+// ---------- Workspace manager (list / create / edit / select / delete) ----------
+
+let workspaceManagerItems = [];
+let activeWorkspace = null;
+
+function getWorkspaceById(workspaceId) {
+  return workspaceManagerItems.find(
+    workspace => Number(workspace.id) === Number(workspaceId)
+  );
+}
+
+function renderWorkspaceManager() {
+  const list = $('#workspaceList');
+  const count = $('#workspaceCount');
+
+  if (!list || !count) return;
+
+  count.textContent =
+    `${workspaceManagerItems.length} ${workspaceManagerItems.length === 1 ? 'workspace' : 'workspaces'}`;
+
+  if (!workspaceManagerItems.length) {
+    list.innerHTML = emptyState(
+      'No workspaces yet. Create your first workspace to get started.'
+    );
+    return;
+  }
+
+  list.innerHTML = workspaceManagerItems.map(workspace => {
+    const segments = Array.isArray(workspace.segments) ? workspace.segments : [];
+
+    const details = [
+      workspace.industry,
+      workspace.businessStage,
+      workspace.primaryMarket
+    ].filter(Boolean);
+
+    return `
+      <article class="workspace-selection-card ${workspace.isActive ? 'is-active' : ''}">
+        <div class="workspace-selection-main">
+          <div class="workspace-selection-title">
+            <span class="workspace-index">WORKSPACE</span>
+            <h3>${escapeHtml(workspace.workspaceName || 'Untitled Workspace')}</h3>
+            <p class="workspace-business-name">${escapeHtml(workspace.businessName || '')}</p>
+          </div>
+
+          ${details.length
+            ? `
+              <div class="workspace-selection-meta">
+                ${details.map(detail => `<span>${escapeHtml(detail)}</span>`).join('')}
+              </div>
+            `
+            : ''}
+
+          <div class="workspace-card-segments">
+            <span class="workspace-card-label">Initial market segments to consider</span>
+            ${segments.length
+              ? `
+                <div class="workspace-segment-chips">
+                  ${segments.map(segment => `<span>${escapeHtml(segment.name)}</span>`).join('')}
+                </div>
+              `
+              : '<p>No initial market segments added.</p>'}
+          </div>
+        </div>
+
+        <div class="workspace-selection-actions">
+          <button class="workspace-card-edit" type="button" data-edit-workspace="${workspace.id}">
+            Edit
+          </button>
+
+          <button
+            class="workspace-card-open"
+            type="button"
+            data-open-workspace="${workspace.id}"
+            ${workspace.isActive ? 'disabled' : ''}
+          >
+            ${workspace.isActive ? 'Current' : 'Open'}
+          </button>
+
+          <button class="workspace-card-delete" type="button" data-delete-workspace="${workspace.id}">
+            Delete
+          </button>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  document.querySelectorAll('[data-edit-workspace]').forEach(button => {
+    button.addEventListener('click', () => {
+      openWorkspaceSetup(getWorkspaceById(button.dataset.editWorkspace));
+    });
+  });
+
+  document.querySelectorAll('[data-open-workspace]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const workspaceId = Number(button.dataset.openWorkspace);
+
+      try {
+        await api('/api/workspaces/select', {
+          method: 'POST',
+          body: JSON.stringify({ workspaceId })
+        });
+
+        showToast('Workspace opened.');
+        await loadWorkspace();
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-delete-workspace]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const workspaceId = Number(button.dataset.deleteWorkspace);
+      const workspace = getWorkspaceById(workspaceId);
+
+      if (!confirm(`Delete "${workspace?.workspaceName || 'this workspace'}"? This removes its progress, segments and evidence and cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        await api(`/api/workspaces/${workspaceId}/delete`, {
+          method: 'POST',
+          body: '{}'
+        });
+
+        showToast('Workspace deleted.');
+        await loadWorkspace();
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+  });
+}
+
+function createInitialSegmentField(value = '') {
+  const container = $('#initialSegmentsFields');
+
+  if (!container) return;
+
+  const existing = container.querySelectorAll('.initial-segment-row');
+
+  if (existing.length >= 2) {
+    showToast('You can add up to two initial market segments.');
+    return;
+  }
+
+  const row = document.createElement('div');
+  row.className = 'initial-segment-row';
+
+  row.innerHTML = `
+    <input
+      class="initial-segment-input"
+      type="text"
+      maxlength="150"
+      placeholder="e.g. Mid-market professional services"
+      value="${escapeHtml(value)}"
+    >
+    <button class="remove-initial-segment" type="button" aria-label="Remove segment">
+      Remove
+    </button>
+  `;
+
+  row.querySelector('.remove-initial-segment').addEventListener('click', () => {
+    row.remove();
+    updateInitialSegmentButton();
+  });
+
+  container.appendChild(row);
+  updateInitialSegmentButton();
+}
+
+function updateInitialSegmentButton() {
+  const button = $('#addInitialSegmentButton');
+  const container = $('#initialSegmentsFields');
+
+  if (!button || !container) return;
+
+  const count = container.querySelectorAll('.initial-segment-row').length;
+  button.disabled = count >= 2;
+}
+
+function closeWorkspaceSetup() {
+  const dialog = $('#workspaceSetupDialog');
+  if (dialog?.open) dialog.close();
+}
+
+function openWorkspaceSetup(workspace = null) {
+  const dialog = $('#workspaceSetupDialog');
+  const form = $('#workspaceSetupForm');
+
+  if (!dialog || !form) return;
+
+  form.reset();
+  $('#initialSegmentsFields').innerHTML = '';
+
+  const editing = Boolean(workspace);
+
+  $('#editingWorkspaceId').value = editing ? workspace.id : '';
+  $('#workspaceSetupTitle').textContent = editing ? 'Edit Workspace' : 'Create Workspace';
+  $('#saveWorkspaceSetup').textContent = editing ? 'Save Changes' : 'Create Workspace';
+
+  $('#workspaceNameInput').value = workspace?.workspaceName || '';
+  $('#businessNameInput').value = workspace?.businessName || '';
+  $('#industryInput').value = workspace?.industry || '';
+  $('#businessStageInput').value = workspace?.businessStage || '';
+  $('#primaryMarketInput').value = workspace?.primaryMarket || '';
+  $('#websiteInput').value = workspace?.website || '';
+
+  const segments = Array.isArray(workspace?.segments) ? workspace.segments : [];
+
+  if (segments.length) {
+    segments.slice(0, 2).forEach(segment => createInitialSegmentField(segment.name || ''));
+  } else {
+    createInitialSegmentField();
+  }
+
+  updateInitialSegmentButton();
+  dialog.showModal();
+}
+
+async function saveWorkspaceSetup(event) {
+  event.preventDefault();
+
+  const editingWorkspaceId = Number($('#editingWorkspaceId').value || 0);
+
+  const segments = Array.from(document.querySelectorAll('.initial-segment-input'))
+    .map(input => input.value.trim())
+    .filter(Boolean);
+
+  const payload = {
+    workspaceName: $('#workspaceNameInput').value.trim(),
+    businessName: $('#businessNameInput').value.trim(),
+    industry: $('#industryInput').value.trim(),
+    businessStage: $('#businessStageInput').value.trim(),
+    primaryMarket: $('#primaryMarketInput').value.trim(),
+    website: $('#websiteInput').value.trim(),
+    segments
+  };
+
+  try {
+    if (editingWorkspaceId) {
+      await api(`/api/workspaces/${editingWorkspaceId}/update`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      showToast('Workspace updated.');
+    } else {
+      await api('/api/workspaces', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      showToast('Workspace created.');
+    }
+
+    closeWorkspaceSetup();
+    await loadWorkspace();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function loadWorkspaceManager() {
+  const response = await api('/api/workspaces');
+
+  workspaceManagerItems = response.workspaces || [];
+  activeWorkspace =
+    workspaceManagerItems.find(workspace => workspace.isActive) ||
+    workspaceManagerItems[0] ||
+    null;
+
+  renderWorkspaceManager();
+
+  return activeWorkspace;
+}
+
+function attachWorkspaceManagerListeners() {
+  $('#createWorkspaceButton')?.addEventListener('click', () => openWorkspaceSetup());
+  $('#addInitialSegmentButton')?.addEventListener('click', () => createInitialSegmentField());
+  $('#closeWorkspaceSetup')?.addEventListener('click', closeWorkspaceSetup);
+  $('#cancelWorkspaceSetup')?.addEventListener('click', closeWorkspaceSetup);
+  $('#workspaceSetupForm')?.addEventListener('submit', saveWorkspaceSetup);
+}
+
+attachWorkspaceManagerListeners();
+
 async function loadWorkspace() {
   renderStyles();
 
@@ -1582,6 +2156,8 @@ async function loadWorkspace() {
       window.location.href = 'login.html';
       return;
     }
+
+    await loadWorkspaceManager();
 
     const saved = await api('/api/state');
     const state = saved.state || {};
@@ -1595,7 +2171,9 @@ async function loadWorkspace() {
 
     $('#companyName').textContent = companyName;
     $('#accountName').textContent = accountName;
-    $('#workspaceSubtitle').textContent = `${companyName} · Strategic validation workspace`;
+    $('#workspaceSubtitle').textContent = activeWorkspace
+      ? `${activeWorkspace.workspaceName} · Strategic validation workspace`
+      : `${companyName} · Strategic validation workspace`;
 
     renderSegments(segments);
     renderProgress(state, processes.length);
@@ -1603,7 +2181,6 @@ async function loadWorkspace() {
     renderDocuments(state);
 
     createViewModal();
-    initSegmentDialog();
     attachViewListeners(state, processes);
   } catch (error) {
     showToast(error.message);

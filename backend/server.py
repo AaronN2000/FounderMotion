@@ -383,6 +383,168 @@ def initialise_database():
             ON workspace(user_id)
         """)
 
+        # Workspace setup fields, shown/edited on the My Workspaces page.
+        db.execute("""
+            ALTER TABLE workspace
+            ADD COLUMN IF NOT EXISTS industry VARCHAR(150)
+        """)
+
+        db.execute("""
+            ALTER TABLE workspace
+            ADD COLUMN IF NOT EXISTS business_stage VARCHAR(100)
+        """)
+
+        db.execute("""
+            ALTER TABLE workspace
+            ADD COLUMN IF NOT EXISTS primary_market VARCHAR(150)
+        """)
+
+        db.execute("""
+            ALTER TABLE workspace
+            ADD COLUMN IF NOT EXISTS website VARCHAR(300)
+        """)
+
+        # A user may own several workspaces; exactly one is "active" at a
+        # time -- the one every workspace-scoped read/write below operates
+        # on. ON DELETE SET NULL (rather than a hard FK failure) is what
+        # lets delete_workspace() remove the currently-active workspace:
+        # the column just goes back to NULL and ensure_user_workspace()
+        # picks/creates a replacement on the next request.
+        db.execute("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS active_workspace_id INTEGER
+        """)
+
+        db.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'fk_users_active_workspace'
+                ) THEN
+                    ALTER TABLE users
+                    ADD CONSTRAINT fk_users_active_workspace
+                    FOREIGN KEY (active_workspace_id)
+                    REFERENCES workspace(workspace_id)
+                    ON DELETE SET NULL;
+                END IF;
+            END $$;
+        """)
+
+        # Every existing account needs at least one workspace row before
+        # active_workspace_id (and the workspace_id backfills below) can be
+        # populated. Accounts that already used the single-workspace
+        # version of the app already have exactly one (from
+        # ensure_user_workspace()'s old auto-create-on-first-use path);
+        # this INSERT is a no-op for them and only matters for any account
+        # that was created but never actually opened the app.
+        db.execute("""
+            INSERT INTO workspace (user_id, workspace_name, organisation_name)
+            SELECT
+                u.id,
+                COALESCE(NULLIF(u.company_name, ''), 'FounderMotion') || ' Workspace',
+                COALESCE(NULLIF(u.company_name, ''), 'FounderMotion')
+            FROM users u
+            WHERE NOT EXISTS (
+                SELECT 1 FROM workspace w WHERE w.user_id = u.id
+            )
+        """)
+
+        db.execute("""
+            UPDATE users u
+            SET active_workspace_id = (
+                SELECT w.workspace_id
+                FROM workspace w
+                WHERE w.user_id = u.id
+                ORDER BY w.workspace_id
+                LIMIT 1
+            )
+            WHERE active_workspace_id IS NULL
+        """)
+
+        # Market segments and evidence now belong to a single workspace
+        # rather than to the whole account -- each existing row is
+        # backfilled onto that user's (now guaranteed to exist) earliest
+        # workspace, so nothing already saved goes missing.
+        db.execute("""
+            ALTER TABLE market_segments
+            ADD COLUMN IF NOT EXISTS workspace_id INTEGER
+        """)
+
+        db.execute("""
+            UPDATE market_segments ms
+            SET workspace_id = (
+                SELECT w.workspace_id
+                FROM workspace w
+                WHERE w.user_id = ms.user_id
+                ORDER BY w.workspace_id
+                LIMIT 1
+            )
+            WHERE workspace_id IS NULL
+        """)
+
+        db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_market_segments_workspace
+            ON market_segments(workspace_id)
+        """)
+
+        db.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'fk_market_segments_workspace'
+                ) THEN
+                    ALTER TABLE market_segments
+                    ADD CONSTRAINT fk_market_segments_workspace
+                    FOREIGN KEY (workspace_id)
+                    REFERENCES workspace(workspace_id)
+                    ON DELETE CASCADE;
+                END IF;
+            END $$;
+        """)
+
+        db.execute("""
+            ALTER TABLE evidence_items
+            ADD COLUMN IF NOT EXISTS workspace_id INTEGER
+        """)
+
+        db.execute("""
+            UPDATE evidence_items e
+            SET workspace_id = (
+                SELECT w.workspace_id
+                FROM workspace w
+                WHERE w.user_id = e.user_id
+                ORDER BY w.workspace_id
+                LIMIT 1
+            )
+            WHERE workspace_id IS NULL
+        """)
+
+        db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_evidence_items_workspace
+            ON evidence_items(workspace_id)
+        """)
+
+        db.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'fk_evidence_items_workspace'
+                ) THEN
+                    ALTER TABLE evidence_items
+                    ADD CONSTRAINT fk_evidence_items_workspace
+                    FOREIGN KEY (workspace_id)
+                    REFERENCES workspace(workspace_id)
+                    ON DELETE CASCADE;
+                END IF;
+            END $$;
+        """)
+
         db.execute("""
             CREATE TABLE IF NOT EXISTS process (
                 process_id SERIAL PRIMARY KEY,
@@ -648,15 +810,15 @@ def seed_process_output_dependencies(db):
             )
 
 
-def seed_sample_evidence(user_id, company_name):
-    """Seed fictional CarCompany evidence once for the sample workspace."""
+def seed_sample_evidence(user_id, workspace_id, company_name):
+    """Seed fictional CarCompany evidence once per workspace."""
     if company_name != "CarCompany":
         return
 
     with database_connection() as db:
         existing = db.execute(
-            "SELECT 1 FROM evidence_items WHERE user_id = %s LIMIT 1",
-            (user_id,)
+            "SELECT 1 FROM evidence_items WHERE workspace_id = %s LIMIT 1",
+            (workspace_id,)
         ).fetchone()
 
         if existing:
@@ -694,11 +856,12 @@ def seed_sample_evidence(user_id, company_name):
         for evidence_type, title, content, source in sample_items:
             db.execute("""
                 INSERT INTO evidence_items
-                    (user_id, evidence_type, title, content, source, created_at, updated_at)
+                    (user_id, workspace_id, evidence_type, title, content, source, created_at, updated_at)
                 VALUES
-                    (%s, %s, %s, %s, %s, %s, %s)
+                    (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 user_id,
+                workspace_id,
                 evidence_type,
                 title,
                 content,
@@ -708,8 +871,9 @@ def seed_sample_evidence(user_id, company_name):
             ))
 
 
-def get_evidence(user_id):
-    seed_sample_evidence(user_id, "CarCompany")
+def get_evidence(user):
+    workspace = ensure_user_workspace(user)
+    seed_sample_evidence(user["id"], workspace["workspace_id"], "CarCompany")
 
     with database_connection() as db:
         rows = db.execute("""
@@ -722,14 +886,16 @@ def get_evidence(user_id):
                 created_at AS "createdAt",
                 updated_at AS "updatedAt"
             FROM evidence_items
-            WHERE user_id = %s
+            WHERE workspace_id = %s
             ORDER BY created_at DESC, evidence_id DESC
-        """, (user_id,)).fetchall()
+        """, (workspace["workspace_id"],)).fetchall()
 
     return rows
 
 
-def create_evidence(user_id, payload):
+def create_evidence(user, payload):
+    workspace = ensure_user_workspace(user)
+
     evidence_type = str(payload.get("type", "")).strip()
     title = str(payload.get("title", "")).strip()
     content = str(payload.get("content", "")).strip()
@@ -759,9 +925,9 @@ def create_evidence(user_id, payload):
     with database_connection() as db:
         row = db.execute("""
             INSERT INTO evidence_items
-                (user_id, evidence_type, title, content, source, created_at, updated_at)
+                (user_id, workspace_id, evidence_type, title, content, source, created_at, updated_at)
             VALUES
-                (%s, %s, %s, %s, %s, %s, %s)
+                (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING
                 evidence_id AS id,
                 evidence_type AS type,
@@ -771,7 +937,8 @@ def create_evidence(user_id, payload):
                 created_at AS "createdAt",
                 updated_at AS "updatedAt"
         """, (
-            user_id,
+            user["id"],
+            workspace["workspace_id"],
             evidence_type,
             title,
             content,
@@ -783,17 +950,40 @@ def create_evidence(user_id, payload):
     return row
 
 
-def delete_evidence(user_id, evidence_id):
+def delete_evidence(user, evidence_id):
+    workspace = ensure_user_workspace(user)
+
     with database_connection() as db:
         db.execute("""
             DELETE FROM evidence_items
-            WHERE evidence_id = %s AND user_id = %s
-        """, (evidence_id, user_id))
+            WHERE evidence_id = %s AND workspace_id = %s
+        """, (evidence_id, workspace["workspace_id"]))
 
 
 def ensure_user_workspace(user):
-    """Return the user's current workspace, creating one when required."""
+    """Return the user's active workspace, creating/selecting one when required."""
     with database_connection() as db:
+        workspace = db.execute(
+            """
+            SELECT
+                w.workspace_id,
+                w.user_id,
+                w.workspace_name,
+                w.organisation_name
+            FROM workspace w
+            JOIN users u
+                ON u.active_workspace_id = w.workspace_id
+            WHERE u.id = %s
+            """,
+            (user["id"],)
+        ).fetchone()
+
+        if workspace:
+            return workspace
+
+        # No active workspace set (a brand-new account, or the previously
+        # active workspace was deleted) -- fall back to any workspace this
+        # user already owns rather than creating a duplicate.
         workspace = db.execute(
             """
             SELECT workspace_id, user_id, workspace_name, organisation_name
@@ -805,35 +995,38 @@ def ensure_user_workspace(user):
             (user["id"],)
         ).fetchone()
 
-        if workspace:
-            return workspace
+        if not workspace:
+            company_name = (
+                user.get("company_name")
+                or user.get("companyName")
+                or "FounderMotion"
+            )
 
-        company_name = (
-            user.get("company_name")
-            or user.get("companyName")
-            or "FounderMotion"
+            workspace = db.execute(
+                """
+                INSERT INTO workspace (
+                    user_id,
+                    workspace_name,
+                    organisation_name
+                )
+                VALUES (%s, %s, %s)
+                RETURNING
+                    workspace_id,
+                    user_id,
+                    workspace_name,
+                    organisation_name
+                """,
+                (
+                    user["id"],
+                    f"{company_name} Workspace",
+                    company_name
+                )
+            ).fetchone()
+
+        db.execute(
+            "UPDATE users SET active_workspace_id = %s WHERE id = %s",
+            (workspace["workspace_id"], user["id"])
         )
-
-        workspace = db.execute(
-            """
-            INSERT INTO workspace (
-                user_id,
-                workspace_name,
-                organisation_name
-            )
-            VALUES (%s, %s, %s)
-            RETURNING
-                workspace_id,
-                user_id,
-                workspace_name,
-                organisation_name
-            """,
-            (
-                user["id"],
-                f"{company_name} Workspace",
-                company_name
-            )
-        ).fetchone()
 
         return workspace
 
@@ -1215,8 +1408,333 @@ def get_artefact_versions(user_id, process_number):
     ]
 
 
-def get_segments(user_id):
-    """Return all market segments belonging to the current workspace/user."""
+def workspace_to_public(row, active_workspace_id=None):
+    """Convert a workspace database row to the API representation."""
+    return {
+        "id": row["workspace_id"],
+        "workspaceName": row["workspace_name"] or "",
+        "businessName": row["organisation_name"] or "",
+        "industry": row.get("industry") or "",
+        "businessStage": row.get("business_stage") or "",
+        "primaryMarket": row.get("primary_market") or "",
+        "website": row.get("website") or "",
+        "isActive": row["workspace_id"] == active_workspace_id,
+    }
+
+
+def get_workspaces(user):
+    """Return every workspace this user owns, each with its market segments."""
+    with database_connection() as db:
+        account = db.execute(
+            "SELECT active_workspace_id FROM users WHERE id = %s",
+            (user["id"],)
+        ).fetchone()
+
+        active_workspace_id = (
+            account["active_workspace_id"] if account else None
+        )
+
+        rows = db.execute(
+            """
+            SELECT
+                workspace_id,
+                user_id,
+                workspace_name,
+                organisation_name,
+                industry,
+                business_stage,
+                primary_market,
+                website
+            FROM workspace
+            WHERE user_id = %s
+            ORDER BY workspace_id
+            """,
+            (user["id"],)
+        ).fetchall()
+
+        segment_rows = db.execute(
+            """
+            SELECT
+                workspace_id,
+                segment_id,
+                segment_name
+            FROM market_segments
+            WHERE workspace_id IN (
+                SELECT workspace_id FROM workspace WHERE user_id = %s
+            )
+            ORDER BY workspace_id, segment_id
+            """,
+            (user["id"],)
+        ).fetchall()
+
+    segments_by_workspace = {}
+
+    for segment in segment_rows:
+        segments_by_workspace.setdefault(
+            segment["workspace_id"], []
+        ).append(segment["segment_name"])
+
+    workspaces = []
+
+    for row in rows:
+        workspace = workspace_to_public(row, active_workspace_id)
+        workspace["segments"] = segments_by_workspace.get(
+            row["workspace_id"], []
+        )
+        workspaces.append(workspace)
+
+    return workspaces
+
+
+def create_workspace(user, payload):
+    """Create a workspace and make it the user's active workspace."""
+    workspace_name = str(payload.get("workspaceName", "")).strip()
+    business_name = str(payload.get("businessName", "")).strip()
+    industry = str(payload.get("industry", "")).strip()
+    business_stage = str(payload.get("businessStage", "")).strip()
+    primary_market = str(payload.get("primaryMarket", "")).strip()
+    website = str(payload.get("website", "")).strip()
+
+    segments = payload.get("segments", [])
+    if not isinstance(segments, list):
+        segments = []
+    segments = [str(segment).strip() for segment in segments if str(segment).strip()]
+
+    if not workspace_name:
+        raise ValueError("Workspace name is required.")
+
+    if len(workspace_name) > 200:
+        raise ValueError("Workspace name must be 200 characters or fewer.")
+
+    if not business_name:
+        raise ValueError("Business name is required.")
+
+    if len(segments) > 2:
+        raise ValueError("Add no more than two initial market segments.")
+
+    now = int(time.time())
+
+    with database_connection() as db:
+        row = db.execute(
+            """
+            INSERT INTO workspace (
+                user_id,
+                workspace_name,
+                organisation_name,
+                industry,
+                business_stage,
+                primary_market,
+                website
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING
+                workspace_id,
+                user_id,
+                workspace_name,
+                organisation_name,
+                industry,
+                business_stage,
+                primary_market,
+                website
+            """,
+            (
+                user["id"],
+                workspace_name,
+                business_name,
+                industry or None,
+                business_stage or None,
+                primary_market or None,
+                website or None,
+            )
+        ).fetchone()
+
+        db.execute(
+            "UPDATE users SET active_workspace_id = %s WHERE id = %s",
+            (row["workspace_id"], user["id"])
+        )
+
+        for segment_name in segments:
+            db.execute(
+                """
+                INSERT INTO market_segments (
+                    user_id, workspace_id, segment_name, description,
+                    geography, company_size, wedge, created_at, updated_at
+                )
+                VALUES (%s, %s, %s, '', '', '', '', %s, %s)
+                """,
+                (user["id"], row["workspace_id"], segment_name, now, now)
+            )
+
+    return workspace_to_public(row, row["workspace_id"])
+
+
+def select_workspace(user, workspace_id):
+    """Set one of the user's workspaces as the active workspace."""
+    with database_connection() as db:
+        owned = db.execute(
+            """
+            SELECT workspace_id
+            FROM workspace
+            WHERE workspace_id = %s AND user_id = %s
+            """,
+            (workspace_id, user["id"])
+        ).fetchone()
+
+        if not owned:
+            raise ValueError("Workspace not found.")
+
+        db.execute(
+            "UPDATE users SET active_workspace_id = %s WHERE id = %s",
+            (workspace_id, user["id"])
+        )
+
+    return {"activeWorkspaceId": workspace_id}
+
+
+def update_workspace(user, workspace_id, payload):
+    """Update workspace setup information and its initial market segments."""
+    workspace_name = str(payload.get("workspaceName", "")).strip()
+    business_name = str(payload.get("businessName", "")).strip()
+    industry = str(payload.get("industry", "")).strip()
+    business_stage = str(payload.get("businessStage", "")).strip()
+    primary_market = str(payload.get("primaryMarket", "")).strip()
+    website = str(payload.get("website", "")).strip()
+
+    segments = payload.get("segments", [])
+    if not isinstance(segments, list):
+        segments = []
+    segments = [str(segment).strip() for segment in segments if str(segment).strip()]
+
+    if not workspace_name:
+        raise ValueError("Workspace name is required.")
+
+    if not business_name:
+        raise ValueError("Business name is required.")
+
+    if len(segments) > 2:
+        raise ValueError("Add no more than two initial market segments.")
+
+    now = int(time.time())
+
+    with database_connection() as db:
+        row = db.execute(
+            """
+            UPDATE workspace
+            SET
+                workspace_name = %s,
+                organisation_name = %s,
+                industry = %s,
+                business_stage = %s,
+                primary_market = %s,
+                website = %s
+            WHERE workspace_id = %s AND user_id = %s
+            RETURNING
+                workspace_id,
+                user_id,
+                workspace_name,
+                organisation_name,
+                industry,
+                business_stage,
+                primary_market,
+                website
+            """,
+            (
+                workspace_name,
+                business_name,
+                industry or None,
+                business_stage or None,
+                primary_market or None,
+                website or None,
+                workspace_id,
+                user["id"],
+            )
+        ).fetchone()
+
+        if not row:
+            raise ValueError("Workspace not found.")
+
+        # Initial market segments are fully replaced on every edit -- this
+        # form only ever holds up to two plain segment names, so there is
+        # no partial-update case to preserve.
+        db.execute(
+            "DELETE FROM market_segments WHERE workspace_id = %s",
+            (workspace_id,)
+        )
+
+        for segment_name in segments:
+            db.execute(
+                """
+                INSERT INTO market_segments (
+                    user_id, workspace_id, segment_name, description,
+                    geography, company_size, wedge, created_at, updated_at
+                )
+                VALUES (%s, %s, %s, '', '', '', '', %s, %s)
+                """,
+                (user["id"], workspace_id, segment_name, now, now)
+            )
+
+    return workspace_to_public(row)
+
+
+def delete_workspace(user, workspace_id):
+    """Delete one of the user's workspaces and everything scoped to it.
+
+    process_progress, market_segments and evidence_items all reference
+    workspace_id with ON DELETE CASCADE, so deleting the workspace row
+    takes its data with it. Deleting the account's only remaining
+    workspace is refused -- there must always be somewhere for process
+    progress, segments and evidence to live.
+    """
+    with database_connection() as db:
+        remaining = db.execute(
+            "SELECT COUNT(*) AS count FROM workspace WHERE user_id = %s",
+            (user["id"],)
+        ).fetchone()
+
+        if remaining["count"] <= 1:
+            raise ValueError("You must keep at least one workspace.")
+
+        cursor = db.execute(
+            "DELETE FROM workspace WHERE workspace_id = %s AND user_id = %s",
+            (workspace_id, user["id"])
+        )
+
+        if cursor.rowcount == 0:
+            raise ValueError("Workspace not found.")
+
+        # If the deleted workspace was active, users.active_workspace_id
+        # was just set to NULL by the ON DELETE SET NULL foreign key --
+        # point it at another remaining workspace right away so the next
+        # request doesn't have to fall back through ensure_user_workspace().
+        account = db.execute(
+            "SELECT active_workspace_id FROM users WHERE id = %s",
+            (user["id"],)
+        ).fetchone()
+
+        if not account or account["active_workspace_id"] is None:
+            fallback = db.execute(
+                """
+                SELECT workspace_id FROM workspace
+                WHERE user_id = %s
+                ORDER BY workspace_id
+                LIMIT 1
+                """,
+                (user["id"],)
+            ).fetchone()
+
+            if fallback:
+                db.execute(
+                    "UPDATE users SET active_workspace_id = %s WHERE id = %s",
+                    (fallback["workspace_id"], user["id"])
+                )
+
+    return get_workspaces(user)
+
+
+def get_segments(user):
+    """Return all market segments belonging to the user's active workspace."""
+    workspace = ensure_user_workspace(user)
+
     with database_connection() as db:
         rows = db.execute("""
             SELECT
@@ -1229,9 +1747,9 @@ def get_segments(user_id):
                 created_at,
                 updated_at
             FROM market_segments
-            WHERE user_id = %s
+            WHERE workspace_id = %s
             ORDER BY segment_id
-        """, (user_id,)).fetchall()
+        """, (workspace["workspace_id"],)).fetchall()
 
     return [
         {
@@ -1248,8 +1766,10 @@ def get_segments(user_id):
     ]
 
 
-def create_segment(user_id, payload):
-    """Create a market segment for the current workspace/user."""
+def create_segment(user, payload):
+    """Create a market segment in the user's active workspace."""
+    workspace = ensure_user_workspace(user)
+
     name = str(payload.get("name", "")).strip()
     description = str(payload.get("description", "")).strip()
     geography = str(payload.get("geography", "")).strip()
@@ -1268,19 +1788,19 @@ def create_segment(user_id, payload):
         duplicate = db.execute("""
             SELECT 1
             FROM market_segments
-            WHERE user_id = %s
+            WHERE workspace_id = %s
               AND LOWER(segment_name) = LOWER(%s)
-        """, (user_id, name)).fetchone()
+        """, (workspace["workspace_id"], name)).fetchone()
 
         if duplicate:
             raise ValueError("This segment already exists in your workspace.")
 
         row = db.execute("""
             INSERT INTO market_segments
-                (user_id, segment_name, description, geography,
+                (user_id, workspace_id, segment_name, description, geography,
                  company_size, wedge, created_at, updated_at)
             VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s)
+                (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING
                 segment_id,
                 segment_name,
@@ -1291,7 +1811,8 @@ def create_segment(user_id, payload):
                 created_at,
                 updated_at
         """, (
-            user_id,
+            user["id"],
+            workspace["workspace_id"],
             name,
             description,
             geography,
@@ -1313,14 +1834,16 @@ def create_segment(user_id, payload):
     }
 
 
-def delete_segment(user_id, segment_id):
-    """Delete only a segment belonging to the current workspace/user."""
+def delete_segment(user, segment_id):
+    """Delete only a segment belonging to the user's active workspace."""
+    workspace = ensure_user_workspace(user)
+
     with database_connection() as db:
         cursor = db.execute("""
             DELETE FROM market_segments
             WHERE segment_id = %s
-              AND user_id = %s
-        """, (segment_id, user_id))
+              AND workspace_id = %s
+        """, (segment_id, workspace["workspace_id"]))
 
     if cursor.rowcount == 0:
         raise ValueError("Segment not found.")
@@ -1389,13 +1912,13 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
             elif self.path == "/api/segments":
                 user = self.require_user()
                 if user:
-                    segment = create_segment(user["id"], payload)
+                    segment = create_segment(user, payload)
                     self.send_json(201, {"segment": segment})
 
             elif self.path == "/api/evidence":
                 user = self.require_user()
                 if user:
-                    evidence = create_evidence(user["id"], payload)
+                    evidence = create_evidence(user, payload)
                     self.send_json(201, {"evidence": evidence})
 
             elif self.path == "/api/evidence/upload":
@@ -1408,15 +1931,42 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
                 user = self.require_user()
                 if user:
                     evidence_id = int(self.path.split("/")[3])
-                    delete_evidence(user["id"], evidence_id)
+                    delete_evidence(user, evidence_id)
                     self.send_json(200, {"deleted": True})
 
             elif self.path.startswith("/api/segments/") and self.path.endswith("/delete"):
                 user = self.require_user()
                 if user:
                     segment_id = int(self.path.split("/")[3])
-                    delete_segment(user["id"], segment_id)
+                    delete_segment(user, segment_id)
                     self.send_json(200, {"deleted": True})
+
+            elif self.path == "/api/workspaces":
+                user = self.require_user()
+                if user:
+                    workspace = create_workspace(user, payload)
+                    self.send_json(201, {"workspace": workspace})
+
+            elif self.path == "/api/workspaces/select":
+                user = self.require_user()
+                if user:
+                    workspace_id = int(payload.get("workspaceId"))
+                    result = select_workspace(user, workspace_id)
+                    self.send_json(200, result)
+
+            elif self.path.startswith("/api/workspaces/") and self.path.endswith("/update"):
+                user = self.require_user()
+                if user:
+                    workspace_id = int(self.path.split("/")[3])
+                    workspace = update_workspace(user, workspace_id, payload)
+                    self.send_json(200, {"workspace": workspace})
+
+            elif self.path.startswith("/api/workspaces/") and self.path.endswith("/delete"):
+                user = self.require_user()
+                if user:
+                    workspace_id = int(self.path.split("/")[3])
+                    workspaces = delete_workspace(user, workspace_id)
+                    self.send_json(200, {"workspaces": workspaces})
             else:
                 self.send_json(404, {"error": "Not found."})
         except ValueError as error:
@@ -1441,13 +1991,19 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
         if self.path == "/api/segments":
             user = self.require_user()
             if user:
-                self.send_json(200, {"segments": get_segments(user["id"])})
+                self.send_json(200, {"segments": get_segments(user)})
             return
 
         if self.path == "/api/evidence":
             user = self.require_user()
             if user:
-                self.send_json(200, {"evidence": get_evidence(user["id"])})
+                self.send_json(200, {"evidence": get_evidence(user)})
+            return
+
+        if self.path == "/api/workspaces":
+            user = self.require_user()
+            if user:
+                self.send_json(200, {"workspaces": get_workspaces(user)})
             return
         if self.path == "/api/process-progress":
             user = self.require_user()
