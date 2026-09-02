@@ -162,6 +162,24 @@ function renderHistory(state) {
   // so this stat shows the total number of saved records across all processes.
   $('#historyStat').textContent = `${history.length}`;
 
+  const historyItemsLabel = $('#historyItemsLabel');
+  const toggleHistoryButton = $('#toggleHistoryButton');
+
+  if (historyItemsLabel) {
+    historyItemsLabel.textContent =
+      `${history.length} saved ${history.length === 1 ? 'search' : 'searches'}`;
+  }
+
+  if (toggleHistoryButton) {
+    const expanded =
+      toggleHistoryButton.getAttribute('aria-expanded') === 'true';
+
+    toggleHistoryButton.textContent =
+      expanded
+        ? `Hide Searches ↑`
+        : `Show Searches (${history.length}) ↓`;
+  }
+
   if (!history.length) {
     list.innerHTML = emptyState('No previous searches yet.');
     return;
@@ -223,31 +241,72 @@ function renderHistory(state) {
   }).join('');
 }
 
-function renderDocuments(state) {
-  const list = $('#documentsList');
-
-  const savedEvidence = Array.isArray(state.documents)
-    ? state.documents
-    : [];
-
+async function renderWorkspaceEvidence() {
+  const list = $('#workspaceEvidenceList');
   const evidenceStat = $('#evidenceStat');
 
-  if (evidenceStat) {
-    evidenceStat.textContent = String(savedEvidence.length);
-  }
-  const documents = Array.isArray(state.documents) ? state.documents : [];
+  if (!list) return;
 
-  if (!documents.length) {
-    list.innerHTML = emptyState('No saved evidence is currently attached to the workspace.');
-    return;
-  }
+  try {
+    const response = await api('/api/evidence');
+    const evidence = Array.isArray(response.evidence)
+      ? response.evidence
+      : Array.isArray(response.items)
+        ? response.items
+        : [];
 
-  list.innerHTML = documents.map(document => `
-    <div class="workspace-list-item">
-      <strong>${escapeHtml(document.name || 'Untitled document')}</strong>
-      <p>${escapeHtml(document.input || 'General')}</p>
-    </div>
-  `).join('');
+    if (evidenceStat) {
+      evidenceStat.textContent = String(evidence.length);
+    }
+
+    if (!evidence.length) {
+      list.innerHTML = emptyState('No evidence has been added to this workspace yet.');
+      return;
+    }
+
+    list.innerHTML = evidence.map(item => `
+      <div class="workspace-list-item workspace-evidence-item" data-evidence-id="${escapeHtml(item.id || '')}">
+        <div class="workspace-evidence-item-main">
+          <span class="workspace-evidence-type">
+            ${escapeHtml(item.type || 'Evidence')}
+          </span>
+
+          <strong>${escapeHtml(item.title || 'Untitled evidence')}</strong>
+
+          <p>${escapeHtml(item.content || 'No notes provided.')}</p>
+
+          ${item.source
+            ? `<small>Source: ${escapeHtml(item.source)}</small>`
+            : ''}
+        </div>
+
+        <div class="workspace-evidence-actions">
+          <button
+            type="button"
+            class="workspace-evidence-edit"
+            data-evidence-id="${escapeHtml(item.id || '')}"
+          >
+            Edit
+          </button>
+
+          <button
+            type="button"
+            class="workspace-evidence-delete"
+            data-evidence-id="${escapeHtml(item.id || '')}"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    if (evidenceStat) {
+      evidenceStat.textContent = '0';
+    }
+
+    list.innerHTML = emptyState('Unable to load workspace evidence.');
+    showToast(error.message);
+  }
 }
 
 function renderStyles() {
@@ -2213,19 +2272,40 @@ async function loadWorkspace() {
     const segmentsResponse = await api('/api/segments');
     const segments = segmentsResponse.segments || [];
 
-    const companyName = session.user.companyName || 'Workspace';
-    const accountName = session.user.email || session.user.username || 'Account';
+    const companyName =
+      activeWorkspace?.businessName ||
+      session.user.companyName ||
+      'Workspace';
 
-    $('#companyName').textContent = companyName;
-    $('#accountName').textContent = accountName;
-    $('#workspaceSubtitle').textContent = activeWorkspace
-      ? `${activeWorkspace.workspaceName} · Strategic validation workspace`
-      : `${companyName} · Strategic validation workspace`;
+    const accountName =
+      session.user.email ||
+      session.user.username ||
+      'Account';
+
+    const workspaceSubtitle = $('#workspaceSubtitle');
+
+    workspaceSubtitle.innerHTML = activeWorkspace
+      ? `
+          <span class="workspace-subtitle-name">${escapeHtml(activeWorkspace.workspaceName)}</span>
+          <span class="workspace-subtitle-divider">•</span>
+          <span class="workspace-subtitle-label">Company:</span>
+          <strong>${escapeHtml(companyName)}</strong>
+          <span class="workspace-subtitle-divider">•</span>
+          <span class="workspace-subtitle-label">Account:</span>
+          <strong>${escapeHtml(accountName)}</strong>
+        `
+      : `
+          <span class="workspace-subtitle-label">Company:</span>
+          <strong>${escapeHtml(companyName)}</strong>
+          <span class="workspace-subtitle-divider">•</span>
+          <span class="workspace-subtitle-label">Account:</span>
+          <strong>${escapeHtml(accountName)}</strong>
+        `;
 
     renderSegments(segments);
     renderProgress(state, processes.length);
     renderHistory(state);
-    renderDocuments(state);
+    await renderWorkspaceEvidence();
 
     createViewModal();
     attachViewListeners(state, processes);
@@ -2499,3 +2579,1100 @@ loadWorkspace();
   }
 })();
 
+
+/* =========================================================
+   WORKSPACE EVIDENCE — ADD MODAL
+   ========================================================= */
+
+(function setupWorkspaceEvidenceAdd() {
+  const evidenceTypes = [
+    "Interview Note",
+    "Objection",
+    "Pricing Signal",
+    "Proof Point"
+  ];
+
+  function ensureModal() {
+    if (document.getElementById("workspaceEvidenceDialog")) return;
+
+    const dialog = document.createElement("dialog");
+    dialog.id = "workspaceEvidenceDialog";
+    dialog.className = "workspace-evidence-dialog";
+
+    dialog.innerHTML = `
+      <form id="workspaceEvidenceForm" class="workspace-evidence-form">
+        <div class="workspace-evidence-form-header">
+          <div>
+            <p class="eyebrow">Evidence</p>
+            <h2>Add Evidence</h2>
+          </div>
+
+          <button
+            type="button"
+            class="workspace-evidence-dialog-close"
+            id="closeWorkspaceEvidenceDialog"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="workspace-evidence-form-grid">
+          <label>
+            <span>Evidence Type</span>
+            <input
+              id="workspaceEvidenceType"
+              type="text"
+              maxlength="100"
+              list="workspaceEvidenceTypeSuggestions"
+              placeholder="e.g. Interview Note"
+              autocomplete="off"
+              required
+            >
+
+            <datalist id="workspaceEvidenceTypeSuggestions">
+              ${evidenceTypes.map(type => `
+                <option value="${type}">
+              `).join("")}
+            </datalist>
+
+            <div class="workspace-evidence-type-suggestions">
+              ${evidenceTypes.map(type => `
+                <button
+                  type="button"
+                  class="workspace-evidence-type-chip"
+                  data-evidence-type="${type}"
+                >
+                  ${type}
+                </button>
+              `).join("")}
+            </div>
+          </label>
+
+          <label>
+            <span>Title</span>
+            <input
+              id="workspaceEvidenceTitle"
+              type="text"
+              maxlength="200"
+              placeholder="Enter a clear evidence title"
+              required
+            >
+          </label>
+
+          <label class="workspace-evidence-form-full">
+            <span>Evidence / Notes</span>
+            <textarea
+              id="workspaceEvidenceContent"
+              rows="5"
+              placeholder="Describe the evidence and what was learned"
+              required
+            ></textarea>
+          </label>
+
+          <label class="workspace-evidence-form-full">
+            <span>Source</span>
+            <input
+              id="workspaceEvidenceSource"
+              type="text"
+              placeholder="e.g. Customer interview, Pricing discussion"
+            >
+          </label>
+        </div>
+
+        <div class="workspace-evidence-form-actions">
+          <button
+            type="button"
+            class="workspace-evidence-cancel-button"
+            id="cancelWorkspaceEvidence"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="workspace-evidence-save-button"
+          >
+            Add Evidence
+          </button>
+        </div>
+      </form>
+    `;
+
+    document.body.appendChild(dialog);
+
+    const form = document.getElementById("workspaceEvidenceForm");
+    const closeButton = document.getElementById("closeWorkspaceEvidenceDialog");
+    const cancelButton = document.getElementById("cancelWorkspaceEvidence");
+
+    dialog.querySelectorAll(".workspace-evidence-type-chip").forEach(button => {
+      button.addEventListener("click", () => {
+        const input = document.getElementById("workspaceEvidenceType");
+        input.value = button.dataset.evidenceType || "";
+        input.focus();
+      });
+    });
+
+    function closeDialog() {
+      dialog.close();
+      form.reset();
+    }
+
+    closeButton.addEventListener("click", closeDialog);
+    cancelButton.addEventListener("click", closeDialog);
+
+    dialog.addEventListener("click", event => {
+      if (event.target === dialog) {
+        closeDialog();
+      }
+    });
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const submitButton = form.querySelector('button[type="submit"]');
+
+      const payload = {
+        type: document.getElementById("workspaceEvidenceType").value,
+        title: document.getElementById("workspaceEvidenceTitle").value.trim(),
+        content: document.getElementById("workspaceEvidenceContent").value.trim(),
+        source: document.getElementById("workspaceEvidenceSource").value.trim()
+      };
+
+      try {
+        submitButton.disabled = true;
+        submitButton.textContent = "Saving...";
+
+        await api("/api/evidence", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        closeDialog();
+        await renderWorkspaceEvidence();
+        showToast("Evidence added successfully.");
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Add Evidence";
+      }
+    });
+  }
+
+  function attachAddButton() {
+    const button = document.getElementById("addWorkspaceEvidenceButton");
+
+    if (!button || button.dataset.evidenceAddReady === "true") return;
+
+    button.dataset.evidenceAddReady = "true";
+
+    button.addEventListener("click", () => {
+      ensureModal();
+
+      const dialog = document.getElementById("workspaceEvidenceDialog");
+      const form = document.getElementById("workspaceEvidenceForm");
+
+      form.reset();
+      dialog.showModal();
+
+      setTimeout(() => {
+        document.getElementById("workspaceEvidenceTitle")?.focus();
+      }, 0);
+    });
+  }
+
+  function injectStyles() {
+    if (document.getElementById("workspaceEvidenceModalStyles")) return;
+
+    const style = document.createElement("style");
+    style.id = "workspaceEvidenceModalStyles";
+
+    style.textContent = `
+      .workspace-evidence-dialog {
+        width: min(620px, calc(100vw - 40px));
+        border: 0;
+        padding: 0;
+        border-radius: 20px;
+        box-shadow: 0 24px 70px rgba(33, 19, 51, .20);
+        background: #fff;
+      }
+
+      .workspace-evidence-dialog::backdrop {
+        background: rgba(24, 16, 34, .42);
+        backdrop-filter: blur(5px);
+      }
+
+      .workspace-evidence-form {
+        padding: 28px;
+      }
+
+      .workspace-evidence-form-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .workspace-evidence-form-header h2 {
+        margin: 4px 0 0;
+        font-size: 25px;
+      }
+
+      .workspace-evidence-dialog-close {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid rgba(54, 35, 75, .12);
+        background: #faf9fb;
+        font-size: 22px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .workspace-evidence-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+
+      .workspace-evidence-form-grid label {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .workspace-evidence-form-grid label > span {
+        font-size: 13px;
+        font-weight: 700;
+        color: #3c3243;
+      }
+
+      .workspace-evidence-form-grid input,
+      .workspace-evidence-form-grid select,
+      .workspace-evidence-form-grid textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid rgba(64, 42, 87, .16);
+        border-radius: 12px;
+        padding: 12px 13px;
+        background: #fff;
+        color: #2d2631;
+        font: inherit;
+        outline: none;
+      }
+
+      .workspace-evidence-form-grid input:focus,
+      .workspace-evidence-form-grid select:focus,
+      .workspace-evidence-form-grid textarea:focus {
+        border-color: #7a46bb;
+        box-shadow: 0 0 0 3px rgba(122, 70, 187, .10);
+      }
+
+      .workspace-evidence-form-grid textarea {
+        resize: vertical;
+        min-height: 130px;
+      }
+
+      .workspace-evidence-type-suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 2px;
+      }
+
+      .workspace-evidence-type-chip {
+        border: 1px solid rgba(75, 22, 140, .13);
+        background: #f8f5fb;
+        color: #5c397d;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font: inherit;
+        font-size: 11px;
+        font-weight: 650;
+        cursor: pointer;
+        transition:
+          background .15s ease,
+          border-color .15s ease,
+          color .15s ease;
+      }
+
+      .workspace-evidence-type-chip:hover {
+        background: #f0e8f8;
+        border-color: rgba(75, 22, 140, .24);
+        color: #4b168c;
+      }
+
+      .workspace-evidence-form-full {
+        grid-column: 1 / -1;
+      }
+
+      .workspace-evidence-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(54, 35, 75, .08);
+      }
+
+      .workspace-evidence-cancel-button,
+      .workspace-evidence-save-button {
+        min-height: 42px;
+        padding: 0 18px;
+        border-radius: 11px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .workspace-evidence-cancel-button {
+        border: 1px solid rgba(54, 35, 75, .14);
+        background: #fff;
+        color: #4a404f;
+      }
+
+      .workspace-evidence-save-button {
+        border: 0;
+        background: #4b168c;
+        color: #fff;
+      }
+
+      .workspace-evidence-save-button:disabled {
+        opacity: .65;
+        cursor: wait;
+      }
+
+      @media (max-width: 600px) {
+        .workspace-evidence-form {
+          padding: 22px;
+        }
+
+        .workspace-evidence-form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .workspace-evidence-form-full {
+          grid-column: auto;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+  function start() {
+    injectStyles();
+    attachAddButton();
+
+    const observer = new MutationObserver(() => {
+      attachAddButton();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
+  }
+})();
+
+/* =========================================================
+   WORKSPACE EVIDENCE — VISUAL + SHOW ALL
+   ========================================================= */
+
+(function setupWorkspaceEvidenceVisual() {
+  let expanded = false;
+
+  function renderEvidenceSection() {
+    const section = document.getElementById("workspaceEvidenceSection");
+    const list = document.getElementById("workspaceEvidenceList");
+
+    if (!section || !list) return;
+
+    const items = Array.from(
+      list.querySelectorAll(".workspace-evidence-item")
+    );
+
+    let footer = section.querySelector(".workspace-evidence-footer");
+
+    if (!items.length) {
+      list.hidden = false;
+
+      if (footer) {
+        footer.remove();
+      }
+
+      return;
+    }
+
+    // This controller owns Evidence visibility.
+    // Individual items must never keep an old hidden state.
+    items.forEach(item => {
+      item.hidden = false;
+    });
+
+    list.hidden = !expanded;
+
+    if (!footer) {
+      footer = document.createElement("div");
+      footer.className = "workspace-evidence-footer";
+      list.insertAdjacentElement("afterend", footer);
+    }
+
+    footer.innerHTML = `
+      <span class="workspace-evidence-count">
+        ${items.length} evidence ${items.length === 1 ? "item" : "items"}
+      </span>
+
+      <button
+        type="button"
+        class="workspace-evidence-show-toggle"
+        aria-expanded="${expanded}"
+      >
+        ${expanded
+          ? `Hide Evidence <span aria-hidden="true">↑</span>`
+          : `Show Evidence (${items.length}) <span aria-hidden="true">↓</span>`}
+      </button>
+    `;
+
+    const toggle = footer.querySelector(".workspace-evidence-show-toggle");
+
+    toggle.addEventListener("click", () => {
+      expanded = !expanded;
+      renderEvidenceSection();
+    });
+  }
+
+  function injectStyles() {
+    if (document.getElementById("workspaceEvidenceVisualStyles")) return;
+
+    const style = document.createElement("style");
+    style.id = "workspaceEvidenceVisualStyles";
+
+    style.textContent = `
+      /* Evidence section */
+
+      #workspaceEvidenceSection {
+        background: #ffffff;
+        border: 1px solid rgba(65, 42, 86, .08);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 10px 30px rgba(55, 34, 75, .045);
+      }
+
+      #workspaceEvidenceSection .workspace-card-heading {
+        align-items: flex-start;
+        gap: 24px;
+        padding-bottom: 20px;
+        margin-bottom: 18px;
+        border-bottom: 1px solid rgba(67, 44, 91, .08);
+      }
+
+      #workspaceEvidenceSection .workspace-card-heading h2 {
+        margin: 3px 0 0;
+        font-size: 22px;
+        line-height: 1.2;
+        color: #241d29;
+      }
+
+      .workspace-evidence-description {
+        max-width: 420px;
+        margin: 7px 0 0;
+        color: #716978;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      #addWorkspaceEvidenceButton {
+        flex: 0 0 auto;
+        min-height: 40px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 10px;
+        background: #4b168c;
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 700;
+        box-shadow: 0 5px 14px rgba(75, 22, 140, .16);
+        cursor: pointer;
+        transition:
+          transform .15s ease,
+          background .15s ease,
+          box-shadow .15s ease;
+      }
+
+      #addWorkspaceEvidenceButton:hover {
+        background: #5a1ca4;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(75, 22, 140, .20);
+      }
+
+      #workspaceEvidenceList {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      #workspaceEvidenceList[hidden] {
+        display: none !important;
+      }
+
+      #workspaceEvidenceList .workspace-evidence-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        min-height: 104px;
+        padding: 16px 17px;
+        border: 1px solid rgba(66, 43, 88, .10);
+        border-radius: 14px;
+        background: #ffffff;
+        box-sizing: border-box;
+        transition:
+          border-color .16s ease,
+          box-shadow .16s ease,
+          transform .16s ease;
+      }
+
+      #workspaceEvidenceList .workspace-evidence-item:hover {
+        border-color: rgba(75, 22, 140, .18);
+        box-shadow: 0 7px 20px rgba(49, 30, 68, .06);
+        transform: translateY(-1px);
+      }
+
+      #workspaceEvidenceList .workspace-evidence-item[hidden] {
+        display: none !important;
+      }
+
+      .workspace-evidence-item-main {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .workspace-evidence-type {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        margin-bottom: 3px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: #f4eff9;
+        color: #6d3c9f;
+        font-size: 10px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: .055em;
+        text-transform: uppercase;
+      }
+
+      .workspace-evidence-item-main > strong {
+        display: block;
+        margin: 2px 0 6px;
+        color: #27202c;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .workspace-evidence-item-main > p {
+        max-width: 540px;
+        margin: 0 0 7px;
+        color: #6b6470;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .workspace-evidence-item-main > small {
+        display: block;
+        color: #817886;
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .workspace-evidence-actions {
+        flex: 0 0 84px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+
+      .workspace-evidence-edit,
+      .workspace-evidence-delete {
+        width: 84px;
+        min-height: 34px;
+        border-radius: 9px;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition:
+          background .15s ease,
+          border-color .15s ease,
+          color .15s ease;
+      }
+
+      .workspace-evidence-edit {
+        border: 1px solid rgba(61, 45, 72, .14);
+        background: #ffffff;
+        color: #453a49;
+      }
+
+      .workspace-evidence-edit:hover {
+        border-color: rgba(75, 22, 140, .24);
+        background: #f8f4fb;
+        color: #4b168c;
+      }
+
+      .workspace-evidence-delete {
+        border: 1px solid rgba(210, 58, 72, .18);
+        background: #fff8f8;
+        color: #c92f3c;
+      }
+
+      .workspace-evidence-delete:hover {
+        border-color: rgba(210, 58, 72, .30);
+        background: #fff1f2;
+      }
+
+      .workspace-evidence-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 42px;
+        padding-top: 15px;
+      }
+
+      .workspace-evidence-count {
+        color: #817887;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .workspace-evidence-show-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-width: 126px;
+        min-height: 36px;
+        padding: 0 15px;
+        border: 1px solid rgba(75, 22, 140, .16);
+        border-radius: 10px;
+        background: #f8f5fb;
+        color: #4b168c;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+        transition:
+          background .15s ease,
+          border-color .15s ease;
+      }
+
+      .workspace-evidence-show-toggle:hover {
+        background: #f0e8f8;
+        border-color: rgba(75, 22, 140, .25);
+      }
+
+      /* Previous Searches footer — match Workspace Evidence */
+      .workspace-history-toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 42px;
+        padding-top: 15px;
+      }
+
+      #historyItemsLabel {
+        color: #817887;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .workspace-history-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-width: 126px;
+        min-height: 36px;
+        padding: 0 15px;
+        border: 1px solid rgba(75, 22, 140, .16);
+        border-radius: 10px;
+        background: #f8f5fb;
+        color: #4b168c;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+        transition:
+          background .15s ease,
+          border-color .15s ease;
+      }
+
+      .workspace-history-toggle:hover {
+        background: #f0e8f8;
+        border-color: rgba(75, 22, 140, .25);
+      }
+
+      #historyList[hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 700px) {
+        #workspaceEvidenceSection {
+          padding: 20px;
+        }
+
+        #workspaceEvidenceSection .workspace-card-heading {
+          flex-direction: column;
+        }
+
+        #workspaceEvidenceList .workspace-evidence-item {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .workspace-evidence-actions {
+          width: 100%;
+          flex: none;
+          flex-direction: row;
+        }
+
+        .workspace-evidence-edit,
+        .workspace-evidence-delete {
+          flex: 1 1 0;
+          width: auto;
+        }
+
+        .workspace-evidence-footer {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .workspace-evidence-show-toggle {
+          width: 100%;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+  function start() {
+    injectStyles();
+
+    // Evidence starts collapsed on every page load.
+    expanded = false;
+    renderEvidenceSection();
+
+    const list = document.getElementById("workspaceEvidenceList");
+
+    if (!list) return;
+
+    const observer = new MutationObserver(() => {
+      renderEvidenceSection();
+    });
+
+    observer.observe(list, {
+      childList: true
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
+  }
+})();
+
+
+/* =========================================================
+   WORKSPACE HEADER — SUBTITLE HIERARCHY
+   ========================================================= */
+
+(function styleWorkspaceSubtitle() {
+  if (document.getElementById("workspaceSubtitleHierarchyStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "workspaceSubtitleHierarchyStyles";
+
+  style.textContent = `
+    #workspaceSubtitle {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      color: #655d6b;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    #workspaceSubtitle .workspace-subtitle-name {
+      color: #4b168c;
+      font-weight: 750;
+    }
+
+    #workspaceSubtitle .workspace-subtitle-label {
+      color: #82798a;
+      font-weight: 500;
+    }
+
+    #workspaceSubtitle strong {
+      color: #403747;
+      font-weight: 700;
+    }
+
+    #workspaceSubtitle .workspace-subtitle-divider {
+      margin: 0 2px;
+      color: #b7aebe;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PREVIOUS SEARCHES — CONTENT HEIGHT
+   ========================================================= */
+
+(function fixPreviousSearchesHeight() {
+  if (document.getElementById("workspaceHistoryHeightStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "workspaceHistoryHeightStyles";
+
+  style.textContent = `
+    .workspace-grid {
+      align-items: start !important;
+    }
+
+    #historyList {
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    #historyList .workspace-empty {
+      min-height: 0 !important;
+      padding: 18px 20px !important;
+      margin: 0 !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+
+/* =========================================================
+   PREVIOUS SEARCHES — COLLAPSED EVIDENCE ALIGNMENT
+   ========================================================= */
+
+(function alignPreviousSearchesCard() {
+  if (document.getElementById("workspaceHistoryAlignmentStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "workspaceHistoryAlignmentStyles";
+
+  style.textContent = `
+    #historyList {
+      min-height: 56px !important;
+    }
+
+    #historyList .workspace-empty {
+      min-height: 56px !important;
+      box-sizing: border-box !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PREVIOUS SEARCHES — COLLAPSED HEIGHT ALIGNMENT
+   ========================================================= */
+
+(function syncHistoryCardHeight() {
+  function sync() {
+    const historyCard =
+      document.getElementById('workspaceHistorySection');
+
+    const historyList =
+      document.getElementById('historyList');
+
+    const evidenceSection =
+      document.getElementById('workspaceEvidenceSection');
+
+    const evidenceList =
+      document.getElementById('workspaceEvidenceList');
+
+    if (
+      !historyCard ||
+      !historyList ||
+      !evidenceSection ||
+      !evidenceList
+    ) {
+      return;
+    }
+
+    /*
+     * Expanded history must use its natural content height.
+     */
+    if (!historyList.hidden) {
+      historyCard.style.removeProperty('height');
+      historyCard.style.removeProperty('min-height');
+      historyCard.style.boxSizing = 'border-box';
+      return;
+    }
+
+    /*
+     * While both cards are collapsed, align Previous Searches
+     * with the collapsed Workspace Evidence card.
+     */
+    if (evidenceList.hidden) {
+      const evidenceHeight =
+        evidenceSection.getBoundingClientRect().height;
+
+      historyCard.style.height = `${evidenceHeight}px`;
+      historyCard.style.minHeight = `${evidenceHeight}px`;
+      historyCard.style.boxSizing = 'border-box';
+      return;
+    }
+
+    /*
+     * Do not stretch collapsed history to match expanded evidence.
+     */
+    historyCard.style.removeProperty('height');
+    historyCard.style.removeProperty('min-height');
+    historyCard.style.boxSizing = 'border-box';
+  }
+
+  function start() {
+    const historyList =
+      document.getElementById('historyList');
+
+    const evidenceList =
+      document.getElementById('workspaceEvidenceList');
+
+    const evidenceSection =
+      document.getElementById('workspaceEvidenceSection');
+
+    if (
+      !historyList ||
+      !evidenceList ||
+      !evidenceSection
+    ) {
+      return;
+    }
+
+    requestAnimationFrame(sync);
+
+    const observer = new MutationObserver(() => {
+      requestAnimationFrame(sync);
+    });
+
+    observer.observe(historyList, {
+      attributes: true,
+      attributeFilter: ['hidden']
+    });
+
+    observer.observe(evidenceList, {
+      attributes: true,
+      attributeFilter: ['hidden'],
+      childList: true
+    });
+
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(sync);
+    });
+
+    resizeObserver.observe(evidenceSection);
+
+    window.addEventListener('resize', sync);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      start,
+      { once: true }
+    );
+  } else {
+    start();
+  }
+})();
+
+
+/* =========================================================
+   PREVIOUS SEARCHES — COLLAPSIBLE LIST
+   ========================================================= */
+
+(function installHistoryToggle() {
+  function start() {
+    const button = document.getElementById('toggleHistoryButton');
+    const list = document.getElementById('historyList');
+
+    if (!button || !list) return;
+
+    if (button.dataset.historyToggleInstalled === 'true') {
+      return;
+    }
+
+    button.dataset.historyToggleInstalled = 'true';
+
+    list.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+
+    button.addEventListener('click', () => {
+      const expanded =
+        button.getAttribute('aria-expanded') === 'true';
+
+      const nextExpanded = !expanded;
+
+      button.setAttribute(
+        'aria-expanded',
+        String(nextExpanded)
+      );
+
+      list.hidden = !nextExpanded;
+
+      const count =
+        Array.isArray(state?.history)
+          ? state.history.length
+          : 0;
+
+      button.textContent =
+        nextExpanded
+        ? `Hide Searches ↑`
+        : `Show Searches (${count}) ↓`;
+
+      const historyCard =
+        document.getElementById('workspaceHistorySection');
+
+      if (historyCard) {
+        historyCard.style.removeProperty('height');
+        historyCard.style.removeProperty('min-height');
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      start,
+      { once: true }
+    );
+  } else {
+    start();
+  }
+})();

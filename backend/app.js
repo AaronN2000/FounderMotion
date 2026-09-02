@@ -1,6 +1,6 @@
 // Map definitions live together so new map points can be added without changing UI code.
 let mapSteps = [
-  { title: 'Market Positioning Analysis', category: 'Market strategy', purpose: 'Define FounderMotion market focus, competitive frame, wedge positioning and market-entry logic.', inputs: ['PMF & target-market prioritisation', 'Brand handbook & wedge definitions', 'Sector / competitive-category research', 'Early customer / beta feedback & buyer language', 'Trace vs Essentials use-case logic'], questions: ['Which market should FounderMotion target first?', 'Which buyer feels the problem most urgently?', 'Which category should FounderMotion avoid being trapped in?', 'What alternatives does the buyer use today?', 'Which wedge leads in each priority market?'], outputs: 'Priority ICPs and segments; competitive frame of reference; positioning statement and differentiation themes; Trace / Essentials market-entry logic.', feeds: '2, 3, 6, 9, 15, 19, 22, 27, 28' },
+  { title: 'Market Positioning Analysis', category: 'Market strategy', purpose: 'Define FounderMotion market focus, competitive frame, wedge positioning and market-entry logic.', inputs: ['Target Market & Product-Market Fit Notes', 'Brand & Positioning Guidelines', 'Market & Competitor Research', 'Early Customer Feedback', 'Product Use Cases & Customer Needs'], questions: ['Which market should FounderMotion target first?', 'Which buyer feels the problem most urgently?', 'Which category should FounderMotion avoid being trapped in?', 'What alternatives does the buyer use today?', 'Which wedge leads in each priority market?'], outputs: 'Priority ICPs and segments; competitive frame of reference; positioning statement and differentiation themes; Trace / Essentials market-entry logic.', feeds: '2, 3, 6, 9, 15, 19, 22, 27, 28' },
   { title: 'Ideal Customer Profile', category: 'Customer strategy', purpose: 'Turn the market-positioning decision into a clear, prioritised ideal-customer profile.', inputs: ['Previous market positioning output', 'Customer research', 'Sales and beta feedback'], questions: ['Which customer profile should be prioritised first?', 'What firmographic and behavioural signals define the best-fit buyer?', 'Which customer profiles should be deprioritised?'], outputs: 'Prioritised ICP, buying triggers and qualification criteria.', feeds: '3, 6, 9, 15, 19, 22, 27, 28' },
   { title: 'Buyer Problem & Urgency', category: 'Customer strategy', purpose: 'Clarify the priority buyer problem, urgency and language that should guide messaging.', inputs: ['Previous outputs', 'Buyer interviews and feedback', 'Current workarounds'], questions: ['What job is the buyer trying to complete?', 'What makes the problem urgent now?', 'What language does the buyer use to describe the pain?'], outputs: 'Priority problem statement, urgency signals and buyer-language themes.', feeds: '6, 9, 15, 19, 22, 27, 28' }
 ];
@@ -504,8 +504,180 @@ async function restoreAccount() {
     const processResponse = await api('/api/processes');
     mapSteps = processResponse.processes;
 
-    const session = await api('/api/auth/session');
+    /*
+     * User-friendly input labels for Process 1.
+     * Backend process structure remains unchanged.
+     */
+    if (mapSteps[0]) {
+      mapSteps[0].inputs = [
+        'Target Market & Product-Market Fit Notes',
+        'Brand & Positioning Guidelines',
+        'Market & Competitor Research',
+        'Early Customer Feedback',
+        'Product Use Cases & Customer Needs'
+      ];
+    }
 
+    /*
+     * User-friendly input labels for Process 2.
+     * Process 1 output remains available through Inputs to use.
+     */
+    if (mapSteps[1]) {
+      mapSteps[1].outputSources = [1];
+
+      mapSteps[1].inputs = [
+        'Product Strategy & Market Factors',
+        'Industry & Regulatory Trends',
+        'Customer Buying Triggers & Barriers',
+        'Industry-Specific Customer Problems'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 3.
+     * Previous process outputs remain in Inputs to use.
+     */
+    if (mapSteps[2]) {
+      mapSteps[2].inputs = [
+        'Know Your Buyer Guidance',
+        'Customer & Prospect Insights',
+        'Buyer Committee Assumptions',
+        'Customer Interview Evidence'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 4.
+     * Process 3 outputs remain available through Inputs to use.
+     */
+    if (mapSteps[3]) {
+      mapSteps[3].inputs = [
+        'PMF Validation Gaps',
+        'Current Entry Offer Definitions',
+        'Customer Objections & Discovery Questions',
+        'Current Beta Customer Target'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 5.
+     * Process 4 outputs remain available through Inputs to use.
+     */
+    if (mapSteps[4]) {
+      mapSteps[4].inputs = [
+        'Customer & Opportunity Data',
+        'Diagnostic Bookings & Conversions',
+        'Pilot Results & Product Usage'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 6.
+     * Outputs from Processes 1, 2 and 3 remain available through Inputs to use.
+     */
+    if (mapSteps[5]) {
+      mapSteps[5].inputs = [
+        'Strategic Themes & Feature Priorities',
+        'Buyer Outcomes & Differentiated Benefits'
+      ];
+    }
+
+    /*
+     * Process 7 uses Process 3 output (confirmed dependency graph) and
+     * has four new inputs. This was previously hardcoded to [6], which
+     * disagreed with the confirmed dependency graph and with what
+     * server.py's PROCESS_OUTPUT_DEPENDENCIES / process_output_dependency
+     * table already returns for process 7 -- fixed to match.
+     */
+    if (mapSteps[6]) {
+      mapSteps[6].outputSources = [3];
+
+      mapSteps[6].inputs = [
+        'Trace Battlecard',
+        'Decision Defensibility Diagnostic Definition',
+        'Trace Buyer Use Cases',
+        'Delivery & Product Constraints'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 8.
+     * Outputs from Processes 6 and 3 remain available through Inputs to use.
+     */
+    if (mapSteps[7]) {
+      mapSteps[7].inputs = [
+        'Essentials Battlecard',
+        'Practical Risk Visibility Diagnostic Definition',
+        'Delivery & Support Assumptions'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 9.
+     * Outputs from Processes 3, 4 and 6 remain available through Inputs to use.
+     */
+    if (mapSteps[8]) {
+      mapSteps[8].outputSources = [3, 4, 6];
+
+      mapSteps[8].inputs = [
+        'Customer Objections'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 10.
+     * Outputs from Processes 4, 6, 7 and 8 remain available through Inputs to use.
+     */
+    if (mapSteps[9]) {
+      mapSteps[9].inputs = [
+        'Roadmap Planning Framework',
+        'Technical Delivery Constraints'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 11.
+     * Outputs from Processes 7, 8 and 10 remain available through Inputs to use.
+     */
+    if (mapSteps[10]) {
+      mapSteps[10].outputSources = [7, 8, 10];
+
+      mapSteps[10].inputs = [
+        'MVP Product Definition',
+        'Diagnostic Definitions',
+        'Buyer Proof Requirements'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 12.
+     * Outputs from Processes 4, 6, 7, 8 and 10 remain available through Inputs to use.
+     */
+    if (mapSteps[11]) {
+      mapSteps[11].outputSources = [4, 6, 7, 8, 10];
+
+      mapSteps[11].inputs = [
+        'Value-Based Pricing Guidance',
+        'Buyer Willingness-to-Pay Feedback',
+        'Alternative Costs & Competitive Options',
+        'Cost to Deliver'
+      ];
+    }
+
+    /*
+     * User-friendly input labels for Process 13.
+     * Outputs from Processes 12, 7, 8 and 10 remain available through Inputs to use.
+     */
+    if (mapSteps[12]) {
+      mapSteps[12].outputSources = [12, 7, 8, 10];
+
+      mapSteps[12].inputs = [
+        'Delivery Model',
+        'Route-to-Market & Channel Assumptions'
+      ];
+    }
+
+    const session = await api('/api/auth/session');
     if (!session.user) {
       render();
       return;
@@ -515,7 +687,6 @@ async function restoreAccount() {
     syncAuthScreenUI();
 
     const saved = await api('/api/state');
-
     state = saved.state || defaultState();
 
     // Always restore arrays safely.
@@ -540,7 +711,6 @@ async function restoreAccount() {
       : [];
 
     await loadProcessProgress();
-
     /*
      * IMPORTANT:
      * Restore the exact saved process.
@@ -903,22 +1073,7 @@ function getHighestUnlockedProcessIndex() {
 }
 
 
-function cleanupProcess3Icons() {
-  // Process 3 only
-  if (state.step !== 2) return;
 
-  const cards = document.querySelectorAll('#inputList .input-source');
-
-  cards.forEach(card => {
-    const icons = Array.from(card.querySelectorAll('.input-icon'));
-
-    // Nothing to clean
-    if (icons.length <= 1) return;
-
-    // Keep the newest/current icon and remove all older duplicates.
-    icons.slice(0, -1).forEach(icon => icon.remove());
-  });
-}
 
 function render() {
   const step = currentStep();
@@ -1040,6 +1195,115 @@ function render() {
     const displayInput = String(input).charAt(0).toUpperCase() + String(input).slice(1);
     const inputIcon = getInputIcon(input, index);
 
+    const processOneDescriptions = [
+      'What you know about your target customers, market priorities, and product-market fit',
+      'Your brand direction, positioning, messaging, and what makes your product different',
+      'Research about your industry, competitors, market categories, and alternatives',
+      'Feedback, interview notes, or language used by early customers and beta users',
+      'How customers use your product, what problems it solves, and which product option fits their needs'
+    ];
+
+    const processTwoDescriptions = [
+      'External market factors that may influence your product strategy and priorities',
+      'Important industry, regulatory, technology, cyber, AI, and assurance trends affecting the market',
+      'What may encourage customers to act and what may prevent or delay their decision',
+      'Evidence showing which customer problems are important in each target industry'
+    ];
+
+    const processThreeDescriptions = [
+      'Guidance and insights for identifying the key buyers involved in the purchasing process',
+      'Information from current customers and prospects that helps validate your target buyer profiles',
+      'Your assumptions about who influences, evaluates, and makes the buying decision',
+      'Evidence and insights collected from beta users and early customer interviews'
+    ];
+
+    const processFourDescriptions = [
+      'Areas where product-market fit is still uncertain because customer feedback is limited or not yet validated',
+      'The existing diagnostic or entry offers currently used to start customer conversations',
+      'Common customer objections and the questions used to explore their needs, concerns, and buying context',
+      'The current target group selected for beta testing and early validation'
+    ];
+
+    const processFiveDescriptions = [
+      'Customer and sales opportunity data used to measure market interest and commercial progress',
+      'Data showing diagnostic bookings and how many prospects move to the next stage',
+      'Results from customer pilots and evidence showing how the product is being used'
+    ];
+
+    const processSixDescriptions = [
+      'Strategic themes and feature-prioritisation guidance used to shape the product value proposition',
+      'The outcomes buyers want to achieve and the benefits that differentiate the product from alternatives'
+    ];
+
+    const processSevenDescriptions = [
+      'A concise comparison of Trace against common alternatives, objections, and competing approaches',
+      'The current definition, scope, and purpose of the diagnostic used to assess decision defensibility',
+      'The main buyer use cases for Trace, including governance, third-party decisions, and risk-related scenarios',
+      'Known delivery, technical, product, or operational constraints that may affect the offer'
+    ];
+
+    const processEightDescriptions = [
+      'A concise comparison of Essentials against common alternatives, objections, and competing approaches',
+      'The current definition, scope, and purpose of the diagnostic used to assess practical risk visibility',
+      'Key assumptions about delivery, implementation, support, and ongoing service requirements'
+    ];
+
+    const processNineDescriptions = [
+      'Common objections, concerns, and reasons customers may hesitate or decide not to move forward'
+    ];
+
+    const processTenDescriptions = [
+      'Themes, prioritisation criteria, timeline, and communication guidance used to shape the product roadmap',
+      'Technical, implementation, and delivery limitations that may affect roadmap priorities and sequencing'
+    ];
+
+    const processElevenDescriptions = [
+      'The current definition of the minimum viable product, including what should be included in the first usable version',
+      'The current definitions, scope, and purpose of the diagnostics included in the product offer',
+      'The evidence, demonstrations, or proof buyers need before they feel confident moving forward'
+    ];
+
+    const processTwelveDescriptions = [
+      'Pricing guidance used to connect customer value, outcomes, and willingness to pay with the proposed price',
+      'Customer feedback showing how much buyers may be willing to pay and under what conditions',
+      'The costs of alternative solutions and the competitive options buyers may compare against',
+      'The estimated cost of delivering the product or service, including implementation and support'
+    ];
+
+    const processThirteenDescriptions = [
+      'How the offer will be delivered, implemented, and supported for customers',
+      'Assumptions about how the offer will reach customers, including sales channels, partners, and go-to-market routes'
+    ];
+
+    const inputDescription =
+      state.step === 0
+        ? processOneDescriptions[index] || ''
+        : state.step === 1
+          ? processTwoDescriptions[index] || ''
+          : state.step === 2
+            ? processThreeDescriptions[index] || ''
+            : state.step === 3
+              ? processFourDescriptions[index] || ''
+              : state.step === 4
+                ? processFiveDescriptions[index] || ''
+                : state.step === 5
+                  ? processSixDescriptions[index] || ''
+                  : state.step === 6
+                    ? processSevenDescriptions[index] || ''
+                    : state.step === 7
+                      ? processEightDescriptions[index] || ''
+                      : state.step === 8
+                        ? processNineDescriptions[index] || ''
+                        : state.step === 9
+                          ? processTenDescriptions[index] || ''
+                          : state.step === 10
+                            ? processElevenDescriptions[index] || ''
+                            : state.step === 11
+                              ? processTwelveDescriptions[index] || ''
+                              : state.step === 12
+                                ? processThirteenDescriptions[index] || ''
+                                : '';
+
     return `
       <section class="input-source">
         ${inputIcon}
@@ -1048,13 +1312,63 @@ function render() {
             <span class="input-label">${escapeHtml(displayInput)}</span>
             <small>Required</small>
           </div>
-          <button class="add-source-inline" data-input="${index}" type="button">+ Add information</button>
+
+          ${inputDescription
+            ? `<p class="input-friendly-description">${escapeHtml(inputDescription)}</p>`
+            : ''}
+
+          <div class="input-actions">
+            <button
+              class="add-source-inline"
+              data-input="${index}"
+              type="button"
+            >
+              + Add information
+            </button>
+
+            <button
+              class="upload-evidence-inline"
+              data-upload-evidence="${index}"
+              type="button"
+            >
+              + Upload Evidence
+            </button>
+          </div>
+
           <div class="source-chips">${sourceHtml || '<p class="no-sources">No information attached.</p>'}</div>
         </div>
       </section>
     `;
   }).join('');
-  $('#inputList').querySelectorAll('[data-input]').forEach(button => button.addEventListener('click', () => openDocumentation(step.inputs[Number(button.dataset.input)])));
+  $('#inputList').querySelectorAll('[data-input]').forEach(button => {
+    button.addEventListener('click', () => {
+      openDocumentation(
+        step.inputs[Number(button.dataset.input)]
+      );
+    });
+  });
+
+  $('#inputList').querySelectorAll('[data-upload-evidence]').forEach(button => {
+    button.addEventListener('click', () => {
+      if (!currentUser) {
+        showToast('Log in or sign up to upload evidence.');
+        return;
+      }
+
+      const inputIndex = Number(button.dataset.uploadEvidence);
+      selectedInput = step.inputs[inputIndex];
+
+      $('#documentDialogTitle').textContent =
+        `Upload Evidence — ${selectedInput}`;
+
+      $('#documentName').value = '';
+      $('#documentText').value = '';
+      $('#fileInput').value = '';
+
+      $('#documentDialog').showModal();
+    });
+  });
+
   $('#inputList').querySelectorAll('[data-remove]').forEach(button => button.addEventListener('click', () => { state.documents.splice(Number(button.dataset.remove), 1); render(); saveProgress(false); }));
   $('#questionList').innerHTML = step.questions.map((question, index) => `<div class="question-item"><b>${String(index + 1).padStart(2, '0')}</b><p>${escapeHtml(companyText(question))}</p></div>`).join('');
   $('#analysisOutput').innerHTML = output ? `<div class="generated-answer">${formatAnswer(output)}</div><div class="downstream"><strong>Outputs & downstream</strong><p>${escapeHtml(companyText(step.outputs))}</p><small>Feeds: ${escapeHtml(step.feeds)}</small></div>` : '';
@@ -1069,8 +1383,6 @@ function render() {
   $('#expandOutput').disabled = !output;
   renderHistory();
 
-  // Process 3 only: remove duplicate/legacy input icons.
-  cleanupProcess3Icons();
 }
 
 function openDocumentation(input) {
@@ -2754,11 +3066,17 @@ function escapeHtml(value) { const node = document.createElement('div'); node.te
 function showToast(message) { toast.textContent = message; toast.classList.add('show'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove('show'), 3500); }
 
 syncAuthScreenUI();
-restoreAccount();
 
-setTimeout(() => {
+/*
+ * Single application-ready promise.
+ * UI components that depend on restored workspace state
+ * must wait for this promise before rendering saved data.
+ */
+const appReady = restoreAccount();
+
+appReady.then(() => {
   updateProcessNavigation();
-}, 0);
+});
 
 
 /* FOUNDERMOTION_DASHBOARD_POLISH_V2 */
@@ -4927,13 +5245,21 @@ function syncAuthScreenUI() {
 
       margin-top: 18px !important;
 
+      border-radius: 16px !important;
+    }
+
+    #segmentsPanel {
       height: 196px !important;
       min-height: 196px !important;
       max-height: 196px !important;
-
       overflow: hidden !important;
+    }
 
-      border-radius: 16px !important;
+    #fmDashboardEvidence {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: visible !important;
     }
 
     /* Segment = left frame */
@@ -5010,10 +5336,19 @@ function syncAuthScreenUI() {
 
         margin-left: 20px !important;
         margin-right: 20px !important;
+      }
 
+      #segmentsPanel {
         height: 180px !important;
         min-height: 180px !important;
         max-height: 180px !important;
+      }
+
+      #fmDashboardEvidence {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
       }
 
       #fmDashboardEvidence {
@@ -5074,13 +5409,21 @@ function syncAuthScreenUI() {
 
       box-sizing: border-box !important;
 
+      border-radius: 16px !important;
+    }
+
+    #fmSegmentEvidenceRow #segmentsPanel {
       height: 196px !important;
       min-height: 196px !important;
       max-height: 196px !important;
-
       overflow: hidden !important;
+    }
 
-      border-radius: 16px !important;
+    #fmSegmentEvidenceRow #fmDashboardEvidence {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: visible !important;
     }
 
     /*
@@ -5135,10 +5478,19 @@ function syncAuthScreenUI() {
       #fmSegmentEvidenceRow #segmentsPanel,
       #fmSegmentEvidenceRow #fmDashboardEvidence {
         width: 100% !important;
+      }
 
+      #fmSegmentEvidenceRow #segmentsPanel {
         height: 180px !important;
         min-height: 180px !important;
         max-height: 180px !important;
+      }
+
+      #fmSegmentEvidenceRow #fmDashboardEvidence {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
       }
 
       .map-workspace .map-navigation .next-button {
@@ -5177,17 +5529,11 @@ function syncAuthScreenUI() {
       min-width: 557px !important;
       max-width: 557px !important;
 
-      height: 190px !important;
-      min-height: 190px !important;
-      max-height: 190px !important;
-
       display: inline-block !important;
       vertical-align: top !important;
 
       margin-top: 18px !important;
       margin-bottom: 0 !important;
-
-      overflow: hidden !important;
     }
 
     /* LEFT FRAME
@@ -5453,9 +5799,9 @@ function syncAuthScreenUI() {
       min-width: 0 !important;
       max-width: none !important;
 
-      height: 250px !important;
-      min-height: 250px !important;
-      max-height: 250px !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
 
       margin: 0 !important;
       padding: 24px 26px !important;
@@ -5463,7 +5809,7 @@ function syncAuthScreenUI() {
       box-sizing: border-box !important;
 
       border-radius: 18px !important;
-      overflow: hidden !important;
+      overflow: visible !important;
     }
 
     /* Keep the inside spacing visually consistent */
@@ -5547,10 +5893,19 @@ function syncAuthScreenUI() {
         width: 100% !important;
         max-width: none !important;
         min-width: 0 !important;
+      }
 
+      #fmSegmentEvidenceRow #segmentsPanel {
         height: 220px !important;
         min-height: 220px !important;
         max-height: 220px !important;
+      }
+
+      #fmSegmentEvidenceRow #fmDashboardEvidence {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
       }
 
       .map-navigation {
@@ -7556,6 +7911,11 @@ function syncAuthScreenUI() {
 /* ===== PROCESS INPUT / OUTPUT TABS ===== */
 
 (() => {
+  /* Legacy tab implementation disabled.
+     The application now uses #inputsTab / #outputsTab
+     with #inputsPanel / #outputsPanel below. */
+  return;
+
   function setupProcessTabs() {
     const card = document.querySelector('.map-card');
     const layout = document.querySelector('.map-layout');
@@ -7798,12 +8158,21 @@ function syncAuthScreenUI() {
       inputsTab.setAttribute('aria-selected', 'true');
       outputsTab.setAttribute('aria-selected', 'false');
 
-      inputsPanel.style.display = '';
-      outputsPanel.style.display = 'none';
+      inputsPanel.style.setProperty('display', 'block', 'important');
+      outputsPanel.style.setProperty('display', 'none', 'important');
+
+      const inputsRightStack = document.getElementById('fmInputsRightStack');
+      if (inputsRightStack) {
+        inputsRightStack.style.setProperty('display', 'flex', 'important');
+      }
 
       outputsPanel.style.removeProperty('grid-column');
+      outputsPanel.style.removeProperty('grid-row');
       outputsPanel.style.removeProperty('width');
       outputsPanel.style.removeProperty('max-width');
+      outputsPanel.style.removeProperty('min-width');
+      outputsPanel.style.removeProperty('margin-left');
+      outputsPanel.style.removeProperty('margin-right');
 
       /*
        * Marks that we are NOT on the dedicated Outputs tab, so the
@@ -7830,12 +8199,21 @@ function syncAuthScreenUI() {
       inputsTab.setAttribute('aria-selected', 'false');
       outputsTab.setAttribute('aria-selected', 'true');
 
-      inputsPanel.style.display = 'none';
+      inputsPanel.style.setProperty('display', 'none', 'important');
 
-      outputsPanel.style.display = 'block';
-      outputsPanel.style.gridColumn = '1 / -1';
-      outputsPanel.style.width = '100%';
-      outputsPanel.style.maxWidth = 'none';
+      const inputsRightStack = document.getElementById('fmInputsRightStack');
+      if (inputsRightStack) {
+        inputsRightStack.style.setProperty('display', 'none', 'important');
+      }
+
+      outputsPanel.style.setProperty('display', 'block', 'important');
+      outputsPanel.style.setProperty('grid-column', '1 / -1', 'important');
+      outputsPanel.style.setProperty('grid-row', 'auto', 'important');
+      outputsPanel.style.setProperty('width', '100%', 'important');
+      outputsPanel.style.setProperty('max-width', 'none', 'important');
+      outputsPanel.style.setProperty('min-width', '0', 'important');
+      outputsPanel.style.setProperty('margin-left', '0', 'important');
+      outputsPanel.style.setProperty('margin-right', '0', 'important');
 
       /*
        * On the Outputs tab, restore the original full-width,
@@ -8378,77 +8756,6 @@ function syncAuthScreenUI() {
    * the existing runtime CSS injected by app.js.
    */
   setTimeout(applyFinalInputDesign, 0);
-})();
-
-/* ============================================================
-   PROCESS 3 — ICON ONLY FIX
-   Change ONLY "Current customer & prospect data*" icon.
-   No layout / spacing / typography changes.
-   ============================================================ */
-(function process3IconOnlyFix() {
-
-  const newIcon = `
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.8"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-    >
-      <ellipse cx="12" cy="5" rx="7" ry="3"></ellipse>
-      <path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5"></path>
-      <path d="M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"></path>
-      <path d="M8 9h.01"></path>
-      <path d="M8 16h.01"></path>
-    </svg>
-  `;
-
-  function changeOnlyTargetIcon() {
-    const cards = document.querySelectorAll('#inputList .input-source');
-
-    cards.forEach(card => {
-      const label = card.querySelector('.input-label');
-
-      if (!label) return;
-
-      const text = label.textContent.trim();
-
-      if (text === 'Current customer & prospect data*') {
-        const icon = card.querySelector('.input-icon');
-
-        if (!icon) return;
-
-        // Guard against re-applying: without this check, setting
-        // innerHTML below is itself a DOM mutation that the
-        // MutationObserver below reacts to, which calls this
-        // function again, which mutates again — an infinite loop
-        // that pegs the CPU and freezes the tab.
-        if (icon.dataset.processThreeIconFixed === '1') return;
-
-        icon.innerHTML = newIcon;
-        icon.dataset.processThreeIconFixed = '1';
-
-        console.log(
-          'ICON ONLY FIXED:',
-          'Current customer & prospect data*'
-        );
-      }
-    });
-  }
-
-  changeOnlyTargetIcon();
-
-  const observer = new MutationObserver(() => {
-    changeOnlyTargetIcon();
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-
 })();
 
 /* =========================================================
@@ -9587,2171 +9894,6 @@ function syncAuthScreenUI() {
   }
 
   window.addEventListener('resize', runHistoryResize);
-})();
-
-/* =========================================================
-   PREVIOUS HISTORY — RECORD INSET + SOFT PURPLE BORDER ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'historyRecordInsetFix';
-
-  style.textContent = `
-    #previousSearches #historyList {
-      padding: 12px !important;
-      gap: 12px !important;
-      box-sizing: border-box !important;
-    }
-
-    #previousSearches #historyList > .history-item {
-      width: 100% !important;
-      border: 1px solid rgba(111, 66, 193, 0.20) !important;
-      border-radius: 14px !important;
-      box-sizing: border-box !important;
-    }
-  `;
-
-  document.getElementById('historyRecordInsetFix')?.remove();
-  document.head.appendChild(style);
-
-  function fitHistoryRecords() {
-    const history = document.querySelector('#previousSearches');
-    const header = history?.querySelector('.previous-searches-header');
-    const list = history?.querySelector('#historyList');
-
-    if (!history || !header || !list) return;
-
-    const items = [...list.querySelectorAll(':scope > .history-item')];
-
-    if (!items.length) return;
-
-    const historyRect = history.getBoundingClientRect();
-    const headerRect = header.getBoundingClientRect();
-
-    const topPadding = 12;
-    const bottomPadding = 12;
-    const gap = 12;
-
-    const availableHeight =
-      historyRect.bottom -
-      headerRect.bottom -
-      topPadding -
-      bottomPadding -
-      gap * (items.length - 1);
-
-    const itemHeight = Math.floor(
-      availableHeight / items.length
-    );
-
-    list.style.setProperty('display', 'grid', 'important');
-    list.style.setProperty('grid-template-columns', '1fr', 'important');
-    list.style.setProperty('gap', `${gap}px`, 'important');
-    list.style.setProperty(
-      'padding',
-      `${topPadding}px 12px ${bottomPadding}px`,
-      'important'
-    );
-    list.style.setProperty('margin', '0', 'important');
-    list.style.setProperty('width', '100%', 'important');
-    list.style.setProperty('box-sizing', 'border-box', 'important');
-
-    items.forEach(item => {
-      item.style.setProperty('height', `${itemHeight}px`, 'important');
-      item.style.setProperty('min-height', `${itemHeight}px`, 'important');
-      item.style.setProperty('margin', '0', 'important');
-      item.style.setProperty('box-sizing', 'border-box', 'important');
-    });
-  }
-
-  const run = () => requestAnimationFrame(fitHistoryRecords);
-
-  run();
-  setTimeout(run, 100);
-  setTimeout(run, 400);
-  setTimeout(run, 900);
-
-  const list = document.querySelector('#historyList');
-
-  if (list) {
-    new MutationObserver(run).observe(list, {
-      childList: true
-    });
-  }
-
-  window.addEventListener('resize', run);
-})();
-
-/* =========================================================
-   SEGMENT PANEL — UI ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'segmentPanelUiFix';
-
-  style.textContent = `
-    /* Allow the segment panel to grow with its records */
-    #segmentsPanel {
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
-      overflow: visible !important;
-    }
-
-    /* Header */
-    #segmentsPanel .segments-header {
-      align-items: center !important;
-      gap: 24px !important;
-    }
-
-    #segmentsPanel .segments-header > div:first-child {
-      min-width: 0 !important;
-      flex: 1 1 auto !important;
-    }
-
-    #segmentsPanel #addSegmentButton {
-      flex: 0 0 auto !important;
-      min-width: 180px !important;
-    }
-
-    /* Segment list */
-    #segmentsPanel #segmentsList {
-      display: flex !important;
-      flex-direction: column !important;
-      width: 100% !important;
-      gap: 12px !important;
-      margin-top: 18px !important;
-      padding: 0 !important;
-      overflow: visible !important;
-    }
-
-    /* Each segment becomes a full-width row */
-    #segmentsPanel #segmentsList > .segment-card {
-      position: relative !important;
-
-      display: grid !important;
-      grid-template-columns: minmax(0, 1fr) auto !important;
-      grid-template-areas:
-        "number remove"
-        "title remove"
-        "description remove"
-        "meta remove" !important;
-
-      width: 100% !important;
-      min-width: 0 !important;
-      max-width: none !important;
-      height: auto !important;
-      min-height: 128px !important;
-
-      margin: 0 !important;
-      padding: 20px 22px !important;
-      box-sizing: border-box !important;
-
-      background: #ffffff !important;
-      border: 1px solid rgba(103, 53, 183, 0.20) !important;
-      border-radius: 16px !important;
-      box-shadow: none !important;
-    }
-
-    #segmentsPanel .segment-number {
-      grid-area: number !important;
-      margin: 0 0 7px !important;
-
-      font-size: 11px !important;
-      font-weight: 700 !important;
-      letter-spacing: 0.08em !important;
-      color: #9b82c8 !important;
-    }
-
-    #segmentsPanel .segment-card h3 {
-      grid-area: title !important;
-      margin: 0 !important;
-
-      font-size: 17px !important;
-      line-height: 1.3 !important;
-    }
-
-    #segmentsPanel .segment-description {
-      grid-area: description !important;
-      margin: 6px 0 0 !important;
-
-      font-size: 13px !important;
-      line-height: 1.5 !important;
-      color: #77717e !important;
-    }
-
-    #segmentsPanel .segment-meta {
-      grid-area: meta !important;
-
-      display: flex !important;
-      flex-wrap: wrap !important;
-      gap: 7px !important;
-
-      margin-top: 12px !important;
-    }
-
-    #segmentsPanel .segment-meta span {
-      padding: 5px 9px !important;
-      border-radius: 999px !important;
-      background: #f7f2ff !important;
-
-      font-size: 11px !important;
-      color: #6941a5 !important;
-    }
-
-    /* Keep existing footer only as the Remove-button container */
-    #segmentsPanel .segment-card-footer {
-      grid-area: remove !important;
-
-      display: flex !important;
-      align-items: center !important;
-      justify-content: flex-end !important;
-
-      margin: 0 0 0 20px !important;
-      padding: 0 !important;
-      border: 0 !important;
-    }
-
-    #segmentsPanel .segment-card-footer > span {
-      display: none !important;
-    }
-
-    #segmentsPanel .delete-segment {
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      min-width: 88px !important;
-      height: 38px !important;
-      padding: 0 16px !important;
-
-      border: 1px solid rgba(103, 53, 183, 0.22) !important;
-      border-radius: 10px !important;
-      background: #ffffff !important;
-
-      color: #5b21b6 !important;
-      font: inherit !important;
-      font-size: 12px !important;
-      font-weight: 700 !important;
-
-      cursor: pointer !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-    }
-
-    #segmentsPanel .delete-segment:hover {
-      background: #f8f4ff !important;
-    }
-
-    @media (max-width: 700px) {
-      #segmentsPanel #segmentsList > .segment-card {
-        grid-template-columns: 1fr !important;
-        grid-template-areas:
-          "number"
-          "title"
-          "description"
-          "meta"
-          "remove" !important;
-      }
-
-      #segmentsPanel .segment-card-footer {
-        justify-content: flex-start !important;
-        margin: 16px 0 0 !important;
-      }
-    }
-  `;
-
-  document.getElementById('segmentPanelUiFix')?.remove();
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   SEGMENT PANEL — FINAL DESIGN ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'segmentPanelFinalDesignOnly';
-
-  style.textContent = `
-    #segmentsPanel {
-      width: 100% !important;
-      max-width: none !important;
-      height: auto !important;
-      min-height: 0 !important;
-      margin: 0 !important;
-      padding: 28px 28px 24px !important;
-      box-sizing: border-box !important;
-      overflow: visible !important;
-    }
-
-    #segmentsPanel .segments-header {
-      display: grid !important;
-      grid-template-columns: minmax(0, 1fr) auto !important;
-      align-items: start !important;
-      gap: 24px !important;
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 0 0 18px !important;
-      border-bottom: 1px solid #eee9f3 !important;
-      box-sizing: border-box !important;
-    }
-
-    #segmentsPanel .segments-header > div:first-child {
-      min-width: 0 !important;
-    }
-
-    #segmentsPanel .segments-header .eyebrow {
-      margin: 0 0 8px !important;
-    }
-
-    #segmentsPanel .segments-header h2 {
-      margin: 0 0 6px !important;
-      font-size: 24px !important;
-      line-height: 1.2 !important;
-    }
-
-    #segmentsPanel .segments-subtitle {
-      margin: 0 !important;
-      max-width: 420px !important;
-      font-size: 13px !important;
-      line-height: 1.5 !important;
-    }
-
-    #segmentsPanel #addSegmentButton {
-      align-self: center !important;
-      min-width: 196px !important;
-      height: 44px !important;
-      padding: 0 20px !important;
-      border-radius: 10px !important;
-      font-size: 13px !important;
-      font-weight: 700 !important;
-    }
-
-    #segmentsPanel #segmentsList {
-      display: flex !important;
-      flex-direction: column !important;
-      width: 100% !important;
-      max-width: none !important;
-      gap: 12px !important;
-      margin: 18px 0 0 !important;
-      padding: 0 !important;
-      box-sizing: border-box !important;
-      overflow: visible !important;
-    }
-
-    #segmentsPanel #segmentsList > .segment-card {
-      display: grid !important;
-      grid-template-columns: 48px minmax(0, 1fr) auto !important;
-      grid-template-areas:
-        "number content remove" !important;
-
-      align-items: center !important;
-
-      width: 100% !important;
-      max-width: none !important;
-      min-width: 0 !important;
-      min-height: 92px !important;
-
-      margin: 0 !important;
-      padding: 14px 16px !important;
-
-      box-sizing: border-box !important;
-
-      border: 1px solid rgba(111, 66, 193, 0.18) !important;
-      border-radius: 14px !important;
-      background: #ffffff !important;
-      box-shadow: none !important;
-    }
-
-    #segmentsPanel .segment-number {
-      grid-area: number !important;
-
-      width: 38px !important;
-      height: 38px !important;
-
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      margin: 0 !important;
-
-      border-radius: 10px !important;
-      background: #f5efff !important;
-
-      font-size: 12px !important;
-      font-weight: 700 !important;
-      color: #5b21b6 !important;
-      letter-spacing: 0 !important;
-      opacity: 1 !important;
-    }
-
-    #segmentsPanel .segment-card h3,
-    #segmentsPanel .segment-description,
-    #segmentsPanel .segment-meta {
-      grid-column: 2 !important;
-    }
-
-    #segmentsPanel .segment-card h3 {
-      margin: 0 !important;
-      font-size: 15px !important;
-      line-height: 1.3 !important;
-      color: #292332 !important;
-    }
-
-    #segmentsPanel .segment-description {
-      margin: 4px 0 0 !important;
-      font-size: 12px !important;
-      line-height: 1.45 !important;
-      color: #7e7787 !important;
-    }
-
-    #segmentsPanel .segment-meta {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      gap: 6px !important;
-      margin-top: 8px !important;
-    }
-
-    #segmentsPanel .segment-meta span {
-      padding: 4px 8px !important;
-      border-radius: 999px !important;
-
-      background: #f6f1ff !important;
-      color: #6f42c1 !important;
-
-      font-size: 10px !important;
-      font-weight: 600 !important;
-    }
-
-    #segmentsPanel .segment-card-footer {
-      grid-area: remove !important;
-
-      display: flex !important;
-      align-items: center !important;
-      justify-content: flex-end !important;
-
-      margin: 0 0 0 16px !important;
-      padding: 0 !important;
-      border: 0 !important;
-    }
-
-    #segmentsPanel .segment-card-footer > span {
-      display: none !important;
-    }
-
-    #segmentsPanel .delete-segment {
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      min-width: 86px !important;
-      height: 36px !important;
-
-      padding: 0 14px !important;
-
-      border: 1px solid rgba(220, 53, 69, 0.14) !important;
-      border-radius: 9px !important;
-      background: #fff7f8 !important;
-
-      color: #d84b5f !important;
-      font: inherit !important;
-      font-size: 11px !important;
-      font-weight: 700 !important;
-
-      opacity: 1 !important;
-      visibility: visible !important;
-      cursor: pointer !important;
-    }
-
-    #segmentsPanel .delete-segment:hover {
-      background: #fff0f2 !important;
-    }
-
-    #segmentsPanel .segments-empty {
-      width: 100% !important;
-      box-sizing: border-box !important;
-      padding: 18px !important;
-      border: 1px dashed rgba(111, 66, 193, 0.18) !important;
-      border-radius: 12px !important;
-      text-align: center !important;
-    }
-
-    @media (max-width: 700px) {
-      #segmentsPanel {
-        padding: 22px 18px !important;
-      }
-
-      #segmentsPanel .segments-header {
-        grid-template-columns: 1fr !important;
-      }
-
-      #segmentsPanel #addSegmentButton {
-        width: 100% !important;
-      }
-
-      #segmentsPanel #segmentsList > .segment-card {
-        grid-template-columns: 42px minmax(0, 1fr) !important;
-        grid-template-areas:
-          "number content"
-          "remove remove" !important;
-      }
-
-      #segmentsPanel .segment-card-footer {
-        justify-content: flex-start !important;
-        margin: 12px 0 0 !important;
-      }
-    }
-  `;
-
-  document.getElementById('segmentPanelFinalDesignOnly')?.remove();
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   SEGMENT — FULL WIDTH INSIDE MAP LAYOUT ONLY
-   ========================================================= */
-(() => {
-  function placeSegmentFullWidth() {
-    const segment = document.getElementById('segmentsPanel');
-    const mapLayout = document.querySelector('.map-layout');
-    const questions = mapLayout?.querySelector('.question-card');
-    const history = mapLayout?.querySelector('#previousSearches');
-
-    if (!segment || !mapLayout || !questions || !history) return;
-
-    // 2026-08-31: Key Questions now lives inside the Inputs-tab right-hand
-    // stack, nested several levels down from .map-layout rather than as a
-    // direct child of it. `questions` above is still found (it's a
-    // descendant search), but it's no longer a valid anchor for
-    // mapLayout.insertBefore below -- only a direct child of mapLayout can
-    // be used as a reference node there.
-    if (questions.parentElement !== mapLayout) return;
-
-    /*
-      Move ONLY the segment panel into the main two-column grid.
-      Put it immediately after the Question / History row.
-    */
-    if (segment.parentElement !== mapLayout) {
-      const nextRowAnchor =
-        [...mapLayout.children].find(el => {
-          if (el === questions || el === history) return false;
-
-          const style = getComputedStyle(el);
-          return style.gridColumnStart === '1';
-        });
-
-      if (nextRowAnchor) {
-        mapLayout.insertBefore(segment, nextRowAnchor);
-      } else {
-        mapLayout.appendChild(segment);
-      }
-    }
-
-    segment.style.setProperty('grid-column', '1 / -1', 'important');
-    segment.style.setProperty('width', '100%', 'important');
-    segment.style.setProperty('max-width', 'none', 'important');
-    segment.style.setProperty('justify-self', 'stretch', 'important');
-    segment.style.setProperty('align-self', 'start', 'important');
-  }
-
-  const style = document.createElement('style');
-  style.id = 'segmentFullWidthPlacementOnly';
-
-  style.textContent = `
-    /* ONLY SEGMENT PANEL */
-    .map-layout > #segmentsPanel {
-      grid-column: 1 / -1 !important;
-
-      width: 100% !important;
-      max-width: none !important;
-      min-width: 0 !important;
-
-      justify-self: stretch !important;
-      align-self: start !important;
-
-      margin: 0 !important;
-      box-sizing: border-box !important;
-    }
-
-    /*
-      Segment cards can use the new full width.
-      Does not affect History cards.
-    */
-    .map-layout > #segmentsPanel #segmentsList {
-      width: 100% !important;
-      max-width: none !important;
-    }
-
-    .map-layout > #segmentsPanel #segmentsList > .segment-card {
-      width: 100% !important;
-      max-width: none !important;
-    }
-
-    @media (max-width: 900px) {
-      .map-layout > #segmentsPanel {
-        grid-column: 1 !important;
-      }
-    }
-  `;
-
-  document.getElementById('segmentFullWidthPlacementOnly')?.remove();
-  document.head.appendChild(style);
-
-  placeSegmentFullWidth();
-
-  setTimeout(placeSegmentFullWidth, 100);
-  setTimeout(placeSegmentFullWidth, 500);
-})();
-
-
-/* =========================================================
-   SEGMENT — PLACE DIRECTLY BELOW QUESTIONS ONLY
-   ========================================================= */
-(() => {
-  function placeSegmentBelowQuestions() {
-    const segment = document.getElementById('segmentsPanel');
-    const mapLayout = document.querySelector('.map-layout');
-    const questions = mapLayout?.querySelector('.question-card');
-
-    if (!segment || !mapLayout || !questions) return;
-
-    // 2026-08-31: same reasoning as placeSegmentFullWidth above -- Key
-    // Questions is now nested inside the Inputs-tab right-hand stack, not
-    // a direct child of .map-layout, so it can no longer be used as an
-    // insertBefore reference node here.
-    if (questions.parentElement !== mapLayout) return;
-
-    if (segment.parentElement !== mapLayout) {
-      mapLayout.insertBefore(segment, questions.nextElementSibling);
-    } else if (questions.nextElementSibling !== segment) {
-      mapLayout.insertBefore(segment, questions.nextElementSibling);
-    }
-
-    segment.style.setProperty('grid-column', '1', 'important');
-    segment.style.setProperty('grid-row', 'auto', 'important');
-    segment.style.setProperty('width', '100%', 'important');
-    segment.style.setProperty('max-width', 'none', 'important');
-    segment.style.setProperty('justify-self', 'stretch', 'important');
-    segment.style.setProperty('align-self', 'start', 'important');
-    segment.style.setProperty('margin', '0', 'important');
-  }
-
-  const style = document.createElement('style');
-  style.id = 'segmentBelowQuestionsOnly';
-
-  style.textContent = `
-    .map-layout > #segmentsPanel {
-      grid-column: 1 !important;
-      width: 100% !important;
-      max-width: none !important;
-      min-width: 0 !important;
-      justify-self: stretch !important;
-      align-self: start !important;
-      margin: 0 !important;
-      box-sizing: border-box !important;
-    }
-
-    @media (max-width: 900px) {
-      .map-layout > #segmentsPanel {
-        grid-column: 1 !important;
-      }
-    }
-  `;
-
-  document.getElementById('segmentBelowQuestionsOnly')?.remove();
-  document.head.appendChild(style);
-
-  placeSegmentBelowQuestions();
-
-  setTimeout(placeSegmentBelowQuestions, 100);
-  setTimeout(placeSegmentBelowQuestions, 400);
-  setTimeout(placeSegmentBelowQuestions, 900);
-})();
-
-
-/* =========================================================
-   PREVIOUS HISTORY — CENTER EMPTY STATE CONTENT ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'historyEmptyStateCenterOnly';
-
-  style.textContent = `
-    #previousSearches #historyList > .history-empty {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      width: 100% !important;
-      height: 100% !important;
-      min-height: 0 !important;
-      max-height: none !important;
-
-      margin: 0 !important;
-      padding: 24px !important;
-
-      box-sizing: border-box !important;
-      text-align: center !important;
-    }
-
-    #previousSearches #historyList > .history-empty > * {
-      margin-left: auto !important;
-      margin-right: auto !important;
-    }
-
-    #previousSearches .history-empty-icon {
-      margin-top: 0 !important;
-      margin-bottom: 18px !important;
-    }
-
-    #previousSearches .history-empty-title {
-      margin-top: 0 !important;
-      margin-bottom: 8px !important;
-      text-align: center !important;
-    }
-
-    #previousSearches .history-empty-description {
-      margin-top: 0 !important;
-      margin-bottom: 0 !important;
-      text-align: center !important;
-    }
-  `;
-
-  document
-    .getElementById('historyEmptyStateCenterOnly')
-    ?.remove();
-
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   PREVIOUS HISTORY — TRUE EMPTY STATE CENTER ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'historyTrueEmptyCenterOnly';
-
-  style.textContent = `
-    /*
-      Only when Previous History contains the empty state:
-      make the entire remaining content area a flex container.
-    */
-    #previousSearches #historyList:has(> .history-empty) {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      padding: 0 !important;
-      margin: 0 !important;
-
-      box-sizing: border-box !important;
-    }
-
-    #previousSearches #historyList:has(> .history-empty)
-      > .history-empty {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      width: 100% !important;
-      height: 100% !important;
-
-      min-height: 0 !important;
-      max-height: none !important;
-
-      margin: 0 !important;
-      padding: 0 32px !important;
-
-      box-sizing: border-box !important;
-      text-align: center !important;
-
-      position: static !important;
-      inset: auto !important;
-      transform: none !important;
-    }
-
-    #previousSearches
-      #historyList:has(> .history-empty)
-      .history-empty-icon {
-      margin: 0 0 18px !important;
-    }
-
-    #previousSearches
-      #historyList:has(> .history-empty)
-      .history-empty-title {
-      margin: 0 0 9px !important;
-      text-align: center !important;
-    }
-
-    #previousSearches
-      #historyList:has(> .history-empty)
-      .history-empty-description {
-      margin: 0 !important;
-      max-width: 420px !important;
-      text-align: center !important;
-    }
-  `;
-
-  document.getElementById('historyTrueEmptyCenterOnly')?.remove();
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   PREVIOUS HISTORY — FORCE TRUE EMPTY CENTER
-   EMPTY STATE ONLY
-   ========================================================= */
-(() => {
-  function centerHistoryEmptyState() {
-    const history = document.querySelector('#previousSearches');
-    const header = history?.querySelector('.previous-searches-header');
-    const list = history?.querySelector('#historyList');
-    const empty = list?.querySelector(':scope > .history-empty');
-
-    if (!history || !header || !list || !empty) return;
-
-    const headerHeight = Math.ceil(
-      header.getBoundingClientRect().height
-    );
-
-    /* Keep the existing outer History frame unchanged */
-    history.style.setProperty('position', 'relative', 'important');
-
-    /*
-      Make historyList occupy EXACTLY the area below the header.
-      This overrides old inline height rules.
-    */
-    list.style.setProperty('position', 'absolute', 'important');
-    list.style.setProperty('top', `${headerHeight}px`, 'important');
-    list.style.setProperty('right', '0', 'important');
-    list.style.setProperty('bottom', '0', 'important');
-    list.style.setProperty('left', '0', 'important');
-
-    list.style.setProperty('width', 'auto', 'important');
-    list.style.setProperty('height', 'auto', 'important');
-    list.style.setProperty('min-height', '0', 'important');
-    list.style.setProperty('max-height', 'none', 'important');
-
-    list.style.setProperty('margin', '0', 'important');
-    list.style.setProperty('padding', '0', 'important');
-
-    list.style.setProperty('display', 'flex', 'important');
-    list.style.setProperty('align-items', 'center', 'important');
-    list.style.setProperty('justify-content', 'center', 'important');
-
-    list.style.setProperty('box-sizing', 'border-box', 'important');
-
-    /* Center the complete icon + text group */
-    empty.style.setProperty('position', 'static', 'important');
-
-    empty.style.setProperty('display', 'flex', 'important');
-    empty.style.setProperty('flex-direction', 'column', 'important');
-    empty.style.setProperty('align-items', 'center', 'important');
-    empty.style.setProperty('justify-content', 'center', 'important');
-
-    empty.style.setProperty('width', '100%', 'important');
-    empty.style.setProperty('height', 'auto', 'important');
-    empty.style.setProperty('min-height', '0', 'important');
-    empty.style.setProperty('max-height', 'none', 'important');
-
-    empty.style.setProperty('margin', '0', 'important');
-    empty.style.setProperty('padding', '24px 32px', 'important');
-
-    empty.style.setProperty('transform', 'none', 'important');
-    empty.style.setProperty('text-align', 'center', 'important');
-    empty.style.setProperty('box-sizing', 'border-box', 'important');
-  }
-
-  centerHistoryEmptyState();
-
-  requestAnimationFrame(centerHistoryEmptyState);
-
-  setTimeout(centerHistoryEmptyState, 100);
-  setTimeout(centerHistoryEmptyState, 400);
-  setTimeout(centerHistoryEmptyState, 900);
-
-  const historyList = document.querySelector('#historyList');
-
-  if (historyList) {
-    new MutationObserver(centerHistoryEmptyState).observe(
-      historyList,
-      {
-        childList: true,
-        subtree: false
-      }
-    );
-  }
-
-  window.addEventListener('resize', centerHistoryEmptyState);
-})();
-
-/* =========================================================
-   PREVIOUS HISTORY — INNER EMPTY CONTENT SIZE ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'historyEmptyInnerContentSizeFix';
-
-  style.textContent = `
-    #previousSearches .history-empty-icon {
-      flex: 0 0 auto !important;
-
-      width: 72px !important;
-      height: 72px !important;
-      min-width: 72px !important;
-      min-height: 72px !important;
-      max-width: 72px !important;
-      max-height: 72px !important;
-
-      margin: 0 0 18px !important;
-      padding: 0 !important;
-    }
-
-    #previousSearches .history-empty-title {
-      flex: 0 0 auto !important;
-
-      width: auto !important;
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
-      max-width: 420px !important;
-
-      margin: 0 0 9px !important;
-      padding: 0 !important;
-
-      line-height: 1.3 !important;
-      text-align: center !important;
-    }
-
-    #previousSearches .history-empty-description {
-      flex: 0 0 auto !important;
-
-      width: auto !important;
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
-      max-width: 420px !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      line-height: 1.55 !important;
-      text-align: center !important;
-    }
-
-    #previousSearches #historyList > .history-empty {
-      gap: 0 !important;
-    }
-  `;
-
-  document
-    .getElementById('historyEmptyInnerContentSizeFix')
-    ?.remove();
-
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   PREVIOUS HISTORY — EXACT CENTER OF OUTER FRAME
-   EMPTY STATE ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'historyExactOuterFrameCenter';
-
-  style.textContent = `
-    #previousSearches {
-      position: relative !important;
-    }
-
-    /*
-      Remove previous positioning from the list so the empty
-      state can position itself relative to the OUTER frame.
-    */
-    #previousSearches #historyList:has(> .history-empty) {
-      position: static !important;
-
-      width: 100% !important;
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      display: block !important;
-    }
-
-    /*
-      EXACT geometric centre of the whole Previous History frame
-    */
-    #previousSearches #historyList > .history-empty {
-      position: absolute !important;
-
-      top: 50% !important;
-      left: 50% !important;
-      right: auto !important;
-      bottom: auto !important;
-
-      transform: translate(-50%, -50%) !important;
-
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      width: min(520px, calc(100% - 64px)) !important;
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      box-sizing: border-box !important;
-      text-align: center !important;
-    }
-
-    #previousSearches .history-empty-icon {
-      flex: 0 0 auto !important;
-
-      width: 72px !important;
-      height: 72px !important;
-
-      margin: 0 0 18px !important;
-      padding: 0 !important;
-    }
-
-    #previousSearches .history-empty-title {
-      flex: 0 0 auto !important;
-
-      width: auto !important;
-      height: auto !important;
-      min-height: 0 !important;
-
-      margin: 0 0 9px !important;
-      padding: 0 !important;
-
-      text-align: center !important;
-    }
-
-    #previousSearches .history-empty-description {
-      flex: 0 0 auto !important;
-
-      width: auto !important;
-      height: auto !important;
-      min-height: 0 !important;
-      max-width: 430px !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      text-align: center !important;
-    }
-  `;
-
-  document
-    .getElementById('historyExactOuterFrameCenter')
-    ?.remove();
-
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   PREVIOUS HISTORY — FINAL EXACT FRAME CENTER
-   EMPTY STATE ONLY
-   ========================================================= */
-(() => {
-  function forceHistoryExactCenter() {
-    const history = document.querySelector('#previousSearches');
-    const list = history?.querySelector('#historyList');
-    const empty = list?.querySelector('.history-empty');
-
-    if (!history || !list || !empty) return;
-
-    /* Outer History frame remains unchanged */
-    history.style.setProperty('position', 'relative', 'important');
-
-    /*
-      Remove the old absolute positioning from historyList.
-      Inline !important is required because previous JS used
-      inline !important as well.
-    */
-    list.style.setProperty('position', 'static', 'important');
-    list.style.setProperty('top', 'auto', 'important');
-    list.style.setProperty('right', 'auto', 'important');
-    list.style.setProperty('bottom', 'auto', 'important');
-    list.style.setProperty('left', 'auto', 'important');
-
-    list.style.setProperty('width', '100%', 'important');
-    list.style.setProperty('height', 'auto', 'important');
-    list.style.setProperty('min-height', '0', 'important');
-    list.style.setProperty('max-height', 'none', 'important');
-
-    list.style.setProperty('margin', '0', 'important');
-    list.style.setProperty('padding', '0', 'important');
-    list.style.setProperty('display', 'block', 'important');
-
-    /*
-      Position the WHOLE empty-state group relative to
-      #previousSearches itself.
-    */
-    empty.style.setProperty('position', 'absolute', 'important');
-
-    empty.style.setProperty('top', '50%', 'important');
-    empty.style.setProperty('left', '50%', 'important');
-    empty.style.setProperty('right', 'auto', 'important');
-    empty.style.setProperty('bottom', 'auto', 'important');
-
-    empty.style.setProperty(
-      'transform',
-      'translate(-50%, -50%)',
-      'important'
-    );
-
-    empty.style.setProperty('display', 'flex', 'important');
-    empty.style.setProperty('flex-direction', 'column', 'important');
-    empty.style.setProperty('align-items', 'center', 'important');
-    empty.style.setProperty('justify-content', 'center', 'important');
-
-    empty.style.setProperty(
-      'width',
-      'calc(100% - 64px)',
-      'important'
-    );
-
-    empty.style.setProperty('height', 'auto', 'important');
-    empty.style.setProperty('min-height', '0', 'important');
-    empty.style.setProperty('max-height', 'none', 'important');
-
-    empty.style.setProperty('margin', '0', 'important');
-    empty.style.setProperty('padding', '0', 'important');
-    empty.style.setProperty('text-align', 'center', 'important');
-  }
-
-  /*
-    Old History scripts still have delayed 100/400/900ms updates.
-    Run AFTER all of them.
-  */
-  setTimeout(forceHistoryExactCenter, 1200);
-  setTimeout(forceHistoryExactCenter, 1600);
-
-  window.addEventListener('resize', () => {
-    setTimeout(forceHistoryExactCenter, 0);
-  });
-})();
-
-/* =========================================================
-   MARKET SEGMENTS — CLEAN UI ONLY
-   ========================================================= */
-(() => {
-  [
-    'segmentPanelUiFix',
-    'segmentPanelFinalDesignOnly',
-    'segmentCardsCleanFinalOverride'
-  ].forEach(id => {
-    document.getElementById(id)?.remove();
-  });
-
-  const style = document.createElement('style');
-  style.id = 'segmentCleanUiOnly';
-
-  style.textContent = `
-    /* Panel */
-    #segmentsPanel {
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
-      overflow: visible !important;
-    }
-
-    /* Header */
-    #segmentsPanel .segments-header {
-      display: grid !important;
-      grid-template-columns: minmax(0, 1fr) auto !important;
-      align-items: center !important;
-      gap: 28px !important;
-
-      width: 100% !important;
-
-      margin: 0 !important;
-      padding-bottom: 22px !important;
-
-      border-bottom: 1px solid #eee8f3 !important;
-    }
-
-    #segmentsPanel .segments-header > div:first-child {
-      min-width: 0 !important;
-    }
-
-    #segmentsPanel .segments-header h2 {
-      margin: 5px 0 7px !important;
-    }
-
-    #segmentsPanel .segments-subtitle {
-      margin: 0 !important;
-      max-width: 520px !important;
-      line-height: 1.5 !important;
-    }
-
-    #segmentsPanel #addSegmentButton {
-      position: static !important;
-
-      width: auto !important;
-      min-width: 205px !important;
-      height: 46px !important;
-
-      margin: 0 !important;
-      padding: 0 22px !important;
-
-      align-self: center !important;
-    }
-
-    /* List */
-    #segmentsPanel #segmentsList {
-      display: flex !important;
-      flex-direction: column !important;
-
-      grid-template-columns: none !important;
-      grid-template-rows: none !important;
-
-      width: 100% !important;
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
-
-      gap: 14px !important;
-
-      margin: 18px 0 0 !important;
-      padding: 0 !important;
-
-      overflow: visible !important;
-    }
-
-    /* Segment card */
-    #segmentsPanel #segmentsList > .segment-card {
-      position: relative !important;
-
-      display: block !important;
-
-      width: 100% !important;
-      min-width: 0 !important;
-      max-width: none !important;
-
-      height: auto !important;
-      min-height: 132px !important;
-      max-height: none !important;
-
-      margin: 0 !important;
-      padding: 20px 135px 20px 22px !important;
-
-      box-sizing: border-box !important;
-
-      background: #ffffff !important;
-
-      border: 1px solid #e6dcef !important;
-      border-radius: 14px !important;
-
-      box-shadow: none !important;
-      overflow: visible !important;
-
-      transform: none !important;
-    }
-
-    /* Segment label */
-    #segmentsPanel .segment-card > .segment-number {
-      position: static !important;
-
-      display: block !important;
-
-      width: auto !important;
-      height: auto !important;
-      min-width: 0 !important;
-      min-height: 0 !important;
-
-      margin: 0 0 8px !important;
-      padding: 0 !important;
-
-      background: transparent !important;
-      border: 0 !important;
-      border-radius: 0 !important;
-
-      color: #8764b3 !important;
-
-      font-size: 10px !important;
-      line-height: 1 !important;
-      font-weight: 700 !important;
-      letter-spacing: .09em !important;
-
-      white-space: nowrap !important;
-
-      grid-area: auto !important;
-      grid-column: auto !important;
-      grid-row: auto !important;
-    }
-
-    /* Segment name */
-    #segmentsPanel .segment-card > h3 {
-      position: static !important;
-
-      display: block !important;
-
-      width: auto !important;
-      height: auto !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      color: #272230 !important;
-
-      font-size: 16px !important;
-      line-height: 1.35 !important;
-      font-weight: 700 !important;
-
-      grid-area: auto !important;
-      grid-column: auto !important;
-      grid-row: auto !important;
-    }
-
-    /* Description */
-    #segmentsPanel .segment-card > .segment-description {
-      position: static !important;
-
-      display: block !important;
-
-      width: auto !important;
-      max-width: 950px !important;
-      height: auto !important;
-      min-height: 0 !important;
-
-      margin: 7px 0 0 !important;
-      padding: 0 !important;
-
-      color: #77717e !important;
-      opacity: 1 !important;
-
-      font-size: 13px !important;
-      line-height: 1.5 !important;
-
-      grid-area: auto !important;
-      grid-column: auto !important;
-      grid-row: auto !important;
-    }
-
-    /* Metadata */
-    #segmentsPanel .segment-card > .segment-meta {
-      position: static !important;
-
-      display: flex !important;
-      flex-wrap: wrap !important;
-      align-items: center !important;
-
-      width: auto !important;
-      height: auto !important;
-
-      gap: 7px !important;
-
-      margin: 13px 0 0 !important;
-      padding: 0 !important;
-
-      grid-area: auto !important;
-      grid-column: auto !important;
-      grid-row: auto !important;
-    }
-
-    #segmentsPanel .segment-meta > span {
-      display: inline-flex !important;
-      align-items: center !important;
-
-      width: auto !important;
-      height: 25px !important;
-
-      padding: 0 10px !important;
-
-      border: 0 !important;
-      border-radius: 999px !important;
-
-      background: #f3edfa !important;
-      color: #68449a !important;
-
-      font-size: 10.5px !important;
-      line-height: 1 !important;
-      font-weight: 650 !important;
-
-      white-space: nowrap !important;
-    }
-
-    /* Remove button container */
-    #segmentsPanel .segment-card > .segment-card-footer {
-      position: absolute !important;
-
-      top: 18px !important;
-      right: 18px !important;
-      bottom: auto !important;
-      left: auto !important;
-
-      display: block !important;
-
-      width: auto !important;
-      height: auto !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      border: 0 !important;
-
-      grid-area: auto !important;
-      grid-column: auto !important;
-      grid-row: auto !important;
-    }
-
-    #segmentsPanel .segment-card-footer > span {
-      display: none !important;
-    }
-
-    #segmentsPanel .delete-segment {
-      position: static !important;
-
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      width: auto !important;
-      min-width: 88px !important;
-      height: 38px !important;
-
-      margin: 0 !important;
-      padding: 0 16px !important;
-
-      border: 1px solid #f0ccd2 !important;
-      border-radius: 10px !important;
-
-      background: #fff8f8 !important;
-      color: #d64b5d !important;
-
-      font-family: inherit !important;
-      font-size: 11px !important;
-      font-weight: 700 !important;
-
-      opacity: 1 !important;
-      visibility: visible !important;
-
-      cursor: pointer !important;
-    }
-
-    #segmentsPanel .delete-segment:hover {
-      background: #fff0f2 !important;
-    }
-
-    /* Empty state */
-    #segmentsPanel .segments-empty {
-      width: 100% !important;
-
-      margin: 0 !important;
-      padding: 22px !important;
-
-      box-sizing: border-box !important;
-
-      border: 1px dashed #e1d6eb !important;
-      border-radius: 12px !important;
-
-      text-align: center !important;
-      opacity: 1 !important;
-    }
-
-    @media (max-width: 700px) {
-      #segmentsPanel .segments-header {
-        grid-template-columns: 1fr !important;
-      }
-
-      #segmentsPanel #addSegmentButton {
-        width: 100% !important;
-      }
-
-      #segmentsPanel #segmentsList > .segment-card {
-        padding: 18px 18px 70px !important;
-      }
-
-      #segmentsPanel .segment-card > .segment-card-footer {
-        top: auto !important;
-        right: auto !important;
-        bottom: 18px !important;
-        left: 18px !important;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   PROCESS INPUTS — UPLOAD EVIDENCE BUTTON ONLY
-   ========================================================= */
-(() => {
-  function addUploadEvidenceButtons() {
-    const inputList = document.querySelector('#inputList');
-
-    if (!inputList) return;
-
-    /*
-     * Only inspect input cards inside #inputList.
-     * Nothing outside the Process Inputs area is changed.
-     */
-    const addInformationButtons =
-      inputList.querySelectorAll('.add-source-inline');
-
-    addInformationButtons.forEach(addButton => {
-      const inputCard =
-        addButton.closest('.input-item') ||
-        addButton.closest('.input-card') ||
-        addButton.parentElement;
-
-      if (!inputCard) return;
-
-      /* Do not create duplicates after render() */
-      if (inputCard.querySelector('.upload-evidence-inline')) return;
-
-      const inputValue =
-        addButton.dataset.input ||
-        addButton.getAttribute('data-input');
-
-      if (inputValue === null || inputValue === undefined) return;
-
-      const uploadButton = document.createElement('button');
-
-      uploadButton.type = 'button';
-      uploadButton.className = 'upload-evidence-inline';
-      uploadButton.textContent = '+ Upload evidence';
-      uploadButton.dataset.input = inputValue;
-
-      /*
-       * Place it immediately after Add information.
-       * No parent layout or other section is moved.
-       */
-      addButton.insertAdjacentElement('afterend', uploadButton);
-
-      uploadButton.addEventListener('click', event => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        /*
-         * Reuse the existing input value used by
-         * Add information.
-         */
-        const inputIndex = Number(uploadButton.dataset.input);
-
-        if (!Number.isInteger(inputIndex)) return;
-
-        const step = currentStep();
-        const inputName = step?.inputs?.[inputIndex];
-
-        if (!inputName) return;
-
-        /*
-         * Store the real input name so uploaded evidence remains
-         * linked to the correct process input.
-         */
-        selectedInput = inputName;
-
-        const title = document.querySelector('#documentDialogTitle');
-
-        if (title) {
-          title.textContent =
-            `Upload evidence for Input ${inputIndex + 1}`;
-        }
-
-        const name = document.querySelector('#documentName');
-        const text = document.querySelector('#documentText');
-
-        if (name) name.value = '';
-        if (text) text.value = '';
-
-        const dialog = document.querySelector('#documentDialog');
-
-        if (!dialog) {
-          showToast('Evidence upload is unavailable.');
-          return;
-        }
-
-        dialog.showModal();
-      });
-    });
-  }
-
-  /* Style ONLY the new button */
-  const style = document.createElement('style');
-  style.id = 'processInputUploadEvidenceButtonOnly';
-
-  style.textContent = `
-    #inputList .upload-evidence-inline {
-      appearance: none !important;
-
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      width: auto !important;
-      height: auto !important;
-      min-height: 0 !important;
-
-      margin: 8px 0 0 10px !important;
-      padding: 0 !important;
-
-      border: 0 !important;
-      background: transparent !important;
-
-      color: #6f42a5 !important;
-
-      font-family: inherit !important;
-      font-size: 12px !important;
-      line-height: 1.4 !important;
-      font-weight: 600 !important;
-
-      cursor: pointer !important;
-      box-shadow: none !important;
-      transform: none !important;
-    }
-
-    #inputList .upload-evidence-inline:hover {
-      color: #4f247f !important;
-      text-decoration: underline !important;
-    }
-  `;
-
-  document
-    .getElementById('processInputUploadEvidenceButtonOnly')
-    ?.remove();
-
-  document.head.appendChild(style);
-
-  addUploadEvidenceButtons();
-
-  /*
-   * render() rebuilds the input cards when process/state changes,
-   * so add the button again only when #inputList changes.
-   */
-  const inputList = document.querySelector('#inputList');
-
-  if (inputList) {
-    const observer = new MutationObserver(() => {
-      addUploadEvidenceButtons();
-    });
-
-    observer.observe(inputList, {
-      childList: true
-    });
-  }
-})();
-
-/* =========================================================
-   PROCESS INPUT ACTIONS — SPACING + TYPOGRAPHY ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'processInputActionAlignmentFinal';
-
-  style.textContent = `
-    /*
-     * ONLY the two action buttons inside process input cards.
-     * No other section/layout is affected.
-     */
-
-    #inputList .add-source-inline,
-    #inputList .upload-evidence-inline {
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: flex-start !important;
-
-      vertical-align: middle !important;
-
-      height: auto !important;
-      min-height: 0 !important;
-
-      padding: 0 !important;
-
-      border: 0 !important;
-      background: transparent !important;
-      box-shadow: none !important;
-
-      font-family: inherit !important;
-      font-size: 13px !important;
-      line-height: 1.4 !important;
-      font-weight: 700 !important;
-
-      color: #54208f !important;
-
-      transform: none !important;
-    }
-
-    /* Keep Add information exactly in its current position */
-    #inputList .add-source-inline {
-      margin-top: 0 !important;
-      margin-bottom: 0 !important;
-    }
-
-    /*
-     * Upload evidence:
-     * same baseline, same font, same colour,
-     * but clearly separated horizontally.
-     */
-    #inputList .add-source-inline + .upload-evidence-inline {
-      margin: 0 0 0 30px !important;
-    }
-
-    #inputList .upload-evidence-inline:hover,
-    #inputList .add-source-inline:hover {
-      color: #54208f !important;
-    }
-  `;
-
-  document
-    .getElementById('processInputActionAlignmentFinal')
-    ?.remove();
-
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   PROCESS INPUT ACTIONS — EXACT SAME ROW + BASELINE
-   INPUTS ONLY
-   ========================================================= */
-(() => {
-  function alignInputActionButtons() {
-    const inputList = document.querySelector('#inputList');
-    if (!inputList) return;
-
-    inputList.querySelectorAll('.add-source-inline').forEach(addButton => {
-      const uploadButton =
-        addButton.parentElement?.querySelector('.upload-evidence-inline');
-
-      if (!uploadButton) return;
-
-      let row = addButton.closest('.input-action-row');
-
-      if (!row) {
-        row = document.createElement('div');
-        row.className = 'input-action-row';
-
-        addButton.parentNode.insertBefore(row, addButton);
-
-        row.appendChild(addButton);
-        row.appendChild(uploadButton);
-      } else if (uploadButton.parentElement !== row) {
-        row.appendChild(uploadButton);
-      }
-    });
-  }
-
-  const style = document.createElement('style');
-  style.id = 'inputActionExactRowFix';
-
-  style.textContent = `
-    #inputList .input-action-row {
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: center !important;
-      justify-content: flex-start !important;
-
-      gap: 42px !important;
-
-      width: auto !important;
-      height: auto !important;
-
-      margin: 6px 0 0 !important;
-      padding: 0 !important;
-
-      line-height: 1 !important;
-    }
-
-    #inputList .input-action-row > .add-source-inline,
-    #inputList .input-action-row > .upload-evidence-inline {
-      position: static !important;
-
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: flex-start !important;
-
-      flex: 0 0 auto !important;
-
-      width: auto !important;
-      height: 18px !important;
-      min-height: 18px !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      border: 0 !important;
-      background: transparent !important;
-      box-shadow: none !important;
-
-      color: #54208f !important;
-
-      font-family: inherit !important;
-      font-size: 13px !important;
-      line-height: 18px !important;
-      font-weight: 700 !important;
-
-      vertical-align: middle !important;
-      transform: none !important;
-    }
-
-    #inputList .input-action-row > .add-source-inline:hover,
-    #inputList .input-action-row > .upload-evidence-inline:hover {
-      color: #54208f !important;
-    }
-  `;
-
-  document.getElementById('inputActionExactRowFix')?.remove();
-  document.head.appendChild(style);
-
-  alignInputActionButtons();
-
-  const inputList = document.querySelector('#inputList');
-
-  if (inputList) {
-    new MutationObserver(() => {
-      alignInputActionButtons();
-    }).observe(inputList, {
-      childList: true,
-      subtree: true
-    });
-  }
-})();
-
-/* =========================================================
-   PROCESS INPUT ACTIONS — FINAL BASELINE + SPACING ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'inputActionBaselineSpacingFinal';
-
-  style.textContent = `
-    #inputList .input-action-row {
-      display: flex !important;
-      flex-direction: row !important;
-
-      /* align text using the same baseline */
-      align-items: baseline !important;
-      justify-content: flex-start !important;
-
-      /* slightly wider spacing */
-      column-gap: 58px !important;
-      row-gap: 0 !important;
-
-      width: auto !important;
-      height: auto !important;
-
-      margin: 7px 0 0 !important;
-      padding: 0 !important;
-    }
-
-    #inputList .input-action-row > .add-source-inline,
-    #inputList .input-action-row > .upload-evidence-inline {
-      position: static !important;
-
-      display: inline !important;
-
-      width: auto !important;
-      height: auto !important;
-      min-height: 0 !important;
-      max-height: none !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      border: 0 !important;
-      background: transparent !important;
-      box-shadow: none !important;
-
-      color: #54208f !important;
-
-      font-family: inherit !important;
-      font-size: 13px !important;
-      font-weight: 700 !important;
-      line-height: 1.4 !important;
-
-      vertical-align: baseline !important;
-
-      transform: none !important;
-      translate: none !important;
-    }
-
-    #inputList .input-action-row > .upload-evidence-inline {
-      top: auto !important;
-      bottom: auto !important;
-    }
-  `;
-
-  document
-    .getElementById('inputActionBaselineSpacingFinal')
-    ?.remove();
-
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   INPUT BUTTONS — EXACT ALIGNMENT ONLY
-   ========================================================= */
-(() => {
-  function fixInputActionsExactly() {
-    document
-      .querySelectorAll('#inputList .input-action-row')
-      .forEach(row => {
-        const add = row.querySelector('.add-source-inline');
-        const upload = row.querySelector('.upload-evidence-inline');
-
-        if (!add || !upload) return;
-
-        /* Row only */
-        row.style.setProperty('display', 'flex', 'important');
-        row.style.setProperty('flex-direction', 'row', 'important');
-        row.style.setProperty('align-items', 'flex-start', 'important');
-        row.style.setProperty('justify-content', 'flex-start', 'important');
-        row.style.setProperty('gap', '0', 'important');
-        row.style.setProperty('margin', '7px 0 0', 'important');
-        row.style.setProperty('padding', '0', 'important');
-
-        /* Make both buttons identical */
-        [add, upload].forEach(button => {
-          button.style.setProperty('position', 'relative', 'important');
-          button.style.setProperty('display', 'block', 'important');
-
-          button.style.setProperty('width', 'auto', 'important');
-          button.style.setProperty('height', '20px', 'important');
-          button.style.setProperty('min-height', '20px', 'important');
-
-          button.style.setProperty('margin', '0', 'important');
-          button.style.setProperty('padding', '0', 'important');
-
-          button.style.setProperty('border', '0', 'important');
-          button.style.setProperty('background', 'transparent', 'important');
-          button.style.setProperty('box-shadow', 'none', 'important');
-
-          button.style.setProperty('color', '#54208f', 'important');
-
-          button.style.setProperty('font-family', 'inherit', 'important');
-          button.style.setProperty('font-size', '13px', 'important');
-          button.style.setProperty('font-weight', '700', 'important');
-          button.style.setProperty('line-height', '20px', 'important');
-
-          button.style.setProperty('top', '0', 'important');
-          button.style.setProperty('bottom', 'auto', 'important');
-          button.style.setProperty('transform', 'none', 'important');
-        });
-
-        /* Make Upload evidence clearly farther away */
-        upload.style.setProperty('margin-left', '72px', 'important');
-
-        /*
-         * Measure actual rendered positions.
-         * If an old rule still shifts Upload evidence,
-         * compensate automatically.
-         */
-        requestAnimationFrame(() => {
-          const addTop = add.getBoundingClientRect().top;
-          const uploadTop = upload.getBoundingClientRect().top;
-          const difference = Math.round(addTop - uploadTop);
-
-          if (difference !== 0) {
-            upload.style.setProperty(
-              'top',
-              `${difference}px`,
-              'important'
-            );
-          }
-        });
-      });
-  }
-
-  fixInputActionsExactly();
-
-  requestAnimationFrame(fixInputActionsExactly);
-
-  setTimeout(fixInputActionsExactly, 100);
-  setTimeout(fixInputActionsExactly, 400);
-  setTimeout(fixInputActionsExactly, 1000);
-
-  const inputList = document.querySelector('#inputList');
-
-  if (inputList) {
-    new MutationObserver(() => {
-      requestAnimationFrame(fixInputActionsExactly);
-    }).observe(inputList, {
-      childList: true,
-      subtree: true
-    });
-  }
-})();
-
-/* =========================================================
-   INPUT ACTION BUTTONS — VISUAL ALIGNMENT ONLY
-   ========================================================= */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'inputActionVisualAlignmentOnly';
-
-  style.textContent = `
-    #inputList .input-action-row {
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: flex-start !important;
-      justify-content: flex-start !important;
-
-      gap: 0 !important;
-
-      margin-top: 7px !important;
-      padding: 0 !important;
-    }
-
-    #inputList .input-action-row > .add-source-inline,
-    #inputList .input-action-row > .upload-evidence-inline {
-      display: inline-block !important;
-
-      width: auto !important;
-      height: 20px !important;
-      min-height: 20px !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      border: 0 !important;
-      background: transparent !important;
-      box-shadow: none !important;
-
-      color: #54208f !important;
-
-      font-family: inherit !important;
-      font-size: 13px !important;
-      font-weight: 700 !important;
-      line-height: 20px !important;
-
-      vertical-align: top !important;
-    }
-
-    #inputList .input-action-row > .upload-evidence-inline {
-      margin-left: 64px !important;
-      position: relative !important;
-      top: 4px !important;
-    }
-
-    #inputList .input-action-row > .add-source-inline {
-      position: relative !important;
-      top: 0 !important;
-    }
-  `;
-
-  document.getElementById('inputActionVisualAlignmentOnly')?.remove();
-  document.head.appendChild(style);
-})();
-
-/* INPUT ACTION FINAL VERTICAL ALIGNMENT ONLY */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'inputActionFinalVerticalAlignment';
-
-  style.textContent = `
-    #inputList .input-action-row > .upload-evidence-inline {
-      position: relative !important;
-      top: 6px !important;
-    }
-  `;
-
-  document.getElementById('inputActionFinalVerticalAlignment')?.remove();
-  document.head.appendChild(style);
-})();
-
-/* INPUT ACTION SPACING ONLY */
-(() => {
-  const style = document.createElement('style');
-  style.id = 'inputActionSpacingOnly';
-
-  style.textContent = `
-    #inputList .input-action-row > .upload-evidence-inline {
-      margin-left: 48px !important;
-    }
-  `;
-
-  document.getElementById('inputActionSpacingOnly')?.remove();
-  document.head.appendChild(style);
-})();
-
-/* =========================================================
-   ALL INPUTS — EVIDENCE MODAL LABEL + CLOSE FIX
-   ========================================================= */
-(() => {
-  function formatInputNumber(index) {
-    return `Input ${String(index + 1).padStart(2, '0')}`;
-  }
-
-  document.addEventListener('click', event => {
-    const uploadButton = event.target.closest(
-      '#inputList .upload-evidence-inline'
-    );
-
-    if (!uploadButton) return;
-
-    const inputIndex = Number(uploadButton.dataset.input);
-
-    if (!Number.isInteger(inputIndex)) return;
-
-    const title = document.querySelector('#documentDialogTitle');
-
-    if (title) {
-      title.textContent =
-        `Upload evidence for ${formatInputNumber(inputIndex)}`;
-    }
-  });
-
-  const dialog = document.querySelector('#documentDialog');
-
-  if (!dialog) return;
-
-  const closeButton = dialog.querySelector('.close');
-
-  if (closeButton) {
-    closeButton.addEventListener('click', event => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (dialog.open) {
-        dialog.close();
-      }
-    });
-  }
-})();
-
-/* =========================================================
-   SEGMENT + EVIDENCE — FULL WIDTH ONLY
-   ========================================================= */
-(() => {
-  function applySegmentEvidenceFullWidth() {
-    const segment = document.querySelector('#segmentsPanel');
-    const evidence = document.querySelector('#fmDashboardEvidence');
-
-    if (!segment || !evidence) return;
-
-    [segment, evidence].forEach(section => {
-      section.style.setProperty('grid-column', '1 / -1', 'important');
-      section.style.setProperty('grid-row', 'auto', 'important');
-
-      section.style.setProperty('width', '100%', 'important');
-      section.style.setProperty('max-width', 'none', 'important');
-
-      section.style.setProperty('justify-self', 'stretch', 'important');
-      section.style.setProperty('align-self', 'start', 'important');
-
-      section.style.setProperty('margin-left', '0', 'important');
-      section.style.setProperty('margin-right', '0', 'important');
-    });
-  }
-
-  applySegmentEvidenceFullWidth();
-
-  window.addEventListener('load', applySegmentEvidenceFullWidth);
-
-  setTimeout(applySegmentEvidenceFullWidth, 500);
-  setTimeout(applySegmentEvidenceFullWidth, 2500);
 })();
 
 /* =========================================================
@@ -13026,7 +11168,7 @@ function syncAuthScreenUI() {
    ========================================================= */
 (() => {
   const STYLE_ID = 'fmSixTileOutputStyle';
-  const VIEW_ID = 'fmSixTileOutput';
+  const VIEW_ID = 'fmCurrentResultCard';
 
   /* ---------------------------------------------------------
      OUTPUT-ONLY STYLES
@@ -13337,10 +11479,69 @@ function syncAuthScreenUI() {
      --------------------------------------------------------- */
 
   function buildOutputData() {
-    const source =
-      document.querySelector(
-        '#analysisOutput .generated-answer'
+    const analysisOutput =
+      document.getElementById(
+        'analysisOutput'
       );
+
+    let source =
+      analysisOutput?.querySelector(
+        '.generated-answer'
+      );
+
+    /*
+     * The saved process output is the source of truth.
+     * Tab/layout changes may temporarily rebuild or clear
+     * #analysisOutput, so restore the current process output
+     * before deciding that no generated result exists.
+     */
+    if (!source) {
+      const directOutput =
+        Array.isArray(state.outputs)
+          ? state.outputs[state.step]
+          : null;
+
+      const latestHistoryOutput =
+        Array.isArray(state.history)
+          ? state.history
+              .filter(item => {
+                const processIndex =
+                  Number.isInteger(item.processIndex)
+                    ? item.processIndex
+                    : Number(item.processNumber || 1) - 1;
+
+                return processIndex === state.step;
+              })
+              .sort(
+                (a, b) =>
+                  new Date(b.createdAt || 0) -
+                  new Date(a.createdAt || 0)
+              )[0]?.answer
+          : null;
+
+      const savedOutput =
+        typeof directOutput === 'string' &&
+        directOutput.trim()
+          ? directOutput
+          : latestHistoryOutput || '';
+
+      if (
+        analysisOutput &&
+        typeof savedOutput === 'string' &&
+        savedOutput.trim()
+      ) {
+        analysisOutput.innerHTML = `
+          <div class="generated-answer">
+            ${formatAnswer(savedOutput)}
+          </div>
+        `;
+
+        source =
+          analysisOutput.querySelector(
+            '.generated-answer'
+          );
+      }
+    }
 
     if (!source) return null;
 
@@ -13513,6 +11714,9 @@ function syncAuthScreenUI() {
     const data =
       buildOutputData();
 
+    const emptyState =
+      panel.querySelector(':scope > .fm-output-state');
+
     let view =
       document.getElementById(VIEW_ID);
 
@@ -13522,7 +11726,20 @@ function syncAuthScreenUI() {
       );
 
       view?.remove();
+
+      if (emptyState) {
+        emptyState.style.removeProperty('display');
+      }
+
       return;
+    }
+
+    if (emptyState) {
+      emptyState.style.setProperty(
+        'display',
+        'none',
+        'important'
+      );
     }
 
     if (!view) {
@@ -13531,90 +11748,110 @@ function syncAuthScreenUI() {
 
       view.id = VIEW_ID;
 
-      panel.appendChild(view);
+      if (emptyState) {
+        emptyState.insertAdjacentElement(
+          'afterend',
+          view
+        );
+      } else {
+        panel.prepend(view);
+      }
     }
 
     panel.classList.add(
       'fm-six-output-ready'
     );
 
-    const questionTiles =
-      data.questions
-        .map(item => `
-          <section class="fm-six-output-tile">
-            <div class="fm-six-output-number">
-              ${escapeHtml(item.number)}
-            </div>
+    const processIndex = state.step;
 
-            <h3 class="fm-six-output-tile-title">
-              ${escapeHtml(item.title)}
-            </h3>
-
-            <div class="fm-six-output-divider"></div>
-
-            <p class="fm-six-output-summary">
-              ${escapeHtml(item.summary)}
-            </p>
-          </section>
-        `)
-        .join('');
+    const currentTitle =
+      mapSteps?.[processIndex]?.title ||
+      `Process ${processIndex + 1}`;
 
     view.innerHTML = `
-      <header class="fm-six-output-header">
-        <p class="fm-six-output-eyebrow">
-          Generated output
-        </p>
-
-        <h2>
-          Decision brief
-        </h2>
-
-        <p>
-          AI-generated from the information provided in this process.
-        </p>
-      </header>
-
-      <div class="fm-six-output-grid">
-        ${questionTiles}
-
-        <section
-          class="
-            fm-six-output-tile
-            fm-six-output-recommended
-          "
-        >
-          <div class="fm-six-output-number">
-            06
-          </div>
-
-          <h3 class="fm-six-output-tile-title">
-            Recommended decision
-          </h3>
-
-          <div class="fm-six-output-divider"></div>
-
-          <p class="fm-six-output-summary">
-            ${escapeHtml(data.recommended)}
+      <article class="history-item fm-current-result-item">
+        <div class="history-item-info">
+          <p class="history-item-title">
+            ${escapeHtml(currentTitle)}
           </p>
-        </section>
-      </div>
 
-      ${
-        data.assumption
-          ? `
-            <div class="fm-six-assumption">
-              <strong>
-                Key assumption
-              </strong>
+          <p class="history-item-meta">
+            Process ${processIndex + 1} · Current generated result
+          </p>
+        </div>
+
+        <button
+          class="history-view"
+          type="button"
+          data-current-result-view
+        >
+          View result →
+        </button>
+      </article>
+    `;
+
+    const viewButton =
+      view.querySelector('[data-current-result-view]');
+
+    if (viewButton) {
+      viewButton.onclick = () => {
+        const modal =
+          document.getElementById('outputModal');
+
+        const modalTitle =
+          document.getElementById('outputModalTitle');
+
+        const modalBody =
+          document.getElementById('outputModalBody');
+
+        const sourceOutput =
+          document.getElementById('analysisOutput');
+
+        if (!modal || !modalBody) return;
+
+        if (modalTitle) {
+          modalTitle.textContent = currentTitle;
+        }
+
+        if (
+          sourceOutput &&
+          sourceOutput.innerHTML.trim()
+        ) {
+          modalBody.innerHTML =
+            sourceOutput.innerHTML;
+        } else {
+          modalBody.innerHTML = `
+            <div class="generated-answer">
+              ${data.questions.map(item => `
+                <h3>
+                  ${escapeHtml(item.number)}.
+                  ${escapeHtml(item.title)}
+                </h3>
+
+                <p>
+                  ${escapeHtml(item.summary)}
+                </p>
+              `).join('')}
+
+              <h3>
+                Recommended decision
+              </h3>
 
               <p>
-                ${escapeHtml(data.assumption)}
+                ${escapeHtml(data.recommended)}
               </p>
             </div>
-          `
-          : ''
-      }
-    `;
+          `;
+        }
+
+        modal.classList.add('open');
+        modal.setAttribute(
+          'aria-hidden',
+          'false'
+        );
+      };
+    }
+
     /*
      * NOTE: tile clicks are NOT wired here. A later block in this
      * file ("FINAL OUTPUT TILE PREVIEW + FULL ANSWER MODAL") already
@@ -13663,15 +11900,21 @@ function syncAuthScreenUI() {
       .sixTileOutputInstalled = 'true';
 
     /*
-     * Build/update only when Outputs is opened.
+     * Render the current result only after application state
+     * has been restored. Tab changes must never render against
+     * the temporary default state used during startup.
      */
+    function scheduleCurrentResultRender() {
+      appReady.then(() => {
+        requestAnimationFrame(() => {
+          renderSixTileOutput();
+        });
+      });
+    }
+
     outputsTab.addEventListener(
       'click',
-      () => {
-        requestAnimationFrame(
-          renderSixTileOutput
-        );
-      }
+      scheduleCurrentResultRender
     );
 
     /*
@@ -13694,20 +11937,17 @@ function syncAuthScreenUI() {
       }
     );
 
-    renderSixTileOutput();
+    scheduleCurrentResultRender();
   }
 
-  if (
-    document.readyState === 'loading'
-  ) {
-    document.addEventListener(
-      'DOMContentLoaded',
-      installSixTileOutput,
-      { once: true }
-    );
-  } else {
+  /*
+   * Install only after restoreAccount() has completed.
+   * At this point state.step, state.outputs and state.history
+   * are the restored workspace values.
+   */
+  appReady.then(() => {
     installSixTileOutput();
-  }
+  });
 })();
 
 
@@ -16351,7 +14591,7 @@ function syncAuthScreenUI() {
     if (!stack) {
       stack = document.createElement('div');
       stack.id = STACK_ID;
-      outputsPanel.appendChild(stack);
+      document.querySelector('.fm-process-body')?.insertBefore(stack, outputsPanel);
     }
 
     // 1. Key Questions -- moved here, replacing the old right-side content.
@@ -16567,13 +14807,17 @@ function syncAuthScreenUI() {
     // layout for buttons that are no longer here -- size the single
     // remaining column to the button's own content instead of
     // stretching it across most of the row.
-    actions.style.setProperty('grid-template-columns', 'max-content', 'important');
-    actions.style.setProperty('justify-items', 'start', 'important');
-    actions.style.setProperty('justify-content', 'start', 'important');
+    actions.style.setProperty('grid-template-columns', 'minmax(0, 1fr)', 'important');
+    actions.style.setProperty('justify-items', 'stretch', 'important');
+    actions.style.setProperty('justify-content', 'stretch', 'important');
+    actions.style.setProperty('width', '100%', 'important');
+    actions.style.setProperty('margin', '18px 0 0', 'important');
 
-    button.style.setProperty('width', 'auto', 'important');
-    button.style.setProperty('min-width', '240px', 'important');
-    button.style.setProperty('padding', '0 30px', 'important');
+    button.style.setProperty('width', '100%', 'important');
+    button.style.setProperty('min-width', '0', 'important');
+    button.style.setProperty('height', '56px', 'important');
+    button.style.setProperty('padding', '0 28px', 'important');
+    button.style.setProperty('border-radius', '11px', 'important');
 
     // Defensive: a couple of other scripts write this button's
     // innerHTML too (the loading state and the success/failure reset
@@ -16671,7 +14915,7 @@ function syncAuthScreenUI() {
       outputsPanel.querySelector(':scope > .fm-output-state');
 
     let previous = contentAnchor || null;
-    [sixTileOutput, exportWrap, history].forEach(el => {
+    [sixTileOutput, history, exportWrap].forEach(el => {
       if (!el) return;
 
       const referenceNode = previous
@@ -16736,7 +14980,7 @@ function syncAuthScreenUI() {
       setImportant(historyList, 'flex-direction', 'column');
       setImportant(historyList, 'align-items', 'stretch');
       setImportant(historyList, 'justify-content', 'center');
-      setImportant(historyList, 'min-height', '260px');
+      setImportant(historyList, 'min-height', '120px');
       // NOT height/max-height: a much earlier script
       // (installHistoryListHeightGuard) permanently strips those two
       // specific properties off #historyList the instant either is
@@ -16842,4 +15086,2116 @@ function syncAuthScreenUI() {
   window.addEventListener('resize', () => {
     setTimeout(restoreRelocatedHistoryStyle, 50);
   });
+})();
+
+/* =========================================================
+   MAIN PAGE — WORKSPACE EVIDENCE SUMMARY
+   Read-only on Process page.
+   Evidence management belongs in My Workspace.
+   ========================================================= */
+
+(function setupWorkspaceEvidenceSummary() {
+  const DEFAULT_VISIBLE_COUNT = 3;
+
+  function escapeEvidenceHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  async function initialiseWorkspaceEvidenceSummary() {
+    const section = document.getElementById('fmDashboardEvidence');
+
+    if (!section) return;
+    if (section.dataset.workspaceEvidenceReady === 'true') return;
+
+    section.dataset.workspaceEvidenceReady = 'true';
+
+    section.innerHTML = `
+      <div class="fm-workspace-evidence-summary">
+        <div class="fm-workspace-evidence-summary-header">
+          <div>
+            <p class="fm-evidence-eyebrow">Evidence</p>
+
+            <h2>Workspace Evidence</h2>
+
+            <p class="fm-workspace-evidence-summary-description">
+              Evidence currently available in this workspace.
+            </p>
+          </div>
+
+          <span
+            class="fm-workspace-evidence-count"
+            id="fmWorkspaceEvidenceCount"
+          >
+            0 items
+          </span>
+        </div>
+
+        <div
+          class="fm-workspace-evidence-preview"
+          id="fmWorkspaceEvidencePreview"
+        >
+          Loading evidence...
+        </div>
+      </div>
+    `;
+
+    document.getElementById('fmEvidenceModal')?.remove();
+
+    try {
+      const response = await fetch('/api/evidence', {
+        credentials: 'same-origin'
+      });
+
+      if (!response.ok) {
+        throw new Error('Evidence could not be loaded.');
+      }
+
+      const data = await response.json();
+
+      const evidence = Array.isArray(data.evidence)
+        ? data.evidence
+        : [];
+
+      const count = document.getElementById(
+        'fmWorkspaceEvidenceCount'
+      );
+
+      const preview = document.getElementById(
+        'fmWorkspaceEvidencePreview'
+      );
+
+      if (!preview || !count) return;
+
+      count.textContent =
+        `${evidence.length} ${evidence.length === 1 ? 'item' : 'items'}`;
+
+      if (!evidence.length) {
+        preview.innerHTML = `
+          <div class="fm-workspace-evidence-empty-summary">
+            No evidence has been added to this workspace yet.
+          </div>
+        `;
+        return;
+      }
+
+      let expanded = false;
+
+      function renderEvidence() {
+        const visibleItems = expanded
+          ? evidence
+          : evidence.slice(0, DEFAULT_VISIBLE_COUNT);
+
+        preview.innerHTML = `
+          <div class="fm-workspace-evidence-preview-list">
+            ${visibleItems.map(item => `
+              <div class="fm-workspace-evidence-preview-item">
+                <div class="fm-workspace-evidence-preview-content">
+                  <strong>
+                    ${escapeEvidenceHtml(
+                      item.title ||
+                      item.name ||
+                      'Untitled evidence'
+                    )}
+                  </strong>
+
+                  <span>
+                    ${escapeEvidenceHtml(
+                      item.type ||
+                      item.evidence_type ||
+                      'Evidence'
+                    )}
+                  </span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          ${
+            evidence.length > DEFAULT_VISIBLE_COUNT
+              ? `
+                <div class="fm-workspace-evidence-toggle-wrap">
+                  <button
+                    type="button"
+                    class="fm-workspace-evidence-toggle"
+                    id="fmWorkspaceEvidenceToggle"
+                  >
+                    ${
+                      expanded
+                        ? 'Show less ↑'
+                        : `Show all ${evidence.length} items ↓`
+                    }
+                  </button>
+                </div>
+              `
+              : ''
+          }
+        `;
+
+        const toggle =
+          document.getElementById('fmWorkspaceEvidenceToggle');
+
+        if (toggle) {
+          toggle.addEventListener('click', () => {
+            expanded = !expanded;
+            renderEvidence();
+          });
+        }
+      }
+
+      renderEvidence();
+
+    } catch (error) {
+      const preview = document.getElementById(
+        'fmWorkspaceEvidencePreview'
+      );
+
+      if (preview) {
+        preview.textContent = 'Evidence could not be loaded.';
+      }
+    }
+  }
+
+  function startWorkspaceEvidenceSummary() {
+    initialiseWorkspaceEvidenceSummary();
+
+    const observer = new MutationObserver(() => {
+      initialiseWorkspaceEvidenceSummary();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      startWorkspaceEvidenceSummary
+    );
+  } else {
+    startWorkspaceEvidenceSummary();
+  }
+})();
+
+/* =========================================================
+   PROCESS PAGE — RIGHT PANELS VISUAL POLISH
+   Key Questions + Workspace Evidence only
+   ========================================================= */
+
+(function polishProcessRightPanels() {
+  if (document.getElementById("fmRightPanelsPolishStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRightPanelsPolishStyles";
+
+  style.textContent = `
+    /* ---------- Shared card treatment ---------- */
+
+    #fmInputsRightStack > .fm-key-questions-card,
+    #fmDashboardEvidence {
+      border: 1px solid rgba(74, 42, 104, .10) !important;
+      border-radius: 18px !important;
+      background: rgba(255, 255, 255, .98) !important;
+      box-shadow: 0 12px 34px rgba(46, 28, 64, .055) !important;
+      box-sizing: border-box !important;
+    }
+
+    /* ---------- Key Questions ---------- */
+
+    #fmInputsRightStack > .fm-key-questions-card {
+      padding: 22px 24px 20px !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-section-eyebrow,
+    #fmInputsRightStack > .fm-key-questions-card .eyebrow {
+      margin-bottom: 6px !important;
+      color: #7a56a6 !important;
+      font-size: 10px !important;
+      font-weight: 800 !important;
+      letter-spacing: .09em !important;
+      text-transform: uppercase !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card h2,
+    #fmInputsRightStack > .fm-key-questions-card h3 {
+      margin: 0 !important;
+      color: #28212f !important;
+      font-size: 22px !important;
+      line-height: 1.2 !important;
+      letter-spacing: -.025em !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-count,
+    #fmInputsRightStack > .fm-key-questions-card .fm-count-badge {
+      border: 0 !important;
+      border-radius: 999px !important;
+      background: #f2ebf8 !important;
+      color: #6d3fa0 !important;
+      padding: 6px 10px !important;
+      font-size: 9px !important;
+      font-weight: 800 !important;
+      letter-spacing: .04em !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-list,
+    #fmInputsRightStack > .fm-key-questions-card .questions-list {
+      margin-top: 16px !important;
+      border: 1px solid rgba(77, 48, 103, .09) !important;
+      border-radius: 14px !important;
+      overflow: hidden !important;
+      background: #fff !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-item,
+    #fmInputsRightStack > .fm-key-questions-card .question-item {
+      min-height: 62px !important;
+      padding: 12px 14px !important;
+      border-bottom: 1px solid rgba(71, 46, 91, .07) !important;
+      background: #fff !important;
+      transition:
+        background .15s ease,
+        transform .15s ease !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-item:last-child,
+    #fmInputsRightStack > .fm-key-questions-card .question-item:last-child {
+      border-bottom: 0 !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-item:hover,
+    #fmInputsRightStack > .fm-key-questions-card .question-item:hover {
+      background: #fbf9fd !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-number,
+    #fmInputsRightStack > .fm-key-questions-card .question-number {
+      width: 34px !important;
+      height: 34px !important;
+      min-width: 34px !important;
+      border-radius: 9px !important;
+      background: #f2ebf9 !important;
+      color: #5c22a0 !important;
+      font-size: 11px !important;
+      font-weight: 800 !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-text,
+    #fmInputsRightStack > .fm-key-questions-card .question-text {
+      color: #302836 !important;
+      font-size: 12px !important;
+      font-weight: 650 !important;
+      line-height: 1.42 !important;
+    }
+
+    /* ---------- Workspace Evidence ---------- */
+
+    #fmDashboardEvidence {
+      padding: 22px 24px 20px !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-summary {
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-summary-header,
+    #fmDashboardEvidence .fm-evidence-summary-header {
+      display: flex !important;
+      align-items: flex-start !important;
+      justify-content: space-between !important;
+      gap: 18px !important;
+      padding-bottom: 14px !important;
+      margin-bottom: 14px !important;
+      border-bottom: 1px solid rgba(69, 44, 91, .08) !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-summary h2,
+    #fmDashboardEvidence .fm-workspace-evidence-summary h3 {
+      margin: 3px 0 0 !important;
+      color: #28212f !important;
+      font-size: 20px !important;
+      line-height: 1.2 !important;
+      letter-spacing: -.025em !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-summary p {
+      margin: 5px 0 0 !important;
+      color: #807786 !important;
+      font-size: 10px !important;
+      line-height: 1.4 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-count,
+    #fmDashboardEvidence .fm-evidence-count {
+      border-radius: 999px !important;
+      background: #f2ebf8 !important;
+      color: #6d3fa0 !important;
+      padding: 6px 10px !important;
+      font-size: 9px !important;
+      font-weight: 800 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-list {
+      border: 1px solid rgba(74, 44, 99, .09) !important;
+      border-radius: 13px !important;
+      overflow: hidden !important;
+      background: #fff !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-item {
+      min-height: 54px !important;
+      padding: 10px 12px !important;
+      border-bottom: 1px solid rgba(70, 44, 92, .07) !important;
+      background: #fff !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-item:last-child {
+      border-bottom: 0 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-item:hover {
+      background: #fbf9fd !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-title {
+      color: #302836 !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      line-height: 1.35 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-type {
+      margin-top: 2px !important;
+      color: #887d8e !important;
+      font-size: 9px !important;
+      line-height: 1.3 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle-wrap {
+      padding-top: 14px !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle {
+      min-height: 34px !important;
+      padding: 0 14px !important;
+      border: 1px solid rgba(75, 22, 140, .14) !important;
+      border-radius: 10px !important;
+      background: #f7f3fa !important;
+      color: #4b168c !important;
+      font-size: 10px !important;
+      font-weight: 750 !important;
+      box-shadow: none !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle:hover {
+      background: #efe7f6 !important;
+      border-color: rgba(75, 22, 140, .22) !important;
+    }
+
+    /* Keep the two right-side cards visually separated */
+    #fmInputsRightStack {
+      gap: 18px !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — RIGHT PANELS FINAL ALIGNMENT
+   Key Questions + Workspace Evidence only
+   ========================================================= */
+
+(function alignProcessRightPanelsFinal() {
+  if (document.getElementById("fmRightPanelsFinalAlignmentStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRightPanelsFinalAlignmentStyles";
+
+  style.textContent = `
+    /* Right column container */
+    #fmInputsRightStack {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 16px !important;
+      box-sizing: border-box !important;
+      overflow: visible !important;
+    }
+
+    /* Both right-side frames */
+    #fmInputsRightStack > .fm-key-questions-card,
+    #fmDashboardEvidence {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+
+      border: 1px solid rgba(72, 43, 96, .10) !important;
+      border-radius: 16px !important;
+      background: #ffffff !important;
+      box-shadow: 0 8px 24px rgba(45, 28, 61, .045) !important;
+      overflow: hidden !important;
+    }
+
+    /* Same internal padding */
+    #fmInputsRightStack > .fm-key-questions-card {
+      padding: 20px !important;
+    }
+
+    #fmDashboardEvidence {
+      padding: 20px !important;
+    }
+
+    /* Same header spacing */
+    #fmInputsRightStack > .fm-key-questions-card > header,
+    #fmInputsRightStack > .fm-key-questions-card .fm-key-questions-header,
+    #fmDashboardEvidence .fm-workspace-evidence-summary-header,
+    #fmDashboardEvidence .fm-evidence-summary-header {
+      width: 100% !important;
+      min-width: 0 !important;
+      display: flex !important;
+      align-items: flex-start !important;
+      justify-content: space-between !important;
+      gap: 16px !important;
+      margin: 0 0 14px !important;
+      padding: 0 0 14px !important;
+      border-bottom: 1px solid rgba(69, 44, 91, .08) !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Header titles align visually */
+    #fmInputsRightStack > .fm-key-questions-card h2,
+    #fmInputsRightStack > .fm-key-questions-card h3,
+    #fmDashboardEvidence .fm-workspace-evidence-summary h2,
+    #fmDashboardEvidence .fm-workspace-evidence-summary h3 {
+      margin: 2px 0 0 !important;
+      color: #28212f !important;
+      font-size: 20px !important;
+      line-height: 1.2 !important;
+      letter-spacing: -.025em !important;
+    }
+
+    /* Eyebrows align */
+    #fmInputsRightStack > .fm-key-questions-card .fm-section-eyebrow,
+    #fmInputsRightStack > .fm-key-questions-card .eyebrow,
+    #fmDashboardEvidence .fm-workspace-evidence-summary .eyebrow,
+    #fmDashboardEvidence .fm-evidence-eyebrow {
+      margin: 0 0 5px !important;
+      color: #7751a1 !important;
+      font-size: 9px !important;
+      font-weight: 800 !important;
+      letter-spacing: .09em !important;
+      text-transform: uppercase !important;
+    }
+
+    /* Top-right badges */
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-count,
+    #fmInputsRightStack > .fm-key-questions-card .fm-count-badge,
+    #fmDashboardEvidence .fm-workspace-evidence-count,
+    #fmDashboardEvidence .fm-evidence-count {
+      flex: 0 0 auto !important;
+      margin: 0 !important;
+      padding: 5px 9px !important;
+      border: 0 !important;
+      border-radius: 999px !important;
+      background: #f2ebf8 !important;
+      color: #6c3d9d !important;
+      font-size: 9px !important;
+      font-weight: 800 !important;
+      line-height: 1 !important;
+    }
+
+    /* Question list box */
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-list,
+    #fmInputsRightStack > .fm-key-questions-card .questions-list {
+      width: 100% !important;
+      min-width: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 1px solid rgba(72, 44, 96, .09) !important;
+      border-radius: 12px !important;
+      background: #ffffff !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-item,
+    #fmInputsRightStack > .fm-key-questions-card .question-item {
+      width: 100% !important;
+      min-width: 0 !important;
+      min-height: 60px !important;
+      margin: 0 !important;
+      padding: 11px 12px !important;
+      box-sizing: border-box !important;
+      border-bottom: 1px solid rgba(71, 46, 91, .07) !important;
+      background: #ffffff !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-item:last-child,
+    #fmInputsRightStack > .fm-key-questions-card .question-item:last-child {
+      border-bottom: 0 !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-number,
+    #fmInputsRightStack > .fm-key-questions-card .question-number {
+      width: 34px !important;
+      min-width: 34px !important;
+      height: 34px !important;
+      border-radius: 8px !important;
+      background: #f2ebf9 !important;
+      color: #5d22a1 !important;
+      font-size: 11px !important;
+      font-weight: 800 !important;
+    }
+
+    /* Evidence inner summary must not create a second outer frame */
+    #fmDashboardEvidence .fm-workspace-evidence-summary {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      box-sizing: border-box !important;
+      overflow: visible !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-list {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 1px solid rgba(72, 44, 96, .09) !important;
+      border-radius: 12px !important;
+      background: #ffffff !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-item {
+      width: 100% !important;
+      min-width: 0 !important;
+      min-height: 52px !important;
+      margin: 0 !important;
+      padding: 10px 12px !important;
+      box-sizing: border-box !important;
+      border-bottom: 1px solid rgba(71, 46, 91, .07) !important;
+      background: #ffffff !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-item:last-child {
+      border-bottom: 0 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle-wrap {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 13px 0 0 !important;
+      display: flex !important;
+      justify-content: center !important;
+      box-sizing: border-box !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle {
+      min-height: 34px !important;
+      padding: 0 14px !important;
+      border: 1px solid rgba(75, 22, 140, .14) !important;
+      border-radius: 9px !important;
+      background: #f7f3fa !important;
+      color: #4b168c !important;
+      font-size: 10px !important;
+      font-weight: 750 !important;
+      box-shadow: none !important;
+    }
+
+    /* Prevent any child from escaping the right column */
+    #fmInputsRightStack *,
+    #fmDashboardEvidence * {
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — RIGHT PANELS POLISH V2
+   Questions + Evidence only
+   ========================================================= */
+
+(function polishRightPanelsV2() {
+  if (document.getElementById("fmRightPanelsPolishV2")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRightPanelsPolishV2";
+
+  style.textContent = `
+    /* ---------- Shared outer cards ---------- */
+
+    #fmInputsRightStack > .fm-key-questions-card,
+    #fmDashboardEvidence {
+      padding: 22px !important;
+      border: 1px solid rgba(66, 43, 87, .09) !important;
+      border-radius: 16px !important;
+      background: #fff !important;
+      box-shadow: 0 8px 24px rgba(42, 27, 57, .04) !important;
+    }
+
+    #fmInputsRightStack {
+      gap: 14px !important;
+    }
+
+    /* ---------- Shared header hierarchy ---------- */
+
+    #fmInputsRightStack > .fm-key-questions-card h2,
+    #fmInputsRightStack > .fm-key-questions-card h3,
+    #fmDashboardEvidence .fm-workspace-evidence-summary h2,
+    #fmDashboardEvidence .fm-workspace-evidence-summary h3 {
+      margin: 2px 0 0 !important;
+      font-size: 20px !important;
+      line-height: 1.2 !important;
+      font-weight: 750 !important;
+      letter-spacing: -.025em !important;
+      color: #29212f !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-section-eyebrow,
+    #fmInputsRightStack > .fm-key-questions-card .eyebrow,
+    #fmDashboardEvidence .fm-evidence-eyebrow,
+    #fmDashboardEvidence .eyebrow {
+      margin: 0 0 5px !important;
+      color: #7a56a3 !important;
+      font-size: 9px !important;
+      font-weight: 800 !important;
+      letter-spacing: .09em !important;
+      text-transform: uppercase !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-count,
+    #fmInputsRightStack > .fm-key-questions-card .fm-count-badge,
+    #fmDashboardEvidence .fm-workspace-evidence-count,
+    #fmDashboardEvidence .fm-evidence-count {
+      padding: 5px 9px !important;
+      border: 0 !important;
+      border-radius: 999px !important;
+      background: #f3edf8 !important;
+      color: #6d3d9e !important;
+      font-size: 9px !important;
+      font-weight: 800 !important;
+    }
+
+    /* ---------- Questions ---------- */
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-list,
+    #fmInputsRightStack > .fm-key-questions-card .questions-list {
+      margin-top: 14px !important;
+      border: 1px solid rgba(70, 45, 92, .10) !important;
+      border-radius: 12px !important;
+      overflow: hidden !important;
+      background: #fff !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-item,
+    #fmInputsRightStack > .fm-key-questions-card .question-item {
+      min-height: 61px !important;
+      padding: 11px 12px !important;
+      border-bottom: 1px solid rgba(65, 42, 85, .07) !important;
+      background: #fff !important;
+      text-align: left !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-item:last-child,
+    #fmInputsRightStack > .fm-key-questions-card .question-item:last-child {
+      border-bottom: 0 !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-text,
+    #fmInputsRightStack > .fm-key-questions-card .question-text {
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+      text-align: left !important;
+      color: #302735 !important;
+      font-size: 12px !important;
+      font-weight: 650 !important;
+      line-height: 1.4 !important;
+    }
+
+    #fmInputsRightStack > .fm-key-questions-card .fm-question-number,
+    #fmInputsRightStack > .fm-key-questions-card .question-number {
+      width: 36px !important;
+      min-width: 36px !important;
+      height: 36px !important;
+      border-radius: 9px !important;
+      background: #f2ebf9 !important;
+      color: #5d22a0 !important;
+      font-size: 11px !important;
+      font-weight: 800 !important;
+    }
+
+    /* ---------- Evidence ---------- */
+
+    #fmDashboardEvidence .fm-workspace-evidence-summary {
+      padding: 0 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview {
+      margin-top: 14px !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-list {
+      border: 1px solid rgba(70, 45, 92, .10) !important;
+      border-radius: 12px !important;
+      overflow: hidden !important;
+      background: #fff !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-item {
+      min-height: 57px !important;
+      padding: 11px 12px !important;
+      border-bottom: 1px solid rgba(65, 42, 85, .07) !important;
+      background: #fff !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-item:last-child {
+      border-bottom: 0 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-title {
+      color: #302735 !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      line-height: 1.35 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-type {
+      margin-top: 3px !important;
+      color: #8a7e8f !important;
+      font-size: 9px !important;
+      line-height: 1.3 !important;
+    }
+
+    /* ---------- Evidence button ---------- */
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle-wrap {
+      padding-top: 14px !important;
+      justify-content: center !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle {
+      min-width: 150px !important;
+      min-height: 35px !important;
+      padding: 0 16px !important;
+      border: 1px solid rgba(75, 22, 140, .14) !important;
+      border-radius: 9px !important;
+      background: #f6f1fa !important;
+      color: #4b168c !important;
+      font-size: 10px !important;
+      font-weight: 750 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle:hover {
+      background: #eee5f6 !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — RIGHT PANEL INNER ALIGNMENT
+   Questions + Evidence only
+   ========================================================= */
+
+(function alignRightPanelInnerContent() {
+  if (document.getElementById("fmRightPanelInnerAlignmentFix")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRightPanelInnerAlignmentFix";
+
+  style.textContent = `
+    /* Match outer padding */
+    #fmInputsRightStack > .question-card {
+      padding: 22px !important;
+    }
+
+    #fmDashboardEvidence {
+      padding: 22px !important;
+    }
+
+    /* Questions header should align with Evidence summary */
+    #fmInputsRightStack > .question-card .question-card-header {
+      width: 100% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Remove the old extra inset from the Questions list */
+    #fmInputsRightStack > .question-card #questionList {
+      width: 100% !important;
+      max-width: none !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Question rows fill the inner frame */
+    #fmInputsRightStack > .question-card #questionList .question-item {
+      width: 100% !important;
+      max-width: none !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Evidence uses the same inner width */
+    #fmDashboardEvidence .fm-workspace-evidence-summary,
+    #fmDashboardEvidence .fm-workspace-evidence-preview,
+    #fmDashboardEvidence .fm-workspace-evidence-preview-list {
+      width: 100% !important;
+      max-width: none !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      box-sizing: border-box !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — RIGHT PANEL TYPOGRAPHY BALANCE
+   Questions + Evidence only
+   ========================================================= */
+
+(function balanceRightPanelTypography() {
+  if (document.getElementById("fmRightPanelTypographyBalance")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRightPanelTypographyBalance";
+
+  style.textContent = `
+    /* -----------------------------------------------------
+       QUESTIONS — lighter number badges
+       ----------------------------------------------------- */
+
+    #fmInputsRightStack > .question-card
+    #questionList .question-number {
+      font-weight: 600 !important;
+      font-size: 12px !important;
+      color: #6230a3 !important;
+    }
+
+    #fmInputsRightStack > .question-card
+    #questionList .question-text {
+      font-size: 12.5px !important;
+      line-height: 1.45 !important;
+      font-weight: 600 !important;
+    }
+
+    /* -----------------------------------------------------
+       EVIDENCE — increase visual weight
+       ----------------------------------------------------- */
+
+    #fmDashboardEvidence .fm-workspace-evidence-summary h2,
+    #fmDashboardEvidence .fm-workspace-evidence-summary h3 {
+      font-size: 20px !important;
+      line-height: 1.2 !important;
+      font-weight: 750 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-summary p {
+      margin-top: 6px !important;
+      font-size: 11px !important;
+      line-height: 1.45 !important;
+      color: #776e7d !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview {
+      margin-top: 16px !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-list {
+      border-radius: 12px !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-item {
+      min-height: 66px !important;
+      padding: 13px 14px !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-title {
+      font-size: 12.5px !important;
+      line-height: 1.4 !important;
+      font-weight: 700 !important;
+      color: #2e2633 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-preview-type {
+      margin-top: 4px !important;
+      font-size: 10.5px !important;
+      line-height: 1.35 !important;
+      color: #847a89 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle-wrap {
+      padding-top: 16px !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle {
+      min-width: 160px !important;
+      min-height: 38px !important;
+      padding: 0 18px !important;
+
+      font-size: 11px !important;
+      font-weight: 700 !important;
+
+      border-radius: 10px !important;
+    }
+
+    /* Give Evidence the same visual breathing room as Questions */
+    #fmDashboardEvidence {
+      padding-top: 24px !important;
+      padding-bottom: 24px !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — REAL QUESTION / EVIDENCE TYPOGRAPHY FIX
+   ========================================================= */
+
+(function applyRealRightPanelTypographyFix() {
+  if (document.getElementById("fmRealRightPanelTypographyFix")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRealRightPanelTypographyFix";
+
+  style.textContent = `
+    /* Questions */
+    #questionList .question-item > b {
+      font-size: 15px !important;
+      font-weight: 500 !important;
+      color: #6430a3 !important;
+    }
+
+    #questionList .question-item > p {
+      font-size: 15px !important;
+      font-weight: 500 !important;
+      line-height: 1.45 !important;
+      color: #2d2632 !important;
+    }
+
+    #questionList .question-item {
+      min-height: 68px !important;
+      padding-top: 13px !important;
+      padding-bottom: 13px !important;
+    }
+
+    /* Evidence */
+    #fmDashboardEvidence .fm-workspace-evidence-preview-item {
+      min-height: 68px !important;
+      padding: 13px 14px !important;
+    }
+
+    #fmDashboardEvidence
+    .fm-workspace-evidence-preview-content > strong {
+      display: block !important;
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      line-height: 1.4 !important;
+      color: #2d2632 !important;
+    }
+
+    #fmDashboardEvidence
+    .fm-workspace-evidence-preview-content > span {
+      display: block !important;
+      margin-top: 4px !important;
+      font-size: 12.5px !important;
+      font-weight: 400 !important;
+      line-height: 1.35 !important;
+      color: #83798a !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-summary h2,
+    #fmDashboardEvidence .fm-workspace-evidence-summary h3 {
+      font-size: 21px !important;
+      font-weight: 700 !important;
+      line-height: 1.2 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-summary p {
+      font-size: 11.5px !important;
+      line-height: 1.45 !important;
+    }
+
+    #fmDashboardEvidence .fm-workspace-evidence-toggle {
+      min-height: 38px !important;
+      min-width: 160px !important;
+      font-size: 11.5px !important;
+      font-weight: 650 !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — QUESTIONS COMPACT REFINEMENT
+   ========================================================= */
+
+(function refineQuestionsCompact() {
+  if (document.getElementById("fmQuestionsCompactRefinement")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmQuestionsCompactRefinement";
+
+  style.textContent = `
+    #questionList .question-item {
+      min-height: 58px !important;
+      padding: 10px 12px !important;
+      gap: 14px !important;
+    }
+
+    #questionList .question-item > b {
+      width: 34px !important;
+      min-width: 34px !important;
+      height: 34px !important;
+
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+
+      border-radius: 8px !important;
+
+      background: #f2ebf9 !important;
+      color: #6533a4 !important;
+
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      line-height: 1 !important;
+    }
+
+    #questionList .question-item > p {
+      flex: 1 1 auto !important;
+
+      margin: 0 !important;
+
+      color: #302735 !important;
+
+      font-size: 12.5px !important;
+      font-weight: 500 !important;
+      line-height: 1.4 !important;
+
+      text-align: left !important;
+    }
+
+    #questionList .question-arrow {
+      flex: 0 0 auto !important;
+
+      font-size: 18px !important;
+      font-weight: 400 !important;
+      line-height: 1 !important;
+
+      color: #4c3b57 !important;
+    }
+
+    #questionList .question-item {
+      border-bottom:
+        1px solid rgba(67, 43, 88, .07) !important;
+    }
+
+    #questionList .question-item:last-child {
+      border-bottom: 0 !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — RUN THE PROCESS BUTTON POLISH
+   ========================================================= */
+
+(function polishRunProcessButton() {
+  if (document.getElementById("fmRunProcessButtonPolish")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRunProcessButtonPolish";
+
+  style.textContent = `
+    #runAnalysis.analyse-button.fm-generate-process {
+      width: auto !important;
+      min-width: 220px !important;
+      height: 48px !important;
+
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 10px !important;
+
+      padding: 0 20px !important;
+
+      border: 1px solid rgba(83, 35, 160, .18) !important;
+      border-radius: 12px !important;
+
+      background:
+        linear-gradient(
+          135deg,
+          #5a22c7 0%,
+          #4b168c 100%
+        ) !important;
+
+      color: #ffffff !important;
+
+      font-size: 13px !important;
+      font-weight: 650 !important;
+      line-height: 1 !important;
+
+      box-shadow:
+        0 8px 18px rgba(75, 22, 140, .18) !important;
+
+      cursor: pointer !important;
+
+      transition:
+        transform .15s ease,
+        box-shadow .15s ease,
+        filter .15s ease !important;
+    }
+
+    #runAnalysis.analyse-button.fm-generate-process:hover {
+      transform: translateY(-1px) !important;
+
+      box-shadow:
+        0 11px 24px rgba(75, 22, 140, .22) !important;
+
+      filter: brightness(1.03) !important;
+    }
+
+    #runAnalysis.analyse-button.fm-generate-process:active {
+      transform: translateY(0) !important;
+    }
+
+    #runAnalysis.analyse-button.fm-generate-process
+    .fm-run-icon,
+    #runAnalysis.analyse-button.fm-generate-process
+    .analyse-icon {
+      font-size: 14px !important;
+      line-height: 1 !important;
+    }
+
+    #runAnalysis.analyse-button.fm-generate-process
+    span[aria-hidden="true"] {
+      margin-left: 4px !important;
+      font-size: 16px !important;
+      font-weight: 500 !important;
+      line-height: 1 !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — RUN BUTTON POSITION
+   ========================================================= */
+
+(function positionRunButtonBottomRight() {
+  if (document.getElementById("fmRunButtonPositionFix")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRunButtonPositionFix";
+
+  style.textContent = `
+    #processOutputActions {
+      width: 100% !important;
+      display: flex !important;
+      justify-content: flex-end !important;
+      align-items: center !important;
+
+      margin-top: 22px !important;
+      padding-right: 0 !important;
+
+      box-sizing: border-box !important;
+    }
+
+    #runAnalysis {
+      margin-left: auto !important;
+      margin-right: 0 !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — RUN BUTTON CLEAN FINAL
+   ========================================================= */
+
+(function cleanRunButtonFinal() {
+  if (document.getElementById("fmRunButtonCleanFinal")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRunButtonCleanFinal";
+
+  style.textContent = `
+    #processOutputActions {
+      margin-top: 18px !important;
+    }
+
+    #runAnalysis {
+      min-width: 184px !important;
+      height: 46px !important;
+      padding: 0 18px !important;
+
+      border: 0 !important;
+      border-radius: 10px !important;
+
+      background: #5520b7 !important;
+      color: #ffffff !important;
+
+      box-shadow:
+        0 6px 14px rgba(85, 32, 183, .15) !important;
+
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 9px !important;
+
+      font-size: 13px !important;
+      font-weight: 650 !important;
+
+      transition:
+        background .15s ease,
+        transform .15s ease,
+        box-shadow .15s ease !important;
+    }
+
+    #runAnalysis:hover {
+      background: #49199f !important;
+      transform: translateY(-1px) !important;
+
+      box-shadow:
+        0 8px 18px rgba(85, 32, 183, .19) !important;
+    }
+
+    #runAnalysis > span:first-child {
+      display: none !important;
+    }
+
+    #runAnalysis > span:last-child {
+      margin-left: 5px !important;
+      font-size: 15px !important;
+      font-weight: 500 !important;
+      line-height: 1 !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — REMOVE RUN BUTTON VERTICAL GAP
+   ========================================================= */
+
+(function removeRunButtonVerticalGap() {
+  if (document.getElementById("fmRunButtonGapFix")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmRunButtonGapFix";
+
+  style.textContent = `
+    #inputsPanel {
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: flex-start !important;
+      align-items: stretch !important;
+    }
+
+    #inputsPanel > .map-section {
+      flex: 0 0 auto !important;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    #inputsPanel #inputList {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+
+    #inputsPanel > #processOutputActions {
+      position: static !important;
+
+      grid-column: auto !important;
+      grid-row: auto !important;
+
+      flex: 0 0 auto !important;
+
+      width: 100% !important;
+      height: auto !important;
+      min-height: 0 !important;
+
+      margin: 20px 0 0 !important;
+      padding: 0 !important;
+
+      align-self: stretch !important;
+
+      box-sizing: border-box !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — QUESTION TEXT SIZE
+   ========================================================= */
+
+(function increaseQuestionTextSize() {
+  if (document.getElementById("fmQuestionTextSizeUp")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmQuestionTextSizeUp";
+
+  style.textContent = `
+    #questionList .question-item > p {
+      font-size: 14px !important;
+      line-height: 1.45 !important;
+      font-weight: 500 !important;
+      color: #2d2632 !important;
+    }
+
+    #questionList .question-item {
+      min-height: 64px !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   PROCESS PAGE — QUESTION TEXT FINAL SIZE
+   ========================================================= */
+
+(function finalQuestionTextSize() {
+  if (document.getElementById("fmQuestionTextFinalSize")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmQuestionTextFinalSize";
+
+  style.textContent = `
+    #questionList .question-item > p {
+      font-size: 15.5px !important;
+      line-height: 1.42 !important;
+      font-weight: 500 !important;
+      color: #2d2632 !important;
+    }
+
+    #questionList .question-item {
+      min-height: 66px !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   OUTPUTS TAB — FINAL STRUCTURE
+   Result -> History -> Export
+   ========================================================= */
+
+(function setupFinalOutputsTabLayout() {
+  if (document.getElementById("fmFinalOutputsTabLayout")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmFinalOutputsTabLayout";
+
+  style.textContent = `
+    #outputsPanel.fm-outputs-tab-active {
+      display: flex !important;
+      flex-direction: column !important;
+
+      width: 100% !important;
+      max-width: none !important;
+
+      gap: 0 !important;
+
+      padding: 28px 0 8px !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Current generated result / empty state */
+    #outputsPanel.fm-outputs-tab-active > .fm-output-state {
+      width: 100% !important;
+
+      min-height: 280px !important;
+      height: auto !important;
+
+      margin: 0 !important;
+      padding: 48px 32px !important;
+
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+
+      box-sizing: border-box !important;
+    }
+
+    #outputsPanel.fm-outputs-tab-active > .fm-real-output,
+    #outputsPanel.fm-outputs-tab-active > #fmSixTileOutput {
+      width: 100% !important;
+      max-width: none !important;
+
+      margin: 0 !important;
+
+      box-sizing: border-box !important;
+    }
+
+    /* Previous History */
+    #outputsPanel.fm-outputs-tab-active > #previousSearches {
+      width: 100% !important;
+
+      margin: 28px 0 0 !important;
+      padding: 26px !important;
+
+      border: 1px solid #eadff2 !important;
+      border-radius: 16px !important;
+
+      background: #ffffff !important;
+
+      box-sizing: border-box !important;
+    }
+
+    #outputsPanel.fm-outputs-tab-active #historyList {
+      min-height: 120px !important;
+    }
+
+    /* Export actions always last */
+    #outputsPanel.fm-outputs-tab-active > #fmExportButtonsWrap {
+      width: 100% !important;
+
+      display: flex !important;
+      justify-content: flex-end !important;
+      align-items: center !important;
+
+      gap: 12px !important;
+
+      margin: 24px 0 0 !important;
+      padding: 20px 0 0 !important;
+
+      border-top: 1px solid #eee5f3 !important;
+
+      box-sizing: border-box !important;
+    }
+
+    #outputsPanel.fm-outputs-tab-active
+    #fmExportButtonsWrap .fm-export-button {
+      min-width: 150px !important;
+      height: 44px !important;
+
+      border-radius: 9px !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   OUTPUTS TAB — FULL WIDTH HISTORY + CLEAN FLOW
+   ========================================================= */
+
+(function fixOutputsHistoryFullWidth() {
+  if (document.getElementById("fmOutputsHistoryFullWidthFix")) return;
+
+  const style = document.createElement("style");
+  style.id = "fmOutputsHistoryFullWidthFix";
+
+  style.textContent = `
+    #outputsPanel.fm-outputs-tab-active {
+      display: flex !important;
+      flex-direction: column !important;
+
+      width: 100% !important;
+      max-width: none !important;
+
+      padding: 28px 0 10px !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Current output / empty state */
+    #outputsPanel.fm-outputs-tab-active > .fm-output-state,
+    #outputsPanel.fm-outputs-tab-active > .fm-real-output,
+    #outputsPanel.fm-outputs-tab-active > #fmSixTileOutput {
+      width: 100% !important;
+      max-width: none !important;
+
+      grid-column: auto !important;
+      grid-row: auto !important;
+
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+
+      box-sizing: border-box !important;
+    }
+
+    #outputsPanel.fm-outputs-tab-active > .fm-output-state {
+      min-height: 260px !important;
+      padding: 44px 28px !important;
+    }
+
+    /* Previous generations */
+    #outputsPanel.fm-outputs-tab-active > #previousSearches {
+      display: block !important;
+
+      width: 100% !important;
+      max-width: none !important;
+      min-width: 0 !important;
+
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+
+      grid-column: auto !important;
+      grid-row: auto !important;
+
+      margin: 24px 0 0 !important;
+      padding: 24px 26px !important;
+
+      border: 1px solid #eadff2 !important;
+      border-radius: 16px !important;
+
+      background: #ffffff !important;
+
+      box-shadow: none !important;
+
+      box-sizing: border-box !important;
+    }
+
+    #outputsPanel.fm-outputs-tab-active
+    > #previousSearches
+    .previous-searches-header {
+      margin: 0 0 18px !important;
+    }
+
+    #outputsPanel.fm-outputs-tab-active
+    > #previousSearches
+    #historyList {
+      width: 100% !important;
+
+      min-height: 110px !important;
+
+      margin: 0 !important;
+      padding: 0 !important;
+
+      box-sizing: border-box !important;
+    }
+
+    /* Export row last */
+    #outputsPanel.fm-outputs-tab-active > #fmExportButtonsWrap {
+      display: flex !important;
+
+      width: 100% !important;
+      max-width: none !important;
+
+      justify-content: flex-end !important;
+      align-items: center !important;
+
+      gap: 12px !important;
+
+      margin: 22px 0 0 !important;
+      padding: 20px 0 0 !important;
+
+      border-top: 1px solid #eee5f3 !important;
+
+      box-sizing: border-box !important;
+    }
+
+    #outputsPanel.fm-outputs-tab-active
+    #fmExportButtonsWrap .fm-export-button {
+      width: auto !important;
+      min-width: 160px !important;
+      height: 44px !important;
+
+      border-radius: 9px !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   OUTPUTS TAB — FINAL APPROVED DESIGN
+   Current result -> Previous generations -> Export actions
+   ========================================================= */
+
+(function installApprovedOutputsDesign() {
+  const STYLE_ID = "fmApprovedOutputsDesign";
+
+  if (!document.getElementById(STYLE_ID)) {
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+
+    style.textContent = `
+      #outputsPanel.fm-outputs-tab-active {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 24px !important;
+
+        width: 100% !important;
+        max-width: none !important;
+
+        padding: 24px 0 8px !important;
+        margin: 0 !important;
+
+        box-sizing: border-box !important;
+      }
+
+      /* ---------- CURRENT RESULT ---------- */
+
+      #outputsPanel.fm-outputs-tab-active > .fm-output-state {
+        width: 100% !important;
+
+        min-height: 275px !important;
+        height: auto !important;
+
+        margin: 0 !important;
+        padding: 46px 34px !important;
+
+        border: 1.25px solid #dfcfea !important;
+        border-radius: 16px !important;
+
+        background: #ffffff !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        box-sizing: border-box !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      > .fm-output-state .fm-output-icon {
+        width: 54px !important;
+        height: 54px !important;
+
+        margin-bottom: 18px !important;
+
+        border-radius: 50% !important;
+
+        background: #f3eaff !important;
+        color: #5b21b6 !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      > .fm-output-state h3 {
+        margin: 0 0 10px !important;
+
+        font-size: 20px !important;
+        line-height: 1.25 !important;
+        font-weight: 750 !important;
+
+        color: #201829 !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      > .fm-output-state p {
+        max-width: 560px !important;
+
+        margin: 0 !important;
+
+        text-align: center !important;
+
+        font-size: 14px !important;
+        line-height: 1.55 !important;
+
+        color: #776b82 !important;
+      }
+
+      /* Generated content after Run the process */
+
+      #outputsPanel.fm-outputs-tab-active > .fm-real-output,
+      #outputsPanel.fm-outputs-tab-active > #fmSixTileOutput {
+        width: 100% !important;
+        max-width: none !important;
+
+        grid-column: auto !important;
+        grid-row: auto !important;
+
+        margin: 0 !important;
+
+        box-sizing: border-box !important;
+      }
+
+
+      /* ---------- PREVIOUS GENERATIONS ---------- */
+
+      #outputsPanel.fm-outputs-tab-active > #previousSearches {
+        display: block !important;
+
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+
+        height: auto !important;
+        min-height: 0 !important;
+
+        grid-column: auto !important;
+        grid-row: auto !important;
+
+        margin: 0 !important;
+        padding: 26px 30px !important;
+
+        border: 1.25px solid #dfcfea !important;
+        border-radius: 16px !important;
+
+        background: #ffffff !important;
+
+        box-shadow: none !important;
+
+        box-sizing: border-box !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      > #previousSearches .previous-searches-header {
+        width: 100% !important;
+
+        margin: 0 0 20px !important;
+        padding: 0 0 20px !important;
+
+        border-bottom: 1px solid #eee6f3 !important;
+
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: space-between !important;
+
+        box-sizing: border-box !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      > #previousSearches .previous-searches-header h3 {
+        margin: 4px 0 0 !important;
+
+        font-size: 19px !important;
+        line-height: 1.25 !important;
+        font-weight: 700 !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      > #previousSearches #historyList {
+        width: 100% !important;
+
+        min-height: 170px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: center !important;
+
+        box-sizing: border-box !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      > #previousSearches .history-empty {
+        width: 100% !important;
+        min-height: 150px !important;
+
+        margin: 0 !important;
+        padding: 22px !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        text-align: center !important;
+
+        box-sizing: border-box !important;
+      }
+
+      /* ---------- EXPORT BAR ---------- */
+
+      #outputsPanel.fm-outputs-tab-active > #fmExportButtonsWrap {
+        width: 100% !important;
+        max-width: none !important;
+
+        margin: 32px 0 0 !important;
+        padding: 18px 20px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 16px !important;
+
+        border: 0 !important;
+        border-radius: 0 !important;
+
+        background: transparent !important;
+
+        box-sizing: border-box !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      #fmExportButtonsWrap .fm-export-button {
+        width: 210px !important;
+        min-width: 210px !important;
+        height: 50px !important;
+
+        border-radius: 10px !important;
+
+        font-size: 14px !important;
+        font-weight: 650 !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      #generatePdf {
+        background: #ffffff !important;
+        border: 1.25px solid #7d48c9 !important;
+        color: #5620a6 !important;
+        box-shadow: none !important;
+      }
+
+      #outputsPanel.fm-outputs-tab-active
+      #generateCsv {
+        background: #5b21b6 !important;
+        border: 1.25px solid #5b21b6 !important;
+        color: #ffffff !important;
+
+        box-shadow:
+          0 7px 16px rgba(91, 33, 182, .16) !important;
+      }
+
+      @media (max-width: 760px) {
+        #outputsPanel.fm-outputs-tab-active
+        > #fmExportButtonsWrap {
+          flex-direction: column !important;
+        }
+
+        #outputsPanel.fm-outputs-tab-active
+        #fmExportButtonsWrap .fm-export-button {
+          width: 100% !important;
+          min-width: 0 !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+  function setImportant(el, property, value) {
+    if (!el) return;
+    el.style.setProperty(property, value, "important");
+  }
+
+  function applyApprovedLayout() {
+    const outputs = document.getElementById("outputsPanel");
+    if (!outputs) return;
+
+    const history = document.getElementById("previousSearches");
+    const historyList = document.getElementById("historyList");
+    const exports = document.getElementById("fmExportButtonsWrap");
+
+    if (history && history.parentElement !== outputs) {
+      outputs.appendChild(history);
+    }
+
+    if (exports && exports.parentElement !== outputs) {
+      outputs.appendChild(exports);
+    }
+
+    const generated =
+      document.getElementById("fmSixTileOutput") ||
+      outputs.querySelector(":scope > .fm-real-output") ||
+      outputs.querySelector(":scope > .fm-output-state");
+
+    /*
+     * Enforce:
+     * 1. Current generated result
+     * 2. Previous generations
+     * 3. PDF / CSV
+     */
+    if (generated && history) {
+      const desiredHistoryPosition = generated.nextElementSibling;
+
+      if (desiredHistoryPosition !== history) {
+        outputs.insertBefore(history, desiredHistoryPosition);
+      }
+    }
+
+    if (history && exports) {
+      const desiredExportPosition = history.nextElementSibling;
+
+      if (desiredExportPosition !== exports) {
+        outputs.insertBefore(exports, desiredExportPosition);
+      }
+    }
+
+    setImportant(history, "width", "100%");
+    setImportant(history, "max-width", "none");
+    setImportant(history, "min-width", "0");
+    setImportant(history, "grid-column", "auto");
+    setImportant(history, "grid-row", "auto");
+    setImportant(history, "margin", "0");
+
+    if (historyList) {
+      setImportant(historyList, "width", "100%");
+      setImportant(historyList, "min-height", "170px");
+    }
+
+    setImportant(exports, "width", "100%");
+    setImportant(exports, "max-width", "none");
+    setImportant(exports, "grid-column", "auto");
+
+    const emptyText = outputs.querySelector(
+      ".fm-output-state p"
+    );
+
+    if (
+      emptyText &&
+      emptyText.textContent.includes("Complete the inputs on the left")
+    ) {
+      emptyText.textContent =
+        "Complete the inputs, then run this process to see the AI-powered results here.";
+    }
+  }
+
+  function start() {
+    applyApprovedLayout();
+
+    const outputs = document.getElementById("outputsPanel");
+
+    if (outputs) {
+      new MutationObserver(() => {
+        requestAnimationFrame(applyApprovedLayout);
+      }).observe(outputs, {
+        childList: true
+      });
+    }
+
+    document
+      .getElementById("outputsTab")
+      ?.addEventListener("click", () => {
+        setTimeout(applyApprovedLayout, 20);
+      });
+
+    setTimeout(applyApprovedLayout, 300);
+    setTimeout(applyApprovedLayout, 900);
+    setTimeout(applyApprovedLayout, 1600);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, {
+      once: true
+    });
+  } else {
+    start();
+  }
+})();
+
+/* =========================================================
+   ADAPTIVE PROCESS COLUMN BALANCING
+   ========================================================= */
+
+(function installAdaptiveProcessLayout() {
+  const HEIGHT_DIFFERENCE_THRESHOLD = 260;
+
+  function updateAdaptiveProcessLayout() {
+    const body = document.querySelector('.fm-process-body');
+    const left = document.querySelector('#inputsPanel');
+    const right = document.querySelector('#fmInputsRightStack');
+
+    if (!body || !left || !right) return;
+
+    /*
+     * Always use the standard stacked mobile layout.
+     * This helper only decides the desktop presentation.
+     */
+    if (window.innerWidth < 1100) {
+      body.classList.remove('fm-adaptive-stacked');
+      return;
+    }
+
+    /*
+     * Measure without the adaptive class first so the decision
+     * is always based on the natural two-column content heights.
+     */
+    body.classList.remove('fm-adaptive-stacked');
+
+    requestAnimationFrame(() => {
+      const leftHeight = left.scrollHeight;
+      const rightHeight = right.scrollHeight;
+
+      const difference = Math.abs(leftHeight - rightHeight);
+
+      body.classList.toggle(
+        'fm-adaptive-stacked',
+        difference > HEIGHT_DIFFERENCE_THRESHOLD
+      );
+    });
+  }
+
+  window.addEventListener(
+    'resize',
+    updateAdaptiveProcessLayout
+  );
+
+  const observer = new MutationObserver(() => {
+    updateAdaptiveProcessLayout();
+  });
+
+  const body = document.querySelector('.fm-process-body');
+
+  if (body) {
+    observer.observe(body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  document.addEventListener(
+    'click',
+    () => {
+      requestAnimationFrame(updateAdaptiveProcessLayout);
+    }
+  );
+
+  requestAnimationFrame(updateAdaptiveProcessLayout);
 })();

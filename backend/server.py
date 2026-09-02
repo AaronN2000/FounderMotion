@@ -1026,15 +1026,11 @@ def create_evidence(user, payload):
     content = str(payload.get("content", "")).strip()
     source = str(payload.get("source", "")).strip()
 
-    allowed_types = {
-        "Interview Note",
-        "Objection",
-        "Pricing Signal",
-        "Proof Point",
-    }
+    if not evidence_type:
+        raise ValueError("Evidence type is required.")
 
-    if evidence_type not in allowed_types:
-        raise ValueError("Please select a valid evidence type.")
+    if len(evidence_type) > 100:
+        raise ValueError("Evidence type is too long.")
 
     if not title:
         raise ValueError("Evidence title is required.")

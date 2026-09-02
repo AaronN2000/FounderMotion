@@ -67,25 +67,6 @@
       <article class="workspace-card workspace-card-wide">
         <div class="workspace-card-heading">
           <div>
-            <p class="eyebrow">Account</p>
-            <h2>Workspace overview</h2>
-          </div>
-        </div>
-        <div class="account-details">
-          <div>
-            <span>Company</span>
-            <strong id="companyName">—</strong>
-          </div>
-          <div>
-            <span>Account</span>
-            <strong id="accountName">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="workspace-card workspace-card-wide">
-        <div class="workspace-card-heading">
-          <div>
             <p class="eyebrow">Market definition</p>
             <h2>Market Segments</h2>
           </div>
@@ -99,24 +80,50 @@
       <div id="progressDetails" hidden></div>
 
 
-      <article class="workspace-card">
+      <article class="workspace-card" id="workspaceHistorySection">
         <div class="workspace-card-heading">
           <div>
             <p class="eyebrow">Saved history</p>
             <h2>Previous Searches</h2>
           </div>
         </div>
-        <div id="historyList" class="workspace-list"></div>
+
+        <div id="historyList" class="workspace-list" hidden></div>
+
+        <div class="workspace-history-toggle-row">
+          <span id="historyItemsLabel">0 saved searches</span>
+
+          <button
+            id="toggleHistoryButton"
+            class="workspace-history-toggle"
+            type="button"
+            aria-expanded="false"
+          >
+            Show Searches (0) ↓
+          </button>
+        </div>
       </article>
 
-      <article class="workspace-card">
+      <article class="workspace-card workspace-evidence-card" id="workspaceEvidenceSection">
         <div class="workspace-card-heading">
           <div>
             <p class="eyebrow">Evidence</p>
-            <h2>Saved Documents</h2>
+            <h2>Workspace Evidence</h2>
+            <p class="workspace-evidence-description">
+              Manage customer and market evidence for this workspace.
+            </p>
           </div>
+
+          <button
+            id="addWorkspaceEvidenceButton"
+            class="add-segment-button"
+            type="button"
+          >
+            + Add Evidence
+          </button>
         </div>
-        <div id="documentsList" class="workspace-list"></div>
+
+        <div id="workspaceEvidenceList" class="workspace-list"></div>
       </article>
     </section>
   </main>
