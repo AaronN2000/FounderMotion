@@ -552,7 +552,7 @@ async function restoreAccount() {
      */
     if (mapSteps[3]) {
       mapSteps[3].inputs = [
-        'PMF Validation Gaps',
+        'Unanswered Questions About Product-Market Fit',
         'Current Entry Offer Definitions',
         'Customer Objections & Discovery Questions',
         'Current Beta Customer Target'
@@ -593,8 +593,8 @@ async function restoreAccount() {
       mapSteps[6].outputSources = [3];
 
       mapSteps[6].inputs = [
-        'Trace Battlecard',
-        'Decision Defensibility Diagnostic Definition',
+        'Trace Sales Comparison Sheet',
+        'Decision Defensibility Assessment Tool',
         'Trace Buyer Use Cases',
         'Delivery & Product Constraints'
       ];
@@ -606,8 +606,8 @@ async function restoreAccount() {
      */
     if (mapSteps[7]) {
       mapSteps[7].inputs = [
-        'Essentials Battlecard',
-        'Practical Risk Visibility Diagnostic Definition',
+        'Essentials Sales Comparison Sheet',
+        'Practical Risk Visibility Assessment Tool',
         'Delivery & Support Assumptions'
       ];
     }
@@ -643,8 +643,8 @@ async function restoreAccount() {
       mapSteps[10].outputSources = [7, 8, 10];
 
       mapSteps[10].inputs = [
-        'MVP Product Definition',
-        'Diagnostic Definitions',
+        'Current Product Definition',
+        'Assessment Tool Definitions',
         'Buyer Proof Requirements'
       ];
     }
