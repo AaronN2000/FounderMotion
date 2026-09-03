@@ -552,7 +552,7 @@ async function restoreAccount() {
      */
     if (mapSteps[3]) {
       mapSteps[3].inputs = [
-        'Unanswered Questions About Product-Market Fit',
+        'PMF Validation Gaps',
         'Current Entry Offer Definitions',
         'Customer Objections & Discovery Questions',
         'Current Beta Customer Target'
@@ -583,18 +583,14 @@ async function restoreAccount() {
     }
 
     /*
-     * Process 7 uses Process 3 output (confirmed dependency graph) and
-     * has four new inputs. This was previously hardcoded to [6], which
-     * disagreed with the confirmed dependency graph and with what
-     * server.py's PROCESS_OUTPUT_DEPENDENCIES / process_output_dependency
-     * table already returns for process 7 -- fixed to match.
+     * Process 7 uses Process 6 output and has four new inputs.
      */
     if (mapSteps[6]) {
-      mapSteps[6].outputSources = [3];
+      mapSteps[6].outputSources = [6];
 
       mapSteps[6].inputs = [
-        'Trace Sales Comparison Sheet',
-        'Decision Defensibility Assessment Tool',
+        'Trace Battlecard',
+        'Decision Defensibility Diagnostic Definition',
         'Trace Buyer Use Cases',
         'Delivery & Product Constraints'
       ];
@@ -606,8 +602,8 @@ async function restoreAccount() {
      */
     if (mapSteps[7]) {
       mapSteps[7].inputs = [
-        'Essentials Sales Comparison Sheet',
-        'Practical Risk Visibility Assessment Tool',
+        'Essentials Battlecard',
+        'Practical Risk Visibility Diagnostic Definition',
         'Delivery & Support Assumptions'
       ];
     }
@@ -643,8 +639,8 @@ async function restoreAccount() {
       mapSteps[10].outputSources = [7, 8, 10];
 
       mapSteps[10].inputs = [
-        'Current Product Definition',
-        'Assessment Tool Definitions',
+        'MVP Product Definition',
+        'Diagnostic Definitions',
         'Buyer Proof Requirements'
       ];
     }
@@ -946,7 +942,7 @@ function getPhaseStatus(startProcess, endProcess) {
     return 'In Progress';
   }
 
-  return 'Not Started';
+  return 'Upcoming';
 }
 
 
@@ -1179,7 +1175,7 @@ function render() {
     const hasAnswer = Boolean(state.outputs[processNumber - 1]);
     return `<li class="output-source ${hasAnswer ? 'ready' : ''}">Process ${processNumber}: ${escapeHtml(sourceProcess?.title || 'Untitled process')}<span>${hasAnswer ? 'available' : 'awaiting output'}</span></li>`;
   }).join('');
-  const outputsToUse = outputDependencies ? `<section class="outputs-to-use"><h4>Outputs to use</h4><ul>${outputDependencies}</ul></section>` : '';
+  const outputsToUse = outputDependencies ? `<section class="outputs-to-use"><h4>Outputs from Previous Processes</h4><ul>${outputDependencies}</ul></section>` : '';
 
   const getInputIcon = (input, index) => {
     return `<span class="input-icon" aria-hidden="true"><span class="input-number">${String(index + 1).padStart(2, '0')}</span></span>`;
@@ -1370,7 +1366,150 @@ function render() {
   });
 
   $('#inputList').querySelectorAll('[data-remove]').forEach(button => button.addEventListener('click', () => { state.documents.splice(Number(button.dataset.remove), 1); render(); saveProgress(false); }));
-  $('#questionList').innerHTML = step.questions.map((question, index) => `<div class="question-item"><b>${String(index + 1).padStart(2, '0')}</b><p>${escapeHtml(companyText(question))}</p></div>`).join('');
+  function ensureQuestionModal() {
+    let modal = document.getElementById('fmQuestionModal');
+
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.id = 'fmQuestionModal';
+    modal.className = 'fm-question-modal';
+    modal.setAttribute('aria-hidden', 'true');
+
+    modal.innerHTML = `
+      <div class="fm-question-modal-backdrop" data-question-modal-close></div>
+
+      <section
+        class="fm-question-modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="fmQuestionModalTitle"
+      >
+        <div class="fm-question-modal-header">
+          <div>
+            <p class="fm-question-modal-eyebrow">
+              Questions Being Answered in This Process
+            </p>
+
+            <h2 id="fmQuestionModalTitle">
+              Process Questions
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            class="fm-question-modal-close"
+            data-question-modal-close
+            aria-label="Close questions"
+          >
+            ×
+          </button>
+        </div>
+
+        <div
+          id="fmQuestionModalList"
+          class="fm-question-modal-list"
+        ></div>
+
+        <div class="fm-question-modal-footer">
+          <button
+            type="button"
+            class="fm-question-modal-done"
+            data-question-modal-close
+          >
+            Close
+          </button>
+        </div>
+      </section>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal
+      .querySelectorAll('[data-question-modal-close]')
+      .forEach(button => {
+        button.addEventListener('click', () => {
+          modal.classList.remove('is-open');
+          modal.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('fm-question-modal-open');
+        });
+      });
+
+    document.addEventListener('keydown', event => {
+      if (
+        event.key === 'Escape' &&
+        modal.classList.contains('is-open')
+      ) {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('fm-question-modal-open');
+      }
+    });
+
+    return modal;
+  }
+
+  function openQuestionModal() {
+    const modal = ensureQuestionModal();
+    const list = modal.querySelector('#fmQuestionModalList');
+
+    list.innerHTML = step.questions
+      .map(
+        (question, index) => `
+          <div class="fm-question-modal-item">
+            <span class="fm-question-modal-number">
+              ${String(index + 1).padStart(2, '0')}
+            </span>
+
+            <p>
+              ${escapeHtml(companyText(question))}
+            </p>
+          </div>
+        `
+      )
+      .join('');
+
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('fm-question-modal-open');
+  }
+
+  function renderQuestionList() {
+    const questionList = $('#questionList');
+    const referenceRow =
+      document.getElementById('fmProcessReferenceRow');
+
+    if (referenceRow) {
+      referenceRow.classList.remove('questions-expanded');
+    }
+
+    questionList.style.setProperty('border', '0', 'important');
+    questionList.style.setProperty('outline', '0', 'important');
+    questionList.style.setProperty('box-shadow', 'none', 'important');
+
+    questionList.innerHTML =
+      step.questions.length
+        ? `
+          <button
+            type="button"
+            class="question-toggle"
+            data-question-modal-open
+          >
+            Show all ${step.questions.length} questions ↓
+          </button>
+        `
+        : '';
+
+    const button =
+      questionList.querySelector('[data-question-modal-open]');
+
+    if (button) {
+      button.addEventListener('click', openQuestionModal);
+    }
+  }
+
+  renderQuestionList();
+
   $('#analysisOutput').innerHTML = output ? `<div class="generated-answer">${formatAnswer(output)}</div><div class="downstream"><strong>Outputs & downstream</strong><p>${escapeHtml(companyText(step.outputs))}</p><small>Feeds: ${escapeHtml(step.feeds)}</small></div>` : '';
   $('#outputEmpty').hidden = Boolean(output);
   document.querySelectorAll('.previous-button').forEach(button => { button.hidden = state.step === 0; });
@@ -2446,118 +2585,14 @@ function createPdf(lines) {
   }
 
   function createEvidenceSection() {
-    if (!currentUser) return null;
-
     const existing = document.getElementById('fmDashboardEvidence');
 
-    if (existing) return existing;
-
-    const anchor = document.querySelector('.site-header');
-
-    if (!anchor) {
-      console.warn('Evidence: anchor element not found.');
-      return null;
+    if (existing) {
+      existing.remove();
     }
 
-    const section = document.createElement('section');
-
-    section.id = 'fmDashboardEvidence';
-
-    section.innerHTML = `
-      <button
-        class="fm-evidence-toggle"
-        id="fmEvidenceToggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="fmEvidenceBody"
-      >
-        <span class="fm-evidence-toggle-left">
-          <span class="fm-evidence-eyebrow">Evidence</span>
-
-          <span class="fm-evidence-toggle-title">
-            Customer & market evidence
-          </span>
-
-          <span class="fm-evidence-toggle-description">
-            Customer and market evidence supporting strategic decisions
-          </span>
-        </span>
-
-        <span class="fm-evidence-toggle-right">
-          <span class="fm-evidence-toggle-label">
-            View evidence
-          </span>
-
-          <span class="fm-evidence-chevron">↓</span>
-        </span>
-      </button>
-
-      <div
-        class="fm-evidence-body"
-        id="fmEvidenceBody"
-        hidden
-      >
-        <div class="fm-evidence-header">
-          <div>
-            <p class="fm-evidence-eyebrow">Evidence</p>
-
-            <h2>Customer & market evidence</h2>
-
-            <p class="fm-evidence-description">
-              Evidence captured from customers and market research that supports
-              the strategic decisions in this workspace.
-            </p>
-          </div>
-
-          <button
-            class="fm-add-evidence"
-            id="fmAddDashboardEvidence"
-            type="button"
-          >
-            + Add evidence
-          </button>
-        </div>
-
-        <div
-          class="fm-evidence-grid"
-          id="fmDashboardEvidenceGrid"
-        >
-          <div class="fm-evidence-empty">
-            Loading evidence...
-          </div>
-        </div>
-      </div>
-    `;
-
-    anchor.insertAdjacentElement('afterend', section);
-
-    const toggle = section.querySelector('#fmEvidenceToggle');
-    const body = section.querySelector('#fmEvidenceBody');
-    const label = section.querySelector('.fm-evidence-toggle-label');
-    const chevron = section.querySelector('.fm-evidence-chevron');
-
-    toggle.addEventListener('click', () => {
-      const open = section.classList.toggle('fm-evidence-open');
-
-      toggle.setAttribute('aria-expanded', String(open));
-      body.hidden = !open;
-
-      label.textContent = open
-        ? 'Hide evidence'
-        : 'View evidence';
-
-      chevron.textContent = open
-        ? '↑'
-        : '↓';
-    });
-
-    section
-      .querySelector('#fmAddDashboardEvidence')
-      .addEventListener('click', openEvidenceModal);
-
-    return section;
+    return null;
   }
-
 
   async function loadDashboardEvidence() {
     if (!currentUser) return;
@@ -8760,7 +8795,7 @@ function syncAuthScreenUI() {
 
 /* =========================================================
    QUESTION + HISTORY UI REFRESH
-   Scoped only to Key Questions and Previous Searches.
+   Scoped only to Process Questions and Previous Searches.
    Does not modify inputs, processes, login, logout, or other sections.
    ========================================================= */
 
@@ -8771,7 +8806,7 @@ function syncAuthScreenUI() {
   style.id = 'question-history-ui-refresh';
 
   style.textContent = `
-    /* ---------- Key Questions ---------- */
+    /* ---------- Process Questions ---------- */
 
     .ui-refresh-questions {
       background: #ffffff !important;
@@ -8846,7 +8881,7 @@ function syncAuthScreenUI() {
       white-space: nowrap !important;
     }
 
-    /* ---------- Shared Key Questions / History layout ---------- */
+    /* ---------- Shared Process Questions / History layout ---------- */
 
     .ui-refresh-question-history-grid {
       display: grid !important;
@@ -9834,7 +9869,7 @@ function syncAuthScreenUI() {
     /*
      * FIX: this used to have no upper bound, so with fewer than 3
      * saved results (often just 1) the leftover vertical space
-     * (stretched to match the height of the Key Questions column on
+     * (stretched to match the height of the Process Questions column on
      * the left) all got assigned to that one card, producing a huge
      * block of blank space inside it. Cap the per-item height so a
      * card never grows past a sensible size -- any leftover space
@@ -14387,7 +14422,7 @@ function syncAuthScreenUI() {
    ========================================================= */
 
 /* ---------------------------------------------------------
-   Key Questions + Market Segments (mini) + Customer & Market
+   Process Questions + Market Segments (mini) + Customer & Market
    Evidence now live together as a right-hand stack on the
    Inputs tab, replacing the old empty-state / "View Results"
    button. On the Outputs tab this stack is hidden and the
@@ -14432,7 +14467,7 @@ function syncAuthScreenUI() {
       display: none !important;
     }
 
-    /* Key Questions, once relocated into the stack, sizes to its own
+    /* Process Questions, once relocated into the stack, sizes to its own
        content instead of matching a "Previous history" column height. */
     #${STACK_ID} > .question-card {
       width: 100% !important;
@@ -14594,7 +14629,7 @@ function syncAuthScreenUI() {
       document.querySelector('.fm-process-body')?.insertBefore(stack, outputsPanel);
     }
 
-    // 1. Key Questions -- moved here, replacing the old right-side content.
+    // 1. Process Questions -- moved here, replacing the old right-side content.
     if (questionCard.parentElement !== stack) {
       stack.appendChild(questionCard);
     }
@@ -14603,7 +14638,7 @@ function syncAuthScreenUI() {
     // two-column grid so that one remaining child doesn't leave a
     // lopsided empty column next to it, and force it to span the full
     // width of .map-layout (it used to occupy just one of two grid
-    // tracks, sized for sharing the row with Key Questions).
+    // tracks, sized for sharing the row with Process Questions).
     restoreHistoryRowStyle();
 
     // 2. Mini market-segments summary -- per-request, this no longer
@@ -14847,7 +14882,7 @@ function syncAuthScreenUI() {
    Generate CSV buttons (same tab-visibility pattern used just
    above for those buttons). It used to sit in its own full-
    width strip on the Inputs tab, inside what is now an empty
-   .question-history-row (Key Questions was relocated out of it
+   .question-history-row (Process Questions was relocated out of it
    earlier in this file) -- hide that leftover row and give
    #previousSearches a permanent home inside #outputsPanel
    instead.
@@ -14858,7 +14893,7 @@ function syncAuthScreenUI() {
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `
-    /* Now permanently empty (Key Questions was relocated out of it
+    /* Now permanently empty (Process Questions was relocated out of it
        earlier, Previous history is relocated out of it here) --
        hide the leftover strip instead of showing a blank gap on
        the Inputs tab. */
@@ -15285,7 +15320,7 @@ function syncAuthScreenUI() {
 
 /* =========================================================
    PROCESS PAGE — RIGHT PANELS VISUAL POLISH
-   Key Questions + Workspace Evidence only
+   Process Questions + Workspace Evidence only
    ========================================================= */
 
 (function polishProcessRightPanels() {
@@ -15306,7 +15341,7 @@ function syncAuthScreenUI() {
       box-sizing: border-box !important;
     }
 
-    /* ---------- Key Questions ---------- */
+    /* ---------- Process Questions ---------- */
 
     #fmInputsRightStack > .fm-key-questions-card {
       padding: 22px 24px 20px !important;
@@ -15511,7 +15546,7 @@ function syncAuthScreenUI() {
 
 /* =========================================================
    PROCESS PAGE — RIGHT PANELS FINAL ALIGNMENT
-   Key Questions + Workspace Evidence only
+   Process Questions + Workspace Evidence only
    ========================================================= */
 
 (function alignProcessRightPanelsFinal() {
@@ -17198,4 +17233,299 @@ function syncAuthScreenUI() {
   );
 
   requestAnimationFrame(updateAdaptiveProcessLayout);
+})();
+
+/* =========================================================
+   PROCESS INPUTS — TOP REFERENCE ROW
+   Previous outputs and Process Questions sit together at the top.
+   Input cards below use the full available width.
+   ========================================================= */
+
+(function installTopReferenceLayout() {
+  const ROW_ID = 'fmProcessReferenceRow';
+
+  function applyTopReferenceLayout() {
+    const body = document.querySelector('.fm-process-body');
+    const inputsPanel = document.getElementById('inputsPanel');
+    const inputList = document.getElementById('inputList');
+    const rightStack = document.getElementById('fmInputsRightStack');
+    const questions =
+      rightStack?.querySelector('.question-card') ||
+      document.querySelector('.question-card');
+
+    if (!body || !inputsPanel || !inputList || !questions) return;
+
+    let row = document.getElementById(ROW_ID);
+
+    if (!row) {
+      row = document.createElement('div');
+      row.id = ROW_ID;
+      row.className = 'fm-process-reference-row';
+
+      const mapSection = inputsPanel.querySelector('.map-section');
+
+      if (mapSection) {
+        mapSection.insertAdjacentElement('afterbegin', row);
+      } else {
+        inputsPanel.insertAdjacentElement('afterbegin', row);
+      }
+    }
+
+    const previousOutputs = inputList.querySelector('.outputs-to-use');
+
+    if (previousOutputs) {
+      row.insertBefore(previousOutputs, row.firstChild);
+
+      previousOutputs.style.setProperty('grid-column', '1 / 2', 'important');
+      previousOutputs.style.setProperty('grid-row', '1 / 2', 'important');
+    }
+
+    if (questions.parentElement !== row || questions !== row.lastElementChild) {
+      row.appendChild(questions);
+    }
+
+    questions.style.setProperty(
+      'grid-column',
+      '2 / 3',
+      'important'
+    );
+
+    questions.style.setProperty(
+      'grid-row',
+      '1',
+      'important'
+    );
+
+    const hasPreviousOutputs =
+      Boolean(row.querySelector('.outputs-to-use'));
+
+    const isFirstProcess =
+      Number(state.step) === 0;
+
+    row.classList.toggle(
+      'fm-reference-questions-only',
+      isFirstProcess || !hasPreviousOutputs
+    );
+
+    if (isFirstProcess) {
+      row.style.setProperty(
+        'grid-template-columns',
+        'minmax(0, 1fr)',
+        'important'
+      );
+
+      questions.style.setProperty(
+        'grid-column',
+        '1 / -1',
+        'important'
+      );
+
+      questions.style.setProperty(
+        'grid-row',
+        '1',
+        'important'
+      );
+
+      questions.style.setProperty(
+        'width',
+        '100%',
+        'important'
+      );
+    } else {
+      row.style.setProperty(
+        'grid-template-columns',
+        'minmax(0, 1fr) minmax(0, 1fr)',
+        'important'
+      );
+
+      questions.style.setProperty(
+        'grid-column',
+        '2 / 3',
+        'important'
+      );
+
+      questions.style.setProperty(
+        'grid-row',
+        '1',
+        'important'
+      );
+    }
+
+    body.classList.add('fm-top-reference-layout');
+
+    if (rightStack) {
+      rightStack.style.display = 'none';
+    }
+  }
+
+  const observer = new MutationObserver(() => {
+    requestAnimationFrame(applyTopReferenceLayout);
+  });
+
+  function start() {
+    applyTopReferenceLayout();
+
+    const body = document.querySelector('.fm-process-body');
+
+    if (body) {
+      observer.observe(body, {
+        childList: true,
+        subtree: true
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+
+  document.addEventListener('click', () => {
+    requestAnimationFrame(applyTopReferenceLayout);
+  });
+
+  window.addEventListener('resize', applyTopReferenceLayout);
+})();
+
+/* =========================================================
+   CURRENT OUTPUT — SAFE EXPORT ACTIONS
+   Visual-only controls. Existing output DOM order is untouched.
+   ========================================================= */
+
+(() => {
+  const ACTIONS_ID = 'fmCurrentOutputActions';
+
+  function installCurrentOutputActions() {
+    const outputsPanel = document.getElementById('outputsPanel');
+
+    if (!outputsPanel) return;
+
+    const generated =
+      document.getElementById('fmCurrentResultCard') ||
+      document.getElementById('fmSixTileOutput') ||
+      outputsPanel.querySelector(':scope > .fm-real-output') ||
+      outputsPanel.querySelector(':scope > .fm-output-state');
+
+    const originalPdf = document.getElementById('generatePdf');
+    const originalCsv = document.getElementById('generateCsv');
+    const originalExportWrap =
+      document.getElementById('fmExportButtonsWrap');
+
+    if (!generated || !originalPdf || !originalCsv) return;
+
+    if (originalExportWrap) {
+      originalExportWrap.style.setProperty(
+        'display',
+        'none',
+        'important'
+      );
+    }
+
+    let actions = document.getElementById(ACTIONS_ID);
+
+    if (!actions) {
+      actions = document.createElement('div');
+      actions.id = ACTIONS_ID;
+      actions.className = 'fm-current-output-actions';
+
+      actions.innerHTML = `
+        <div class="fm-current-output-actions-buttons">
+          <button
+            type="button"
+            class="fm-current-export-button fm-current-export-secondary"
+            data-current-export="pdf"
+          >
+            Generate PDF
+          </button>
+
+          <button
+            type="button"
+            class="fm-current-export-button fm-current-export-primary"
+            data-current-export="csv"
+          >
+            Generate CSV
+          </button>
+        </div>
+      `;
+
+      generated.appendChild(actions);
+
+      actions
+        .querySelector('[data-current-export="pdf"]')
+        ?.addEventListener('click', () => {
+          originalPdf.click();
+        });
+
+      actions
+        .querySelector('[data-current-export="csv"]')
+        ?.addEventListener('click', () => {
+          originalCsv.click();
+        });
+    }
+
+    /*
+     * Keep the visual export actions inside the visible Current Result card.
+     * The app also contains a hidden legacy output element.
+     */
+    const currentResultCard =
+      document.getElementById('fmCurrentResultCard');
+
+    if (currentResultCard) {
+      let currentOutputHeading =
+        document.getElementById('fmCurrentOutputHeading');
+
+      if (!currentOutputHeading) {
+        currentOutputHeading = document.createElement('div');
+        currentOutputHeading.id = 'fmCurrentOutputHeading';
+        currentOutputHeading.textContent = 'Current Output';
+
+        currentResultCard.insertAdjacentElement(
+          'beforebegin',
+          currentOutputHeading
+        );
+      }
+
+      currentOutputHeading.className = 'fm-current-output-heading';
+
+      if (actions.parentElement !== currentResultCard) {
+        currentResultCard.appendChild(actions);
+      }
+    }
+
+    const visualPdf =
+      actions.querySelector('[data-current-export="pdf"]');
+
+    const visualCsv =
+      actions.querySelector('[data-current-export="csv"]');
+
+    if (visualPdf) {
+      visualPdf.disabled = originalPdf.disabled;
+    }
+
+    if (visualCsv) {
+      visualCsv.disabled = originalCsv.disabled;
+    }
+  }
+
+  function start() {
+    installCurrentOutputActions();
+
+    const outputsPanel = document.getElementById('outputsPanel');
+
+    if (!outputsPanel) return;
+
+    new MutationObserver(() => {
+      requestAnimationFrame(installCurrentOutputActions);
+    }).observe(outputsPanel, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
 })();

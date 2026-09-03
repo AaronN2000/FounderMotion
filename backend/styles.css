@@ -11630,10 +11630,16 @@ body *:has(> #progressDots) > #progressDots {
 }
 
 .fm-phase-card[data-state="not-started"] .fm-phase-state,
-.fm-phase-card[data-state="locked"] .fm-phase-state {
+.fm-phase-card[data-state="upcoming"] .fm-phase-state {
   background: #f1eef4;
   color: #8b8393;
   border-color: #e3ddea;
+}
+
+.fm-phase-card[data-state="locked"] .fm-phase-state {
+  background: #eeeeee;
+  color: #6f6f6f;
+  border-color: #d7d7d7;
 }
 
 .fm-phase-card-title {
@@ -13067,4 +13073,2916 @@ body *:has(> #progressDots) > #progressDots {
 
 .fm-process-body:not(.fm-adaptive-stacked) > #fmInputsRightStack {
   align-self: start !important;
+}
+
+
+/* =========================================================
+   COMPACT QUESTIONS COLUMN
+   ========================================================= */
+
+.fm-process-body {
+  grid-template-columns: minmax(0, 1.8fr) minmax(320px, 0.75fr) !important;
+  gap: 28px !important;
+  align-items: start !important;
+}
+
+#inputsPanel {
+  min-width: 0 !important;
+}
+
+#fmInputsRightStack {
+  min-width: 0 !important;
+  width: 100% !important;
+  align-self: start !important;
+  position: static !important;
+}
+
+#fmInputsRightStack > .question-card {
+  width: 100% !important;
+  padding: 18px 18px 12px !important;
+  border-radius: 14px !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+#fmInputsRightStack > .question-card .question-card-header {
+  margin-bottom: 8px !important;
+  padding-bottom: 12px !important;
+}
+
+#fmInputsRightStack > .question-card .question-card-header h3 {
+  margin-top: 4px !important;
+  font-size: 21px !important;
+  line-height: 1.15 !important;
+}
+
+#fmInputsRightStack > .question-card .eyebrow {
+  font-size: 9.5px !important;
+  letter-spacing: .8px !important;
+}
+
+#fmInputsRightStack > .question-card .question-count {
+  font-size: 9px !important;
+  padding: 5px 9px !important;
+}
+
+#fmInputsRightStack > .question-card #questionList {
+  margin-top: 0 !important;
+}
+
+#fmInputsRightStack > .question-card #questionList .question-item {
+  min-height: 54px !important;
+  padding: 12px 8px !important;
+  gap: 12px !important;
+}
+
+#fmInputsRightStack > .question-card #questionList .question-number {
+  flex: 0 0 30px !important;
+  width: 30px !important;
+  height: 30px !important;
+  font-size: 10px !important;
+}
+
+#fmInputsRightStack > .question-card #questionList .question-text {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+/* Process page no longer displays Workspace Evidence */
+#fmInputsRightStack > .workspace-evidence,
+#fmInputsRightStack > .workspace-evidence-card,
+#fmInputsRightStack > #workspaceEvidence,
+#fmInputsRightStack > #fmWorkspaceEvidence {
+  display: none !important;
+}
+
+@media (max-width: 1099px) {
+  .fm-process-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  #fmInputsRightStack {
+    width: 100% !important;
+  }
+}
+
+/* =========================================================
+   FINAL PROCESS PAGE LAYOUT
+   Inputs are the primary working area.
+   Questions are supporting reference information.
+   ========================================================= */
+
+@media (min-width: 1100px) {
+  .fm-process-body,
+  .fm-process-body.fm-adaptive-stacked {
+    display: grid !important;
+    grid-template-columns: minmax(0, 72fr) minmax(280px, 28fr) !important;
+    grid-template-rows: auto !important;
+    column-gap: 28px !important;
+    row-gap: 0 !important;
+    align-items: start !important;
+  }
+
+  .fm-process-body > #inputsPanel,
+  .fm-process-body.fm-adaptive-stacked > #inputsPanel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-right: 0 !important;
+    align-self: start !important;
+  }
+
+  .fm-process-body > #fmInputsRightStack,
+  .fm-process-body.fm-adaptive-stacked > #fmInputsRightStack {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    border-left: 0 !important;
+    position: static !important;
+    align-self: start !important;
+  }
+
+  #fmInputsRightStack > .question-card {
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 18px 18px 10px !important;
+    border-radius: 14px !important;
+  }
+
+  #fmInputsRightStack > .question-card .question-card-header {
+    align-items: flex-start !important;
+    margin: 0 0 6px !important;
+    padding: 0 0 12px !important;
+  }
+
+  #fmInputsRightStack > .question-card .eyebrow {
+    font-size: 9px !important;
+    line-height: 1.25 !important;
+    letter-spacing: .7px !important;
+    margin-bottom: 4px !important;
+  }
+
+  #fmInputsRightStack > .question-card .question-card-header h3 {
+    font-size: 20px !important;
+    line-height: 1.15 !important;
+    margin: 0 !important;
+  }
+
+  #fmInputsRightStack > .question-card .question-count {
+    flex: 0 0 auto !important;
+    font-size: 9px !important;
+    padding: 4px 8px !important;
+  }
+
+  #fmInputsRightStack > .question-card #questionList {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #fmInputsRightStack > .question-card #questionList .question-item {
+    min-height: 0 !important;
+    padding: 11px 4px !important;
+    gap: 10px !important;
+  }
+
+  #fmInputsRightStack > .question-card #questionList .question-number {
+    flex: 0 0 28px !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    font-size: 9px !important;
+  }
+
+  #fmInputsRightStack > .question-card #questionList .question-text {
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+  }
+}
+
+@media (max-width: 1099px) {
+  .fm-process-body,
+  .fm-process-body.fm-adaptive-stacked {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #fmInputsRightStack {
+    width: 100% !important;
+    position: static !important;
+  }
+}
+
+/* Remove legacy vertical divider between Inputs and Questions */
+.fm-process-body > .fm-inputs-column,
+.fm-process-body > #inputsPanel,
+#inputsPanel {
+  border-right: 0 !important;
+  border-inline-end: 0 !important;
+}
+
+
+/* =========================================================
+   PROCESS INPUTS — TOP REFERENCE ROW
+   ========================================================= */
+
+@media (min-width: 1100px) {
+
+  .fm-process-body.fm-top-reference-layout,
+  .fm-process-body.fm-top-reference-layout.fm-adaptive-stacked {
+    display: block !important;
+  }
+
+  .fm-process-body.fm-top-reference-layout > #inputsPanel {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .fm-process-body.fm-top-reference-layout #fmInputsRightStack {
+    display: none !important;
+  }
+
+  .fm-process-reference-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.65fr) minmax(300px, .75fr) !important;
+    gap: 28px !important;
+    width: 100% !important;
+    margin: 0 0 28px !important;
+    align-items: stretch !important;
+  }
+
+  .fm-process-reference-row.fm-reference-questions-only {
+    grid-template-columns: minmax(300px, 380px) !important;
+    justify-content: end !important;
+  }
+
+  .fm-process-reference-row > .outputs-to-use,
+  .fm-process-reference-row > .question-card {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .fm-process-reference-row > .outputs-to-use {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .fm-process-reference-row > .outputs-to-use ul {
+    flex: 1 1 auto !important;
+  }
+
+  .fm-process-reference-row > .question-card {
+    padding: 16px !important;
+    border-radius: 14px !important;
+  }
+
+  .fm-process-reference-row .question-card-header {
+    margin: 0 0 4px !important;
+    padding: 0 0 10px !important;
+  }
+
+  .fm-process-reference-row .question-card-header h3 {
+    margin: 2px 0 0 !important;
+    font-size: 18px !important;
+    line-height: 1.15 !important;
+  }
+
+  .fm-process-reference-row .question-card .eyebrow {
+    font-size: 8.5px !important;
+    line-height: 1.25 !important;
+  }
+
+  .fm-process-reference-row .question-count {
+    font-size: 8px !important;
+    padding: 4px 7px !important;
+  }
+
+  .fm-process-reference-row #questionList {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .fm-process-reference-row #questionList .question-item {
+    min-height: 0 !important;
+    padding: 8px 2px !important;
+    gap: 10px !important;
+  }
+
+  .fm-process-reference-row #questionList .question-number {
+    flex: 0 0 24px !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    font-size: 8.5px !important;
+  }
+
+  .fm-process-reference-row #questionList .question-text {
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  .fm-process-body.fm-top-reference-layout #inputList {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .fm-process-body.fm-top-reference-layout
+  #inputList > *:not(.outputs-to-use) {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .fm-process-body.fm-top-reference-layout
+  #processOutputActions {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+@media (max-width: 1099px) {
+
+  .fm-process-reference-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 18px !important;
+    margin-bottom: 22px !important;
+  }
+
+}
+
+/* =========================================================
+   REFERENCE ROW — FORCE SIDE-BY-SIDE DESKTOP LAYOUT
+   ========================================================= */
+
+@media (min-width: 900px) {
+  #fmProcessReferenceRow,
+  .fm-process-reference-row,
+  .fm-process-reference-row.fm-reference-questions-only {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.55fr) minmax(320px, .75fr) !important;
+    grid-template-rows: auto !important;
+    gap: 28px !important;
+    width: 100% !important;
+    max-width: none !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+  }
+
+  #fmProcessReferenceRow > .outputs-to-use,
+  .fm-process-reference-row > .outputs-to-use {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  #fmProcessReferenceRow > .question-card,
+  .fm-process-reference-row > .question-card {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 899px) {
+  #fmProcessReferenceRow,
+  .fm-process-reference-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+
+  #fmProcessReferenceRow > .outputs-to-use,
+  #fmProcessReferenceRow > .question-card,
+  .fm-process-reference-row > .outputs-to-use,
+  .fm-process-reference-row > .question-card {
+    grid-column: 1 !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL TOP REFERENCE POSITIONING
+   Left: Previous Outputs
+   Right: Key Questions
+   ========================================================= */
+
+@media (min-width: 1100px) {
+  #fmProcessReferenceRow,
+  .fm-process-reference-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-areas: "outputs questions" !important;
+    gap: 28px !important;
+    width: 100% !important;
+    max-width: none !important;
+    align-items: start !important;
+  }
+
+  #fmProcessReferenceRow > .outputs-to-use,
+  .fm-process-reference-row > .outputs-to-use {
+    grid-area: outputs !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  #fmProcessReferenceRow > .question-card,
+  .fm-process-reference-row > .question-card {
+    grid-area: questions !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+}
+
+/* Final fix: keep Key Questions in the right column of the top reference row */
+@media (min-width: 1100px) {
+  #fmProcessReferenceRow > section.question-card {
+    grid-column: 2 / 3 !important;
+    grid-row: 1 / 2 !important;
+    justify-self: stretch !important;
+    align-self: start !important;
+    width: 100% !important;
+  }
+
+  #fmProcessReferenceRow > section.outputs-to-use {
+    grid-column: 1 / 2 !important;
+    grid-row: 1 / 2 !important;
+    justify-self: stretch !important;
+    align-self: start !important;
+    width: 100% !important;
+  }
+}
+
+/* Keep Previous Outputs and Key Questions the same size */
+@media (min-width: 1100px) {
+  #fmProcessReferenceRow {
+    align-items: stretch !important;
+  }
+
+  #fmProcessReferenceRow > .outputs-to-use,
+  #fmProcessReferenceRow > .question-card {
+    height: 100% !important;
+    align-self: stretch !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Key Questions expand/collapse action */
+.question-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 10px 12px !important;
+
+  border: 0 !important;
+  border-top: 1px solid #eee7f6 !important;
+  border-radius: 0 !important;
+
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+
+  color: #6f3fb4 !important;
+  font: inherit !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+.question-toggle:hover {
+  background: #faf7fd !important;
+}
+
+.question-toggle:focus,
+.question-toggle:focus-visible,
+.question-toggle:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove the outer purple border around the Key Questions list */
+#questionList {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Remove only the purple border around the question rows */
+#questionList .question-item:first-child {
+  border-top: 0 !important;
+}
+
+#questionList .question-item,
+#questionList .question-item:last-of-type {
+  border-left: 0 !important;
+  border-right: 0 !important;
+}
+
+#questionList .question-item:last-of-type {
+  border-bottom: 0 !important;
+}
+
+/* Keep the Show less / Show all action styling */
+#questionList .question-toggle {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+}
+
+/* Add a purple border only around the Show all / Show less action */
+#questionList .question-toggle {
+  border: 1.5px solid rgba(125, 87, 190, 0.42) !important;
+  border-radius: 14px !important;
+  background: #fbf8fe !important;
+  padding: 12px 16px !important;
+}
+
+#questionList .question-toggle:hover {
+  background: #f7f1fc !important;
+}
+
+/* Match the outer card shape of Previous Outputs and Key Questions */
+#fmProcessReferenceRow > .outputs-to-use,
+#fmProcessReferenceRow > .question-card {
+  border-radius: 16px !important;
+}
+
+/* Improve typography inside Previous Outputs card */
+#fmProcessReferenceRow > .outputs-to-use h4 {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.1px !important;
+  line-height: 1.3 !important;
+}
+
+#fmProcessReferenceRow > .outputs-to-use li {
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+}
+
+#fmProcessReferenceRow > .outputs-to-use li > span,
+#fmProcessReferenceRow > .outputs-to-use li > strong {
+  font-size: 16px !important;
+}
+
+#fmProcessReferenceRow > .outputs-to-use .available,
+#fmProcessReferenceRow > .outputs-to-use [class*="available"] {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+
+/* Keep Previous Outputs compact when Key Questions are expanded */
+@media (min-width: 1100px) {
+  #fmProcessReferenceRow.questions-expanded {
+    align-items: start !important;
+  }
+
+  #fmProcessReferenceRow.questions-expanded > .outputs-to-use {
+    height: auto !important;
+    align-self: start !important;
+  }
+
+  #fmProcessReferenceRow.questions-expanded > .question-card {
+    height: auto !important;
+    align-self: start !important;
+  }
+}
+
+/* =========================================================
+   KEY QUESTIONS — EXPAND AS DROPDOWN
+   Keep the reference row compact when questions are opened
+   ========================================================= */
+
+@media (min-width: 1100px) {
+  #fmProcessReferenceRow {
+    align-items: stretch !important;
+    position: relative !important;
+  }
+
+  #fmProcessReferenceRow > .outputs-to-use,
+  #fmProcessReferenceRow > .question-card {
+    height: 150px !important;
+    min-height: 150px !important;
+    align-self: stretch !important;
+    box-sizing: border-box !important;
+  }
+
+  #fmProcessReferenceRow > .question-card {
+    position: relative !important;
+    overflow: visible !important;
+    z-index: 20 !important;
+  }
+
+  /* Expanded questions float downward instead of increasing row height */
+  #fmProcessReferenceRow.questions-expanded #questionList {
+    position: absolute !important;
+    top: calc(100% - 52px) !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+
+    background: #ffffff !important;
+    border: 1px solid #e7d9f5 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 12px 30px rgba(62, 35, 88, 0.12) !important;
+
+    overflow: hidden !important;
+    z-index: 50 !important;
+  }
+
+  #fmProcessReferenceRow.questions-expanded #questionList .question-item {
+    background: #ffffff !important;
+  }
+
+  #fmProcessReferenceRow.questions-expanded #questionList .question-toggle {
+    background: #fbf8fe !important;
+    border-radius: 0 0 14px 14px !important;
+  }
+}
+
+/* Expanded Key Questions should push Inputs down, not overlap them */
+@media (min-width: 1100px) {
+  #fmProcessReferenceRow.questions-expanded #questionList {
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  #fmProcessReferenceRow.questions-expanded > .question-card {
+    height: auto !important;
+    min-height: 150px !important;
+    align-self: start !important;
+    overflow: visible !important;
+  }
+
+  #fmProcessReferenceRow.questions-expanded > .outputs-to-use {
+    height: 150px !important;
+    min-height: 150px !important;
+    align-self: start !important;
+  }
+
+  #fmProcessReferenceRow.questions-expanded {
+    align-items: start !important;
+  }
+}
+
+/* =========================================================
+   KEY QUESTIONS — KEEP EXPANSION IN RIGHT COLUMN
+   ========================================================= */
+
+@media (min-width: 1100px) {
+
+  #fmProcessReferenceRow.questions-expanded,
+  .fm-process-reference-row.questions-expanded {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows: auto !important;
+    align-items: start !important;
+  }
+
+  #fmProcessReferenceRow.questions-expanded > .outputs-to-use {
+    grid-column: 1 / 2 !important;
+    grid-row: 1 !important;
+    align-self: start !important;
+    height: fit-content !important;
+  }
+
+  #fmProcessReferenceRow.questions-expanded > .question-card {
+    grid-column: 2 / 3 !important;
+    grid-row: 1 !important;
+    align-self: start !important;
+    height: auto !important;
+    position: static !important;
+  }
+}
+
+
+/* =========================================================
+   KEY QUESTIONS — CENTER MODAL
+   ========================================================= */
+
+body.fm-question-modal-open {
+  overflow: hidden !important;
+}
+
+.fm-question-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.fm-question-modal.is-open {
+  display: flex;
+}
+
+.fm-question-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(38, 27, 48, 0.34);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.fm-question-modal-panel {
+  position: relative;
+  z-index: 1;
+
+  width: min(720px, calc(100vw - 64px));
+  max-height: min(760px, calc(100vh - 80px));
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+  border: 1px solid #e8dff0;
+  border-radius: 20px;
+
+  box-shadow:
+    0 24px 70px rgba(48, 31, 63, 0.22);
+
+  overflow: hidden;
+}
+
+.fm-question-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+
+  padding: 26px 28px 20px;
+
+  border-bottom: 1px solid #eee8f2;
+}
+
+.fm-question-modal-eyebrow {
+  margin: 0 0 6px;
+
+  color: #8065a5;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.fm-question-modal-header h2 {
+  margin: 0;
+
+  color: #68449a;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.fm-question-modal-close {
+  width: 36px;
+  height: 36px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  padding: 0;
+
+  border: 1px solid #e7deee;
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  color: #655b6d;
+  font-size: 24px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.fm-question-modal-close:hover {
+  background: #faf7fc;
+}
+
+.fm-question-modal-list {
+  padding: 8px 28px;
+  overflow-y: auto;
+}
+
+.fm-question-modal-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+
+  min-height: 72px;
+
+  border-bottom: 1px solid #eee9f1;
+}
+
+.fm-question-modal-item:last-child {
+  border-bottom: 0;
+}
+
+.fm-question-modal-number {
+  width: 38px;
+  height: 38px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #dfd0f0;
+  border-radius: 10px;
+
+  background: #f7f1fc;
+
+  color: #6f3fb4;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fm-question-modal-item p {
+  margin: 0;
+
+  color: #302936;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.fm-question-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+
+  padding: 18px 28px 22px;
+
+  border-top: 1px solid #eee8f2;
+}
+
+.fm-question-modal-done {
+  min-width: 100px;
+
+  padding: 10px 18px;
+
+  border: 1px solid #6f3fb4;
+  border-radius: 10px;
+
+  background: #6f3fb4;
+
+  color: #ffffff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.fm-question-modal-done:hover {
+  opacity: 0.92;
+}
+
+@media (max-width: 700px) {
+  .fm-question-modal {
+    padding: 18px;
+  }
+
+  .fm-question-modal-panel {
+    width: 100%;
+    max-height: calc(100vh - 36px);
+  }
+
+  .fm-question-modal-header,
+  .fm-question-modal-list,
+  .fm-question-modal-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+
+/* Question panel heading cleanup */
+.question-card .eyebrow {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  margin-bottom: 12px !important;
+}
+
+.question-card h3 {
+  display: none !important;
+}
+
+/* Improve Questions section visual hierarchy */
+.question-card .eyebrow {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0.04em !important;
+  margin: 0 0 24px !important;
+  color: #7652a8 !important;
+}
+
+/* Keep Show All button wide and add breathing room above it */
+#questionList > button:last-child,
+.question-card button[data-question-toggle],
+.question-card .question-toggle {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 44px !important;
+
+  margin: 18px 0 4px !important;
+  padding: 0 18px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  background: #faf7fd !important;
+  border: 1px solid #d8c3ef !important;
+  border-radius: 12px !important;
+
+  color: #6936b5 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+/* Match Questions heading with Previous Outputs heading */
+.question-card .eyebrow {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+/* Force Questions heading to match Previous Outputs heading */
+#fmProcessReferenceRow > .question-card .question-card-header p.eyebrow {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+/* When there are no previous-process outputs, let Questions use the full row */
+@media (min-width: 1100px) {
+  #fmProcessReferenceRow.fm-reference-questions-only {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #fmProcessReferenceRow.fm-reference-questions-only > .question-card {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+/* Process reference layout when there are no previous-process outputs */
+@media (min-width: 1100px) {
+  #fmProcessReferenceRow.fm-reference-questions-only,
+  .fm-process-reference-row.fm-reference-questions-only {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: "questions" !important;
+  }
+
+  #fmProcessReferenceRow.fm-reference-questions-only > .question-card,
+  .fm-process-reference-row.fm-reference-questions-only > .question-card {
+    grid-area: questions !important;
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+/* =========================================================
+   CURRENT OUTPUT — EXPORT ACTIONS
+   ========================================================= */
+
+#outputsPanel.fm-outputs-tab-active
+> #fmExportButtonsWrap {
+  display: none !important;
+}
+
+#outputsPanel.fm-outputs-tab-active
+.fm-real-output {
+  overflow: hidden !important;
+}
+
+#fmCurrentOutputActions {
+  margin-top: 22px !important;
+  padding-top: 18px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 20px !important;
+
+  border-top: 1px solid #eee6f2 !important;
+}
+
+#fmCurrentOutputActions
+.fm-current-output-actions-label {
+  color: #7c61a0 !important;
+
+  font-size: 11px !important;
+  font-weight: 800 !important;
+
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+#fmCurrentOutputActions
+.fm-current-output-actions-buttons {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+#fmCurrentOutputActions
+.fm-current-export-button {
+  min-width: 140px !important;
+  height: 40px !important;
+
+  padding: 0 16px !important;
+
+  border-radius: 10px !important;
+
+  font: inherit !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+
+  cursor: pointer !important;
+}
+
+#fmCurrentOutputActions
+.fm-current-export-secondary {
+  background: #ffffff !important;
+
+  border: 1px solid #7d48c9 !important;
+
+  color: #5620a6 !important;
+}
+
+#fmCurrentOutputActions
+.fm-current-export-primary {
+  background: #5b21b6 !important;
+
+  border: 1px solid #5b21b6 !important;
+
+  color: #ffffff !important;
+}
+
+#fmCurrentOutputActions
+.fm-current-export-button:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
+
+@media (max-width: 760px) {
+  #fmCurrentOutputActions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  #fmCurrentOutputActions
+  .fm-current-output-actions-buttons {
+    width: 100% !important;
+  }
+
+  #fmCurrentOutputActions
+  .fm-current-export-button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+}
+
+
+/* Allow Current Output actions to render fully */
+#outputsPanel.fm-outputs-tab-active > .fm-real-output {
+  overflow: visible !important;
+}
+
+/* Current Result card export controls */
+#outputsPanel.fm-outputs-tab-active
+#fmCurrentResultCard {
+  overflow: visible !important;
+}
+
+#outputsPanel.fm-outputs-tab-active
+#fmCurrentResultCard #fmCurrentOutputActions {
+  display: flex !important;
+}
+
+#outputsPanel.fm-outputs-tab-active
+> #fmExportButtonsWrap {
+  display: none !important;
+}
+
+
+/* Current Output section heading */
+#outputsPanel.fm-outputs-tab-active > #fmCurrentOutputHeading {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 0 10px !important;
+
+  color: #76559d !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+/* =========================================================
+   CURRENT OUTPUT — CLEAN CARD LAYOUT
+   ========================================================= */
+
+#outputsPanel.fm-outputs-tab-active > #fmCurrentOutputHeading {
+  width: 100% !important;
+  margin: 30px 0 10px !important;
+
+  text-align: left !important;
+
+  color: #75579c !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+}
+
+/* Keep Current Output as one single card */
+#outputsPanel.fm-outputs-tab-active #fmCurrentResultCard {
+  position: relative !important;
+
+  display: block !important;
+
+  width: 100% !important;
+
+  margin: 0 0 28px !important;
+  padding: 0 !important;
+
+  overflow: hidden !important;
+}
+
+/* Main result row */
+#fmCurrentResultCard .fm-current-result-item {
+  position: relative !important;
+
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto !important;
+
+  grid-template-rows:
+    auto
+    auto !important;
+
+  align-items: center !important;
+
+  column-gap: 24px !important;
+  row-gap: 6px !important;
+
+  min-height: 112px !important;
+
+  padding:
+    24px
+    28px
+    70px !important;
+}
+
+/* Result information */
+#fmCurrentResultCard .history-item-info {
+  grid-column: 1 !important;
+  grid-row: 1 / 3 !important;
+
+  min-width: 0 !important;
+}
+
+/* View result stays top-right */
+#fmCurrentResultCard .history-item-action,
+#fmCurrentResultCard .history-view-button,
+#fmCurrentResultCard a {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+
+  justify-self: end !important;
+}
+
+/* Export actions become part of the same card */
+#fmCurrentResultCard #fmCurrentOutputActions {
+  position: absolute !important;
+
+  right: 28px !important;
+  bottom: 20px !important;
+
+  width: auto !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  border: 0 !important;
+  background: transparent !important;
+}
+
+#fmCurrentResultCard .fm-current-output-actions-buttons {
+  display: flex !important;
+
+  align-items: center !important;
+  justify-content: flex-end !important;
+
+  gap: 10px !important;
+}
+
+/* Compact buttons */
+#fmCurrentResultCard .fm-current-export-button {
+  width: auto !important;
+  min-width: 126px !important;
+  height: 42px !important;
+
+  margin: 0 !important;
+  padding: 0 18px !important;
+
+  border-radius: 10px !important;
+
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+/* Do not show the old standalone export row */
+#outputsPanel.fm-outputs-tab-active > #fmExportButtonsWrap {
+  display: none !important;
+}
+
+
+/* =========================================================
+   CURRENT OUTPUT — SPLIT SECTION LAYOUT
+   ========================================================= */
+
+/* Hide the standalone heading above the card */
+#outputsPanel.fm-outputs-tab-active > #fmCurrentOutputHeading {
+  display: none !important;
+}
+
+/* Make the whole current result one section */
+#outputsPanel.fm-outputs-tab-active #fmCurrentResultCard {
+  position: relative !important;
+
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1.65fr)
+    minmax(360px, 0.85fr) !important;
+
+  align-items: stretch !important;
+
+  width: 100% !important;
+
+  margin: 28px 0 !important;
+  padding: 0 !important;
+
+  overflow: hidden !important;
+
+  border: 1px solid rgba(105, 46, 190, 0.22) !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+}
+
+/* Main result content on the left */
+#fmCurrentResultCard .fm-current-result-item {
+  grid-column: 1 !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+
+  min-height: 170px !important;
+
+  padding: 52px 30px 28px !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+/* Add Current Output label inside the section */
+#fmCurrentResultCard .fm-current-result-item::before {
+  content: "CURRENT OUTPUT";
+
+  position: absolute !important;
+
+  top: 24px !important;
+  left: 30px !important;
+
+  color: #75579c !important;
+
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+
+  letter-spacing: 0.09em !important;
+}
+
+/* Keep result information normal */
+#fmCurrentResultCard .history-item-info {
+  width: 100% !important;
+}
+
+/* View result sits under the meta instead of floating awkwardly */
+#fmCurrentResultCard .history-item-action,
+#fmCurrentResultCard .history-view-button {
+  position: static !important;
+
+  margin-top: 18px !important;
+
+  align-self: flex-start !important;
+}
+
+/* Export area becomes the right half */
+#fmCurrentResultCard #fmCurrentOutputActions {
+  position: static !important;
+
+  grid-column: 2 !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  width: 100% !important;
+
+  margin: 0 !important;
+  padding: 28px !important;
+
+  border: 0 !important;
+  border-left: 1px solid rgba(105, 46, 190, 0.12) !important;
+
+  background: rgba(115, 64, 190, 0.025) !important;
+}
+
+/* Buttons share the available width evenly */
+#fmCurrentResultCard .fm-current-output-actions-buttons {
+  display: grid !important;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr)) !important;
+
+  gap: 12px !important;
+
+  width: 100% !important;
+}
+
+/* Large balanced export buttons */
+#fmCurrentResultCard .fm-current-export-button {
+  width: 100% !important;
+  min-width: 0 !important;
+
+  height: 52px !important;
+
+  margin: 0 !important;
+  padding: 0 18px !important;
+
+  border-radius: 11px !important;
+
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+/* Ensure old export row remains hidden */
+#outputsPanel.fm-outputs-tab-active > #fmExportButtonsWrap {
+  display: none !important;
+}
+
+
+/* =========================================================
+   CURRENT OUTPUT — REFERENCE DESIGN
+   ========================================================= */
+
+/* Remove the old heading outside the section */
+#outputsPanel.fm-outputs-tab-active > #fmCurrentOutputHeading {
+  display: none !important;
+}
+
+/* One complete Current Output section */
+#outputsPanel.fm-outputs-tab-active #fmCurrentResultCard {
+  position: relative !important;
+
+  display: block !important;
+
+  width: 100% !important;
+
+  margin: 28px 0 30px !important;
+  padding: 0 !important;
+
+  overflow: hidden !important;
+
+  border: 1px solid rgba(106, 47, 190, 0.25) !important;
+  border-radius: 16px !important;
+
+  background: #ffffff !important;
+}
+
+/* =========================================================
+   TOP RESULT AREA
+   ========================================================= */
+
+#fmCurrentResultCard .fm-current-result-item {
+  position: relative !important;
+
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto !important;
+
+  grid-template-rows:
+    auto
+    auto !important;
+
+  align-items: center !important;
+
+  width: 100% !important;
+  min-height: 148px !important;
+
+  margin: 0 !important;
+
+  padding:
+    56px
+    30px
+    30px !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+
+  background: transparent !important;
+}
+
+/* Current Output label inside the section */
+#fmCurrentResultCard .fm-current-result-item::before {
+  content: "CURRENT OUTPUT" !important;
+
+  position: absolute !important;
+
+  top: 26px !important;
+  left: 30px !important;
+
+  color: #75579c !important;
+
+  font-size: 11px !important;
+  font-weight: 800 !important;
+
+  line-height: 1 !important;
+
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+}
+
+/* Title + meta */
+#fmCurrentResultCard .history-item-info {
+  grid-column: 1 !important;
+  grid-row: 1 / 3 !important;
+
+  align-self: center !important;
+
+  width: auto !important;
+  min-width: 0 !important;
+
+  margin: 0 !important;
+}
+
+/* View result — same right-side position as History */
+#fmCurrentResultCard .history-item-action,
+#fmCurrentResultCard .history-view-button,
+#fmCurrentResultCard .history-item-link {
+  position: static !important;
+
+  grid-column: 2 !important;
+  grid-row: 1 / 3 !important;
+
+  align-self: center !important;
+  justify-self: end !important;
+
+  margin: 0 !important;
+
+  white-space: nowrap !important;
+}
+
+/* =========================================================
+   EXPORT AREA
+   ========================================================= */
+
+#fmCurrentResultCard #fmCurrentOutputActions {
+  position: static !important;
+
+  display: block !important;
+
+  width: 100% !important;
+
+  margin: 0 !important;
+
+  padding:
+    26px
+    30px
+    28px !important;
+
+  border: 0 !important;
+  border-top: 1px solid rgba(106, 47, 190, 0.14) !important;
+
+  background: transparent !important;
+}
+
+/* PDF and CSV divide the full row evenly */
+#fmCurrentResultCard .fm-current-output-actions-buttons {
+  display: grid !important;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr)) !important;
+
+  gap: 16px !important;
+
+  width: 100% !important;
+
+  margin: 0 !important;
+}
+
+/* Large export buttons */
+#fmCurrentResultCard .fm-current-export-button {
+  display: flex !important;
+
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+
+  height: 58px !important;
+
+  margin: 0 !important;
+  padding: 0 24px !important;
+
+  border-radius: 12px !important;
+
+  font-size: 14px !important;
+  font-weight: 750 !important;
+
+  cursor: pointer !important;
+}
+
+/* PDF */
+#fmCurrentResultCard .fm-current-export-secondary {
+  border: 1.5px solid #6b27c8 !important;
+
+  background: #ffffff !important;
+  color: #5f21b9 !important;
+}
+
+/* CSV */
+#fmCurrentResultCard .fm-current-export-primary {
+  border: 1.5px solid #6421bf !important;
+
+  background: #6421bf !important;
+  color: #ffffff !important;
+}
+
+/* Do not render the original export row */
+#outputsPanel.fm-outputs-tab-active > #fmExportButtonsWrap {
+  display: none !important;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  #fmCurrentResultCard .fm-current-result-item {
+    grid-template-columns: 1fr !important;
+  }
+
+  #fmCurrentResultCard .history-item-action,
+  #fmCurrentResultCard .history-view-button,
+  #fmCurrentResultCard .history-item-link {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+
+    justify-self: start !important;
+
+    margin-top: 18px !important;
+  }
+
+  #fmCurrentResultCard .fm-current-output-actions-buttons {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* =========================================================
+   MY WORKSPACE — LIST / DETAIL MODE
+   ========================================================= */
+
+/* List view: workspace-owned information is not global */
+body.fm-workspace-list-mode .workspace-stats,
+body.fm-workspace-list-mode .workspace-grid,
+body.fm-workspace-list-mode #fmWorkspaceDetailHeader {
+  display: none !important;
+}
+
+/* Detail view: hide the workspace list */
+body.fm-workspace-detail-mode .workspace-manager {
+  display: none !important;
+}
+
+/* Workspace detail header */
+#fmWorkspaceDetailHeader {
+  margin: 32px 0 22px;
+  padding: 28px;
+
+  border: 1px solid rgba(60, 23, 120, 0.14);
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.fm-workspace-detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  margin-bottom: 30px;
+}
+
+.fm-workspace-detail-title {
+  margin-bottom: 24px;
+}
+
+.fm-workspace-detail-title .eyebrow {
+  margin: 0 0 8px;
+}
+
+.fm-workspace-detail-title h2 {
+  margin: 0;
+
+  font-size: 2rem;
+  line-height: 1.1;
+
+  color: #28212f;
+}
+
+.fm-workspace-detail-title p:last-child {
+  margin: 8px 0 0;
+
+  color: rgba(42, 34, 47, 0.58);
+}
+
+.fm-workspace-detail-meta {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+}
+
+.fm-workspace-detail-meta > div {
+  padding: 18px 20px;
+
+  border-radius: 12px;
+
+  background: #faf8fc;
+}
+
+.fm-workspace-detail-meta span {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #8064a5;
+
+  font-size: 0.67rem;
+  font-weight: 700;
+
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fm-workspace-detail-meta strong {
+  color: #29222f;
+
+  font-size: 0.95rem;
+}
+
+/* Detail sections clearly belong to the opened workspace */
+body.fm-workspace-detail-mode .workspace-stats {
+  margin-top: 0 !important;
+}
+
+body.fm-workspace-detail-mode .workspace-grid {
+  margin-top: 22px !important;
+}
+
+@media (max-width: 760px) {
+  .fm-workspace-detail-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .fm-workspace-detail-top {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+
+/* =========================================================
+   WORKSPACE DETAIL — VISUAL POLISH
+   ========================================================= */
+
+/* Detail view should not show list-level actions */
+body.fm-workspace-detail-mode .workspace-actions {
+  display: none !important;
+}
+
+/* Keep page heading cleaner in detail mode */
+body.fm-workspace-detail-mode .workspace-page-header {
+  margin-bottom: 20px !important;
+}
+
+/* Detail card */
+body.fm-workspace-detail-mode #fmWorkspaceDetailHeader {
+  margin: 20px 0 20px !important;
+  padding: 26px 30px 28px !important;
+
+  border: 1px solid rgba(75, 27, 135, 0.14) !important;
+  border-radius: 18px !important;
+
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 10px 32px rgba(43, 22, 67, 0.045) !important;
+}
+
+/* Top row */
+body.fm-workspace-detail-mode .fm-workspace-detail-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  margin: 0 0 28px !important;
+}
+
+/* Back button */
+body.fm-workspace-detail-mode #fmBackToWorkspaces {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  min-height: 42px !important;
+
+  padding: 0 18px !important;
+
+  border: 1px solid rgba(75, 27, 135, 0.18) !important;
+  border-radius: 10px !important;
+
+  background: #fff !important;
+  color: #431879 !important;
+
+  font: inherit !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+
+  cursor: pointer !important;
+}
+
+/* Edit button */
+body.fm-workspace-detail-mode #fmEditOpenedWorkspace {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  min-height: 42px !important;
+
+  padding: 0 20px !important;
+
+  border: 0 !important;
+  border-radius: 10px !important;
+
+  background: #431879 !important;
+  color: #fff !important;
+
+  font: inherit !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+
+  cursor: pointer !important;
+}
+
+/* Workspace identity */
+body.fm-workspace-detail-mode .fm-workspace-detail-title {
+  margin: 0 0 24px !important;
+}
+
+body.fm-workspace-detail-mode .fm-workspace-detail-title .eyebrow {
+  margin: 0 0 8px !important;
+}
+
+body.fm-workspace-detail-mode .fm-workspace-detail-title h2 {
+  margin: 0 !important;
+
+  font-size: 30px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.035em !important;
+
+  color: #28212f !important;
+}
+
+body.fm-workspace-detail-mode .fm-workspace-detail-title p:last-child {
+  margin: 7px 0 0 !important;
+
+  font-size: 14px !important;
+  color: rgba(42, 34, 47, 0.56) !important;
+}
+
+/* Detail information row */
+body.fm-workspace-detail-mode .fm-workspace-detail-meta {
+  display: grid !important;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr)) !important;
+
+  gap: 12px !important;
+}
+
+body.fm-workspace-detail-mode .fm-workspace-detail-meta > div {
+  min-height: 82px !important;
+
+  padding: 17px 20px !important;
+
+  border: 1px solid rgba(75, 27, 135, 0.06) !important;
+  border-radius: 12px !important;
+
+  background: #faf8fc !important;
+}
+
+/* Stats closer to detail card */
+body.fm-workspace-detail-mode .workspace-stats {
+  margin-top: 0 !important;
+  gap: 14px !important;
+}
+
+/* Reduce oversized whitespace */
+body.fm-workspace-detail-mode .workspace-stat {
+  min-height: 126px !important;
+  padding: 24px 26px !important;
+}
+
+/* Main workspace sections */
+body.fm-workspace-detail-mode .workspace-grid {
+  margin-top: 18px !important;
+  gap: 18px !important;
+}
+
+/* Hover polish */
+body.fm-workspace-detail-mode #fmBackToWorkspaces:hover {
+  background: #f7f3fb !important;
+}
+
+body.fm-workspace-detail-mode #fmEditOpenedWorkspace:hover {
+  background: #351261 !important;
+}
+
+
+/* =========================================================
+   WORKSPACE DETAIL — BACK NAVIGATION POSITION
+   ========================================================= */
+
+/* Allow the detail header to act as the visual card only */
+body.fm-workspace-detail-mode #fmWorkspaceDetailHeader {
+  position: relative !important;
+  margin-top: 62px !important;
+}
+
+/* Move Back to Workspaces outside and above the detail card */
+body.fm-workspace-detail-mode #fmBackToWorkspaces {
+  position: absolute !important;
+
+  top: -54px !important;
+  left: 0 !important;
+
+  min-height: 38px !important;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+
+  background: transparent !important;
+  color: #4b1b8f !important;
+
+  font-size: 14px !important;
+  font-weight: 700 !important;
+
+  box-shadow: none !important;
+}
+
+body.fm-workspace-detail-mode #fmBackToWorkspaces:hover {
+  background: transparent !important;
+  color: #32105f !important;
+  text-decoration: underline !important;
+}
+
+/* The top row is now only responsible for Edit workspace */
+body.fm-workspace-detail-mode .fm-workspace-detail-top {
+  justify-content: flex-end !important;
+
+  margin-bottom: 22px !important;
+}
+
+/* =========================================================
+   WORKSPACE DETAIL — COMPACT CARD + EXTERNAL ACTIONS
+   ========================================================= */
+
+/* Use the top row as navigation/actions outside the card */
+body.fm-workspace-detail-mode #fmWorkspaceDetailHeader {
+  position: relative !important;
+
+  margin-top: 64px !important;
+  padding: 24px 30px 26px !important;
+}
+
+/* Back stays outside, above-left */
+body.fm-workspace-detail-mode #fmBackToWorkspaces {
+  position: absolute !important;
+
+  top: -52px !important;
+  left: 0 !important;
+
+  min-height: 38px !important;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+  background: transparent !important;
+
+  color: #4b1b8f !important;
+
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+/* Move Edit workspace outside, above-right */
+body.fm-workspace-detail-mode #fmEditOpenedWorkspace {
+  position: absolute !important;
+
+  top: -58px !important;
+  right: 0 !important;
+
+  min-height: 42px !important;
+
+  padding: 0 20px !important;
+
+  border: 0 !important;
+  border-radius: 10px !important;
+
+  background: #431879 !important;
+  color: #fff !important;
+
+  font-size: 14px !important;
+  font-weight: 700 !important;
+
+  box-shadow: none !important;
+}
+
+/* The old internal top row should no longer occupy space */
+body.fm-workspace-detail-mode .fm-workspace-detail-top {
+  height: 0 !important;
+  min-height: 0 !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  overflow: visible !important;
+}
+
+/* Compact title block */
+body.fm-workspace-detail-mode .fm-workspace-detail-title {
+  margin: 0 0 18px !important;
+}
+
+body.fm-workspace-detail-mode .fm-workspace-detail-title .eyebrow {
+  margin-bottom: 7px !important;
+}
+
+body.fm-workspace-detail-mode .fm-workspace-detail-title h2 {
+  font-size: 27px !important;
+  line-height: 1.1 !important;
+}
+
+body.fm-workspace-detail-mode .fm-workspace-detail-title p:last-child {
+  margin-top: 5px !important;
+}
+
+/* More compact details */
+body.fm-workspace-detail-mode .fm-workspace-detail-meta {
+  gap: 10px !important;
+}
+
+body.fm-workspace-detail-mode .fm-workspace-detail-meta > div {
+  min-height: 70px !important;
+
+  padding: 14px 18px !important;
+}
+
+/* Reduce visual weight of the whole card */
+body.fm-workspace-detail-mode #fmWorkspaceDetailHeader {
+  border-radius: 16px !important;
+
+  box-shadow:
+    0 8px 24px rgba(43, 22, 67, 0.035) !important;
+}
+
+/* Slightly reduce gap before statistics */
+body.fm-workspace-detail-mode .workspace-stats {
+  margin-top: -2px !important;
+}
+
+/* =========================================================
+   MARKET SEGMENTS EDITOR
+   ========================================================= */
+
+#segmentDialog .segment-editor-intro {
+  margin: -6px 0 20px;
+
+  color: rgba(42, 34, 47, 0.58);
+
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+#segmentEditorRows {
+  display: grid;
+
+  gap: 10px;
+
+  margin-bottom: 12px;
+}
+
+#segmentDialog .segment-editor-row {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+
+  gap: 10px;
+
+  align-items: center;
+}
+
+#segmentDialog .segment-editor-input {
+  width: 100%;
+  height: 44px;
+
+  margin: 0;
+
+  padding: 0 13px;
+
+  border: 1px solid #ddd8e5;
+  border-radius: 9px;
+
+  font: inherit;
+  font-size: 13px;
+}
+
+#segmentDialog .segment-editor-remove {
+  min-width: 82px;
+  height: 44px;
+
+  padding: 0 14px;
+
+  border: 1px solid rgba(178, 42, 42, 0.2);
+  border-radius: 9px;
+
+  background: #fff;
+  color: #a52424;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+#segmentDialog .segment-editor-add {
+  min-height: 40px;
+
+  padding: 0 15px;
+
+  border: 1px solid rgba(60, 23, 120, 0.2);
+  border-radius: 9px;
+
+  background: #fff;
+  color: #3c1778;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+#segmentDialog .segment-editor-add:hover {
+  background: #f7f3fb;
+}
+
+
+/* Market segment card actions */
+
+.workspace-segment-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 8px;
+}
+
+.workspace-segment-item-header .workspace-index {
+  margin: 0;
+}
+
+.workspace-segment-delete {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a52424;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workspace-segment-delete:hover {
+  text-decoration: underline;
+}
+
+.workspace-segment-delete:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+
+#segmentDialog .segment-editor-block {
+  padding: 18px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(60, 23, 120, 0.12);
+  border-radius: 12px;
+  background: #fbfafc;
+}
+
+#segmentDialog .segment-editor-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+#segmentDialog .segment-editor-block-header strong {
+  font-size: 13px;
+  color: #3c1778;
+}
+
+#segmentDialog .segment-editor-block label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+#segmentDialog .segment-editor-block label > span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3c3442;
+}
+
+#segmentDialog .segment-editor-block input,
+#segmentDialog .segment-editor-block textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ddd8e5;
+  border-radius: 9px;
+  background: #fff;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 13px;
+}
+
+#segmentDialog .segment-editor-block textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+#segmentDialog .segment-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+#segmentDialog .segment-editor-remove {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a52424;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#segmentDialog .segment-editor-remove:hover {
+  text-decoration: underline;
+}
+
+/* =========================================================
+   MARKET SEGMENTS — COLLAPSED EDITOR
+   ========================================================= */
+
+#segmentDialog .segment-editor-block {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+#segmentDialog .segment-editor-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+
+  padding: 16px 18px;
+}
+
+#segmentDialog .segment-editor-summary-main {
+  min-width: 0;
+}
+
+#segmentDialog .segment-editor-summary-label {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #8064a5;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+#segmentDialog .segment-editor-summary-name {
+  display: block;
+
+  overflow: hidden;
+
+  color: #29222f;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#segmentDialog .segment-editor-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  flex: 0 0 auto;
+}
+
+#segmentDialog .segment-editor-toggle {
+  border: 0;
+  background: transparent;
+
+  color: #3c1778;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+#segmentDialog .segment-editor-fields {
+  padding: 0 18px 18px;
+
+  border-top: 1px solid rgba(60, 23, 120, .08);
+}
+
+#segmentDialog .segment-editor-fields label:first-child {
+  margin-top: 16px;
+}
+
+#segmentDialog .segment-editor-block.is-collapsed
+.segment-editor-fields {
+  display: none !important;
+}
+
+#segmentDialog .segment-editor-block:not(.is-collapsed)
+.segment-editor-summary {
+  background: #faf8fc;
+}
+
+#segmentDialog .segment-editor-block:not(.is-collapsed)
+.segment-editor-toggle {
+  color: #6b27c8;
+}
+
+
+/* =========================================================
+   MARKET SEGMENTS — CLEAN COLLAPSED CARDS
+   ========================================================= */
+
+#segmentDialog .segment-editor-block {
+  margin-bottom: 10px !important;
+  padding: 0 !important;
+
+  overflow: hidden !important;
+
+  border: 1px solid rgba(60, 23, 120, 0.12) !important;
+  border-radius: 12px !important;
+
+  background: #fff !important;
+}
+
+/* Compact collapsed row */
+#segmentDialog .segment-editor-summary {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  gap: 20px !important;
+
+  min-height: 70px !important;
+
+  padding: 14px 18px !important;
+
+  background: #fff !important;
+}
+
+#segmentDialog .segment-editor-summary-main {
+  min-width: 0 !important;
+}
+
+#segmentDialog .segment-editor-summary-label {
+  display: block !important;
+
+  margin-bottom: 4px !important;
+
+  color: #8064a5 !important;
+
+  font-size: 10px !important;
+  font-weight: 800 !important;
+
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+}
+
+#segmentDialog .segment-editor-summary-name {
+  display: block !important;
+
+  overflow: hidden !important;
+
+  color: #29222f !important;
+
+  font-size: 14px !important;
+  font-weight: 700 !important;
+
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Edit / Hide is the only header action */
+#segmentDialog .segment-editor-toggle {
+  flex: 0 0 auto !important;
+
+  min-width: 64px !important;
+  height: 34px !important;
+
+  padding: 0 12px !important;
+
+  border: 1px solid rgba(60, 23, 120, .18) !important;
+  border-radius: 8px !important;
+
+  background: #fff !important;
+  color: #3c1778 !important;
+
+  font-size: 12px !important;
+  font-weight: 700 !important;
+
+  cursor: pointer !important;
+}
+
+/* Expanded details */
+#segmentDialog .segment-editor-fields {
+  padding: 18px !important;
+
+  border-top: 1px solid rgba(60, 23, 120, .08) !important;
+
+  background: #fbfafc !important;
+}
+
+#segmentDialog .segment-editor-block.is-collapsed
+.segment-editor-fields {
+  display: none !important;
+}
+
+#segmentDialog .segment-editor-fields label {
+  margin-bottom: 13px !important;
+}
+
+/* Geography / Company size */
+#segmentDialog .segment-editor-grid {
+  display: grid !important;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr)) !important;
+
+  gap: 12px !important;
+}
+
+/* Actions only appear inside expanded segment */
+#segmentDialog .segment-editor-inline-actions {
+  display: flex !important;
+
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  gap: 12px !important;
+
+  margin-top: 18px !important;
+  padding-top: 16px !important;
+
+  border-top: 1px solid rgba(60, 23, 120, .08) !important;
+}
+
+#segmentDialog .segment-editor-remove {
+  height: 38px !important;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+
+  background: transparent !important;
+  color: #a52424 !important;
+
+  font-size: 12px !important;
+  font-weight: 700 !important;
+
+  cursor: pointer !important;
+}
+
+#segmentDialog .segment-editor-done {
+  min-width: 86px !important;
+  height: 38px !important;
+
+  padding: 0 16px !important;
+
+  border: 0 !important;
+  border-radius: 8px !important;
+
+  background: #3c1778 !important;
+  color: #fff !important;
+
+  font-size: 12px !important;
+  font-weight: 700 !important;
+
+  cursor: pointer !important;
+}
+
+
+/* =========================================================
+   MARKET SEGMENTS — FOCUSED EDIT MODE
+   ========================================================= */
+
+/* While one segment is being edited hide the other cards */
+#segmentEditorRows.is-editing-segment
+.segment-editor-block:not(.is-active-edit) {
+  display: none !important;
+}
+
+/* The active editor gets its own clear space */
+#segmentDialog
+.segment-editor-block.is-active-edit {
+  margin-bottom: 0 !important;
+
+  border-color: rgba(60, 23, 120, 0.16) !important;
+
+  background: #ffffff !important;
+}
+
+/* No Hide button while editing */
+#segmentDialog
+.segment-editor-block.is-active-edit
+.segment-editor-toggle {
+  display: none !important;
+}
+
+/* Keep the active segment heading clean */
+#segmentDialog
+.segment-editor-block.is-active-edit
+.segment-editor-summary {
+  min-height: 64px !important;
+
+  padding: 16px 18px !important;
+
+  border-bottom: 1px solid rgba(60, 23, 120, 0.08) !important;
+
+  background: #ffffff !important;
+}
+
+/* More breathing room around the form */
+#segmentDialog
+.segment-editor-block.is-active-edit
+.segment-editor-fields {
+  padding: 20px 18px 18px !important;
+}
+
+/* Clear separation for the bottom actions */
+#segmentDialog
+.segment-editor-inline-actions {
+  margin-top: 20px !important;
+  padding-top: 16px !important;
+}
+
+/* Done becomes the clear exit action */
+#segmentDialog
+.segment-editor-done {
+  min-width: 96px !important;
+}
+
+/* =========================================================
+   MARKET SEGMENTS — GEOGRAPHY / COMPANY SIZE ALIGNMENT
+   ========================================================= */
+
+#segmentDialog .segment-editor-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  align-items: start !important;
+}
+
+#segmentDialog .segment-editor-grid label {
+  display: flex !important;
+  flex-direction: column !important;
+
+  margin: 0 !important;
+
+  min-width: 0 !important;
+}
+
+#segmentDialog .segment-editor-grid label > span {
+  display: block !important;
+
+  margin: 0 0 6px !important;
+
+  line-height: 1.2 !important;
+}
+
+#segmentDialog .segment-editor-grid input {
+  display: block !important;
+
+  width: 100% !important;
+  height: 44px !important;
+
+  margin: 0 !important;
+
+  box-sizing: border-box !important;
+}
+
+#segmentDialog .segment-editor-grid + label {
+  margin-top: 13px !important;
+}
+
+/* =========================================================
+   MARKET SEGMENTS — MODAL SCROLL + HEADER CLEANUP
+   ========================================================= */
+
+#segmentDialog {
+  max-height: calc(100vh - 48px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+#segmentDialog form {
+  max-height: none !important;
+}
+
+#segmentDialog .dialog-heading {
+  margin-bottom: 22px !important;
+}
+
+#segmentDialog .dialog-heading h2 {
+  margin: 0 !important;
+}
+
+#segmentDialog .segment-editor-subtitle {
+  margin: 7px 0 0 !important;
+
+  color: rgba(42, 34, 47, 0.58) !important;
+
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+#segmentDialog .segment-editor-intro {
+  display: none !important;
+}
+
+
+/* Hide Add segment while editing one segment */
+#segmentEditorRows.is-editing-segment
++ #addSegmentEditorRow {
+  display: none !important;
+}
+
+/* Keep Add segment visible in normal list mode */
+#segmentEditorRows:not(.is-editing-segment)
++ #addSegmentEditorRow {
+  display: inline-flex !important;
+}
+
+/* =========================================================
+   MARKET SEGMENTS — ADD SEGMENT ACTION
+   ========================================================= */
+
+#segmentDialog #addSegmentEditorRow {
+  width: 100% !important;
+  min-height: 48px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  margin: 14px 0 0 !important;
+  padding: 0 18px !important;
+
+  box-sizing: border-box !important;
+
+  border: 1px dashed rgba(75, 27, 145, 0.28) !important;
+  border-radius: 12px !important;
+
+  background: rgba(75, 27, 145, 0.025) !important;
+
+  color: #4b1b91 !important;
+
+  font-size: 13px !important;
+  font-weight: 700 !important;
+
+  cursor: pointer !important;
+
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease !important;
+}
+
+#segmentDialog #addSegmentEditorRow:hover {
+  background: rgba(75, 27, 145, 0.06) !important;
+  border-color: rgba(75, 27, 145, 0.5) !important;
+}
+
+#segmentDialog #addSegmentEditorRow:active {
+  transform: translateY(1px) !important;
+}
+
+/* Keep it hidden while one segment is being edited */
+#segmentDialog #segmentEditorRows.is-editing-segment
++ #addSegmentEditorRow {
+  display: none !important;
+}
+
+/* Current workspace state */
+.workspace-selection-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.workspace-current-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(75, 29, 135, 0.1);
+  color: #4b1d87;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.workspace-card-open.is-opened,
+.workspace-card-open.is-opened:disabled {
+  background: rgba(75, 29, 135, 0.1);
+  border-color: rgba(75, 29, 135, 0.2);
+  color: #4b1d87;
+  cursor: default;
+  opacity: 1;
+}
+
+/* Workspace list card balance */
+.workspace-selection-card {
+  align-items: center;
+}
+
+.workspace-selection-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.workspace-selection-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.workspace-selection-status-row {
+  margin-bottom: 10px;
+}
+
+.workspace-selection-title h3 {
+  margin: 0 0 5px;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.workspace-selection-title .workspace-business-name {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  opacity: 0.68;
+}
+
+.workspace-selection-actions {
+  align-self: center;
+}
+
+/* Workspace summary layout */
+.workspace-selection-main {
+  justify-content: flex-start;
+}
+
+.workspace-selection-title h3 {
+  margin: 0 0 4px;
+  font-size: 21px;
+  line-height: 1.2;
+  font-weight: 750;
+}
+
+.workspace-selection-title .workspace-business-name {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  opacity: 0.66;
+}
+
+.workspace-selection-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 18px;
+  width: min(720px, 100%);
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(64, 31, 112, 0.1);
+}
+
+.workspace-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workspace-summary-item > span {
+  color: #7755a1;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.workspace-summary-item > strong {
+  color: #2d2634;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.workspace-view-details {
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #4b1d87;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workspace-view-details:hover {
+  text-decoration: underline;
+}
+
+.workspace-selection-actions .workspace-view-details {
+  min-width: 0;
+  min-height: 0;
+  margin-top: 10px;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #4b1d87;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+
+.workspace-selection-actions .workspace-view-details:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+/* Add breathing room between workspace summary labels and values */
+.workspace-summary-item {
+  gap: 12px;
+}
+
+.workspace-summary-item > span {
+  margin-bottom: 2px;
+}
+
+/* Spread workspace summary fields further apart */
+.workspace-selection-meta {
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  column-gap: 48px;
+  width: min(900px, 100%);
+}
+
+.workspace-summary-item {
+  min-width: 0;
+}
+
+/* Evenly distribute workspace summary fields */
+.workspace-selection-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 760px;
+  max-width: 100%;
+  column-gap: 60px;
+}
+
+.workspace-summary-item:nth-child(1) {
+  justify-self: start;
+}
+
+.workspace-summary-item:nth-child(2) {
+  justify-self: center;
+}
+
+.workspace-summary-item:nth-child(3) {
+  justify-self: end;
 }

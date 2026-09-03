@@ -46,24 +46,112 @@ function renderSegments(segments) {
   $('#segmentStat').textContent = `${currentSegments.length}`;
 
   if (!currentSegments.length) {
-    list.innerHTML = emptyState('No market segments have been defined yet. Add priority segments to continue.');
+    list.innerHTML = emptyState(
+      'No market segments have been defined yet'
+    );
     return;
   }
 
   list.innerHTML = currentSegments.map((segment, index) => `
-    <div class="workspace-list-item">
-      <span class="workspace-index">SEGMENT ${String(index + 1).padStart(2, '0')}</span>
+    <div class="workspace-list-item workspace-segment-item">
+      <div class="workspace-segment-item-header">
+        <span class="workspace-index">
+          SEGMENT ${String(index + 1).padStart(2, '0')}
+        </span>
+
+        <button
+          class="workspace-segment-delete"
+          type="button"
+          data-delete-segment="${index}"
+        >
+          Delete
+        </button>
+      </div>
+
       <strong>${escapeHtml(segment.name)}</strong>
-      ${segment.description ? `<p>${escapeHtml(segment.description)}</p>` : ''}
+
+      ${segment.description
+        ? `<p>${escapeHtml(segment.description)}</p>`
+        : ''
+      }
+
       <div class="workspace-meta">
-        ${segment.geography ? `<span>${escapeHtml(segment.geography)}</span>` : ''}
-        ${segment.companySize ? `<span>${escapeHtml(segment.companySize)}</span>` : ''}
-        ${segment.wedge ? `<span>${escapeHtml(segment.wedge)}</span>` : ''}
+        <span>
+          Geography: ${escapeHtml(segment.geography || '—')}
+        </span>
+
+        <span>
+          Company size: ${escapeHtml(segment.companySize || '—')}
+        </span>
+
+        <span>
+          Wedge: ${escapeHtml(segment.wedge || '—')}
+        </span>
       </div>
     </div>
   `).join('');
-}
 
+  list
+    .querySelectorAll('[data-delete-segment]')
+    .forEach(button => {
+      button.addEventListener('click', async () => {
+        const index =
+          Number(button.dataset.deleteSegment);
+
+        const segment =
+          currentSegments[index];
+
+        if (!segment || !activeWorkspace) return;
+
+        const confirmed = confirm(
+          `Delete "${segment.name}" from this workspace`
+        );
+
+        if (!confirmed) return;
+
+        const remainingSegments =
+          currentSegments
+            .filter((_, itemIndex) => itemIndex !== index)
+            .map(item => item.name)
+            .filter(Boolean);
+
+        const payload = {
+          workspaceName:
+            activeWorkspace.workspaceName || '',
+          businessName:
+            activeWorkspace.businessName || '',
+          industry:
+            activeWorkspace.industry || '',
+          businessStage:
+            activeWorkspace.businessStage || '',
+          primaryMarket:
+            activeWorkspace.primaryMarket || '',
+          website:
+            activeWorkspace.website || '',
+          segments: remainingSegments
+        };
+
+        try {
+          button.disabled = true;
+
+          await api(
+            `/api/workspaces/${activeWorkspace.id}/update`,
+            {
+              method: 'POST',
+              body: JSON.stringify(payload)
+            }
+          );
+
+          await loadWorkspace();
+
+          showToast('Market segment deleted');
+        } catch (error) {
+          button.disabled = false;
+          showToast(error.message);
+        }
+      });
+    });
+}
 // Market segments are now managed as part of a workspace's create/edit
 // form (up to two name-only segments per workspace, see
 // openWorkspaceSetup/saveWorkspaceSetup below) rather than through a
@@ -1264,10 +1352,19 @@ function renderStyles() {
     }
 
     .workspace-selection-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(150px, 1fr));
+      column-gap: 56px;
+      width: min(760px, 100%);
+      margin-top: 22px;
+    }
+
+    .workspace-summary-item {
       display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-top: 10px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 11px;
+      min-width: 0;
     }
 
     .workspace-selection-meta span {
@@ -1277,6 +1374,12 @@ function renderStyles() {
       color: #5b3d82;
       font-size: .68rem;
       font-weight: 600;
+    }
+
+    .workspace-summary-item strong {
+      font-size: .82rem;
+      font-weight: 700;
+      color: #29222f;
     }
 
     .workspace-card-segments {
@@ -1957,29 +2060,34 @@ function renderWorkspaceManager() {
       <article class="workspace-selection-card ${workspace.isActive ? 'is-active' : ''}">
         <div class="workspace-selection-main">
           <div class="workspace-selection-title">
-            <span class="workspace-index">WORKSPACE</span>
+            <div class="workspace-selection-status-row">
+              <span class="workspace-index">WORKSPACE</span>
+              ${workspace.isActive
+                ? '<span class="workspace-current-badge">CURRENT WORKSPACE</span>'
+                : ''}
+            </div>
             <h3>${escapeHtml(workspace.workspaceName || 'Untitled Workspace')}</h3>
             <p class="workspace-business-name">${escapeHtml(workspace.businessName || '')}</p>
           </div>
 
-          ${details.length
-            ? `
-              <div class="workspace-selection-meta">
-                ${details.map(detail => `<span>${escapeHtml(detail)}</span>`).join('')}
-              </div>
-            `
-            : ''}
+          <div class="workspace-selection-meta">
+            <div class="workspace-summary-item">
+              <span>Industry</span>
+              <strong>${escapeHtml(workspace.industry || '—')}</strong>
+            </div>
 
-          <div class="workspace-card-segments">
-            <span class="workspace-card-label">Initial market segments to consider</span>
-            ${segments.length
-              ? `
-                <div class="workspace-segment-chips">
-                  ${segments.map(segment => `<span>${escapeHtml(segment.name)}</span>`).join('')}
-                </div>
-              `
-              : '<p>No initial market segments added.</p>'}
+            <div class="workspace-summary-item">
+              <span>Business stage</span>
+              <strong>${escapeHtml(workspace.businessStage || '—')}</strong>
+            </div>
+
+            <div class="workspace-summary-item">
+              <span>Primary market</span>
+              <strong>${escapeHtml(workspace.primaryMarket || '—')}</strong>
+            </div>
           </div>
+
+
         </div>
 
         <div class="workspace-selection-actions">
@@ -1988,16 +2096,24 @@ function renderWorkspaceManager() {
           </button>
 
           <button
-            class="workspace-card-open"
+            class="workspace-card-open ${workspace.isActive ? 'is-opened' : ''}"
             type="button"
             data-open-workspace="${workspace.id}"
             ${workspace.isActive ? 'disabled' : ''}
           >
-            ${workspace.isActive ? 'Current' : 'Open'}
+            ${workspace.isActive ? 'Opened ✓' : 'Open'}
           </button>
 
           <button class="workspace-card-delete" type="button" data-delete-workspace="${workspace.id}">
             Delete
+          </button>
+
+          <button
+            class="workspace-view-details"
+            type="button"
+            data-view-workspace="${workspace.id}"
+          >
+            View details →
           </button>
         </div>
       </article>
@@ -2010,18 +2126,50 @@ function renderWorkspaceManager() {
     });
   });
 
+  document.querySelectorAll('[data-view-workspace]').forEach(button => {
+    button.addEventListener('click', () => {
+      const workspaceId = Number(button.dataset.viewWorkspace);
+      const workspace = getWorkspaceById(workspaceId);
+
+      if (!workspace) return;
+
+      activeWorkspace = workspace;
+
+      const url = new URL(window.location.href);
+      url.searchParams.set('workspace', String(workspaceId));
+
+      window.history.replaceState({}, '', url);
+
+      applyWorkspacePageMode();
+    });
+  });
+
   document.querySelectorAll('[data-open-workspace]').forEach(button => {
     button.addEventListener('click', async () => {
       const workspaceId = Number(button.dataset.openWorkspace);
+      const workspace = getWorkspaceById(workspaceId);
 
       try {
-        await api('/api/workspaces/select', {
-          method: 'POST',
-          body: JSON.stringify({ workspaceId })
-        });
+        if (!workspace?.isActive) {
+          await api('/api/workspaces/select', {
+            method: 'POST',
+            body: JSON.stringify({ workspaceId })
+          });
+        }
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('workspace', String(workspaceId));
+        window.history.replaceState({}, '', url);
+
+        if (workspace) {
+          activeWorkspace = workspace;
+        }
+
+        applyWorkspacePageMode();
+
+        await loadWorkspace();
 
         showToast('Workspace opened.');
-        await loadWorkspace();
       } catch (error) {
         showToast(error.message);
       }
@@ -2057,13 +2205,6 @@ function createInitialSegmentField(value = '') {
 
   if (!container) return;
 
-  const existing = container.querySelectorAll('.initial-segment-row');
-
-  if (existing.length >= 2) {
-    showToast('You can add up to two initial market segments.');
-    return;
-  }
-
   const row = document.createElement('div');
   row.className = 'initial-segment-row';
 
@@ -2091,12 +2232,10 @@ function createInitialSegmentField(value = '') {
 
 function updateInitialSegmentButton() {
   const button = $('#addInitialSegmentButton');
-  const container = $('#initialSegmentsFields');
 
-  if (!button || !container) return;
+  if (!button) return;
 
-  const count = container.querySelectorAll('.initial-segment-row').length;
-  button.disabled = count >= 2;
+  button.disabled = false;
 }
 
 function closeWorkspaceSetup() {
@@ -2126,15 +2265,17 @@ function openWorkspaceSetup(workspace = null) {
   $('#primaryMarketInput').value = workspace?.primaryMarket || '';
   $('#websiteInput').value = workspace?.website || '';
 
-  const segments = Array.isArray(workspace?.segments) ? workspace.segments : [];
+  const segmentsSection = dialog.querySelector('.initial-segments-section');
 
-  if (segments.length) {
-    segments.slice(0, 2).forEach(segment => createInitialSegmentField(segment.name || ''));
-  } else {
-    createInitialSegmentField();
+  if (segmentsSection) {
+    segmentsSection.hidden = editing;
   }
 
-  updateInitialSegmentButton();
+  if (!editing) {
+    createInitialSegmentField();
+    updateInitialSegmentButton();
+  }
+
   dialog.showModal();
 }
 
@@ -2143,9 +2284,17 @@ async function saveWorkspaceSetup(event) {
 
   const editingWorkspaceId = Number($('#editingWorkspaceId').value || 0);
 
-  const segments = Array.from(document.querySelectorAll('.initial-segment-input'))
-    .map(input => input.value.trim())
-    .filter(Boolean);
+  const segments = editingWorkspaceId
+    ? (
+        workspaceManagerItems.find(
+          workspace => Number(workspace.id) === editingWorkspaceId
+        )?.segments || []
+      )
+    : Array.from(
+        document.querySelectorAll('.initial-segment-input')
+      )
+        .map(input => input.value.trim())
+        .filter(Boolean);
 
   const payload = {
     workspaceName: $('#workspaceNameInput').value.trim(),
@@ -2236,13 +2385,503 @@ function renderHeaderWorkspaceSwitcher() {
   };
 }
 
+
+function ensureWorkspaceDetailHeader() {
+  let header = document.getElementById('fmWorkspaceDetailHeader');
+
+  if (header) return header;
+
+  const stats = document.querySelector('.workspace-stats');
+
+  if (!stats) return null;
+
+  header = document.createElement('section');
+  header.id = 'fmWorkspaceDetailHeader';
+  header.className = 'fm-workspace-detail-header';
+
+  header.innerHTML = `
+    <div class="fm-workspace-detail-top">
+      <button
+        id="fmBackToWorkspaces"
+        class="secondary-button"
+        type="button"
+      >
+        ← Back to Workspaces
+      </button>
+
+      <button
+        id="fmEditOpenedWorkspace"
+        class="secondary-button"
+        type="button"
+      >
+        Edit workspace
+      </button>
+    </div>
+
+    <div class="fm-workspace-detail-title">
+      <p class="eyebrow">Workspace details</p>
+      <h2 id="fmWorkspaceDetailName">Workspace</h2>
+      <p id="fmWorkspaceDetailBusiness"></p>
+    </div>
+
+    <div class="fm-workspace-detail-meta">
+      <div>
+        <span>Industry</span>
+        <strong id="fmWorkspaceDetailIndustry">—</strong>
+      </div>
+
+      <div>
+        <span>Business stage</span>
+        <strong id="fmWorkspaceDetailStage">—</strong>
+      </div>
+
+      <div>
+        <span>Primary market</span>
+        <strong id="fmWorkspaceDetailMarket">—</strong>
+      </div>
+    </div>
+  `;
+
+  stats.insertAdjacentElement('beforebegin', header);
+
+  header
+    .querySelector('#fmBackToWorkspaces')
+    ?.addEventListener('click', () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('workspace');
+      window.history.replaceState({}, '', url);
+
+      applyWorkspacePageMode();
+    });
+
+  header
+    .querySelector('#fmEditOpenedWorkspace')
+    ?.addEventListener('click', () => {
+      openWorkspaceSetup(activeWorkspace);
+    });
+
+  return header;
+}
+
+
+function applyWorkspacePageMode() {
+  const workspaceId =
+    Number(
+      new URL(window.location.href)
+        .searchParams
+        .get('workspace')
+    );
+
+  const hasOpenedWorkspace =
+    Number.isFinite(workspaceId) &&
+    workspaceId > 0 &&
+    activeWorkspace &&
+    Number(activeWorkspace.id) === workspaceId;
+
+  document.body.classList.toggle(
+    'fm-workspace-detail-mode',
+    Boolean(hasOpenedWorkspace)
+  );
+
+  document.body.classList.toggle(
+    'fm-workspace-list-mode',
+    !hasOpenedWorkspace
+  );
+
+  const header = ensureWorkspaceDetailHeader();
+
+  if (!header) return;
+
+  header.hidden = !hasOpenedWorkspace;
+
+  if (!hasOpenedWorkspace) return;
+
+  const name =
+    document.getElementById('fmWorkspaceDetailName');
+
+  const business =
+    document.getElementById('fmWorkspaceDetailBusiness');
+
+  const industry =
+    document.getElementById('fmWorkspaceDetailIndustry');
+
+  const stage =
+    document.getElementById('fmWorkspaceDetailStage');
+
+  const market =
+    document.getElementById('fmWorkspaceDetailMarket');
+
+  if (name) {
+    name.textContent =
+      activeWorkspace.workspaceName ||
+      'Workspace';
+  }
+
+  if (business) {
+    business.textContent =
+      activeWorkspace.businessName ||
+      'No business name added.';
+  }
+
+  if (industry) {
+    industry.textContent =
+      activeWorkspace.industry || '—';
+  }
+
+  if (stage) {
+    stage.textContent =
+      activeWorkspace.businessStage || '—';
+  }
+
+  if (market) {
+    market.textContent =
+      activeWorkspace.primaryMarket || '—';
+  }
+}
+
+
+
+function ensureSegmentEditorDialog() {
+  let dialog = document.getElementById('segmentDialog');
+
+  if (dialog) return dialog;
+
+  dialog = document.createElement('dialog');
+  dialog.id = 'segmentDialog';
+
+  dialog.innerHTML = `
+    <form id="segmentEditorForm">
+      <div class="dialog-heading">
+        <div>
+          <h2>Edit Market Segments</h2>
+          <p class="segment-editor-subtitle">
+            Manage the market segments for this workspace
+          </p>
+        </div>
+
+        <button
+          id="closeSegmentDialog"
+          class="close"
+          type="button"
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
+
+
+      <div id="segmentEditorRows"></div>
+
+      <button
+        id="addSegmentEditorRow"
+        class="segment-editor-add"
+        type="button"
+      >
+        + Add segment
+      </button>
+
+      <div class="segment-dialog-actions">
+        <button
+          id="cancelSegmentEditor"
+          class="secondary-button"
+          type="button"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primary-button"
+          type="submit"
+        >
+          Save Changes
+        </button>
+      </div>
+    </form>
+  `;
+
+  document.body.appendChild(dialog);
+
+  dialog
+    .querySelector('#closeSegmentDialog')
+    ?.addEventListener('click', () => {
+      dialog.close();
+    });
+
+  dialog
+    .querySelector('#cancelSegmentEditor')
+    ?.addEventListener('click', () => {
+      dialog.close();
+    });
+
+  dialog
+    .querySelector('#addSegmentEditorRow')
+    ?.addEventListener('click', () => {
+      addSegmentEditorRow();
+    });
+
+  dialog
+    .querySelector('#segmentEditorForm')
+    ?.addEventListener('submit', saveSegmentEditor);
+
+  return dialog;
+}
+
+
+function addSegmentEditorRow(segment = {}) {
+  const container =
+    document.getElementById('segmentEditorRows');
+
+  if (!container) return;
+
+  const value =
+    typeof segment === 'string'
+      ? { name: segment }
+      : segment || {};
+
+  const row = document.createElement('div');
+  row.className = 'segment-editor-block is-collapsed';
+
+  row.innerHTML = `
+    <div class="segment-editor-summary">
+      <div class="segment-editor-summary-main">
+        <span class="segment-editor-summary-label">
+          Market segment
+        </span>
+
+        <strong class="segment-editor-summary-name">
+          ${escapeHtml(value.name || 'Untitled segment')}
+        </strong>
+      </div>
+
+      <button
+        class="segment-editor-toggle"
+        type="button"
+      >
+        Edit
+      </button>
+    </div>
+
+    <div class="segment-editor-fields">
+      <label>
+        <span>Segment name</span>
+        <input
+          class="segment-editor-name"
+          type="text"
+          maxlength="150"
+          value="${escapeHtml(value.name || '')}"
+        >
+      </label>
+
+      <label>
+        <span>Description</span>
+        <textarea
+          class="segment-editor-description"
+          rows="3"
+        >${escapeHtml(value.description || '')}</textarea>
+      </label>
+
+      <div class="segment-editor-grid">
+        <label>
+          <span>Geography</span>
+          <input
+            class="segment-editor-geography"
+            type="text"
+            value="${escapeHtml(value.geography || '')}"
+          >
+        </label>
+
+        <label>
+          <span>Company size</span>
+          <input
+            class="segment-editor-company-size"
+            type="text"
+            value="${escapeHtml(value.companySize || '')}"
+          >
+        </label>
+      </div>
+
+      <label>
+        <span>Wedge</span>
+        <input
+          class="segment-editor-wedge"
+          type="text"
+          value="${escapeHtml(value.wedge || '')}"
+        >
+      </label>
+
+      <div class="segment-editor-inline-actions">
+        <button
+          class="segment-editor-remove"
+          type="button"
+        >
+          Remove segment
+        </button>
+
+        <button
+          class="segment-editor-done"
+          type="button"
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  `;
+
+  const toggle =
+    row.querySelector('.segment-editor-toggle');
+
+  const done =
+    row.querySelector('.segment-editor-done');
+
+  const nameInput =
+    row.querySelector('.segment-editor-name');
+
+  const summaryName =
+    row.querySelector('.segment-editor-summary-name');
+
+  function collapse() {
+    row.classList.add('is-collapsed');
+    row.classList.remove('is-active-edit');
+
+    if (container) {
+      container.classList.remove('is-editing-segment');
+    }
+
+    if (toggle) {
+      toggle.textContent = 'Edit';
+    }
+  }
+
+  function expand() {
+    row.classList.remove('is-collapsed');
+    row.classList.add('is-active-edit');
+
+    if (container) {
+      container.classList.add('is-editing-segment');
+    }
+  }
+
+  toggle?.addEventListener('click', () => {
+    expand();
+  });
+
+  done?.addEventListener('click', () => {
+    collapse();
+  });
+
+  nameInput?.addEventListener('input', () => {
+    if (summaryName) {
+      summaryName.textContent =
+        nameInput.value.trim() || 'Untitled segment';
+    }
+  });
+
+  row
+    .querySelector('.segment-editor-remove')
+    ?.addEventListener('click', () => {
+      row.remove();
+    });
+
+  container.appendChild(row);
+}
+
+function openSegmentEditor() {
+  if (!activeWorkspace) return;
+
+  const dialog = ensureSegmentEditorDialog();
+  const container =
+    document.getElementById('segmentEditorRows');
+
+  if (!dialog || !container) return;
+
+  container.innerHTML = '';
+
+  const segments =
+    Array.isArray(activeWorkspace.segments)
+      ? activeWorkspace.segments
+      : [];
+
+  if (segments.length) {
+    segments.forEach(segment => {
+      addSegmentEditorRow(segment);
+    });
+  } else {
+    addSegmentEditorRow({});
+  }
+
+  dialog.showModal();
+}
+
+
+async function saveSegmentEditor(event) {
+  event.preventDefault();
+
+  if (!activeWorkspace) return;
+
+  const segments = Array.from(
+    document.querySelectorAll('.segment-editor-block')
+  )
+    .map(block => ({
+      name:
+        block.querySelector('.segment-editor-name')
+          ?.value.trim() || '',
+      description:
+        block.querySelector('.segment-editor-description')
+          ?.value.trim() || '',
+      geography:
+        block.querySelector('.segment-editor-geography')
+          ?.value.trim() || '',
+      companySize:
+        block.querySelector('.segment-editor-company-size')
+          ?.value.trim() || '',
+      wedge:
+        block.querySelector('.segment-editor-wedge')
+          ?.value.trim() || ''
+    }))
+    .filter(segment => segment.name);
+
+  const payload = {
+    workspaceName:
+      activeWorkspace.workspaceName || '',
+    businessName:
+      activeWorkspace.businessName || '',
+    industry:
+      activeWorkspace.industry || '',
+    businessStage:
+      activeWorkspace.businessStage || '',
+    primaryMarket:
+      activeWorkspace.primaryMarket || '',
+    website:
+      activeWorkspace.website || '',
+    segments
+  };
+
+  try {
+    await api(
+      `/api/workspaces/${activeWorkspace.id}/update`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      }
+    );
+
+    document
+      .getElementById('segmentDialog')
+      ?.close();
+
+    await loadWorkspace();
+
+    showToast('Market segments updated');
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+
 function attachWorkspaceManagerListeners() {
   $('#createWorkspaceButton')?.addEventListener('click', () => openWorkspaceSetup());
   $('#editSegmentsButton')?.addEventListener('click', () => {
-    // "Edit segments" on the Market Segments card just opens the setup
-    // form for the currently active workspace -- segments are edited
-    // there rather than through a separate segment dialog.
-    openWorkspaceSetup(activeWorkspace);
+    openSegmentEditor();
   });
   $('#addInitialSegmentButton')?.addEventListener('click', () => createInitialSegmentField());
   $('#closeWorkspaceSetup')?.addEventListener('click', closeWorkspaceSetup);
@@ -2306,6 +2945,8 @@ async function loadWorkspace() {
     renderProgress(state, processes.length);
     renderHistory(state);
     await renderWorkspaceEvidence();
+
+    applyWorkspacePageMode();
 
     createViewModal();
     attachViewListeners(state, processes);

@@ -1582,7 +1582,11 @@ def get_workspaces(user):
             SELECT
                 workspace_id,
                 segment_id,
-                segment_name
+                segment_name,
+                description,
+                geography,
+                company_size,
+                wedge
             FROM market_segments
             WHERE workspace_id IN (
                 SELECT workspace_id FROM workspace WHERE user_id = %s
@@ -1597,7 +1601,14 @@ def get_workspaces(user):
     for segment in segment_rows:
         segments_by_workspace.setdefault(
             segment["workspace_id"], []
-        ).append(segment["segment_name"])
+        ).append({
+            "id": segment["segment_id"],
+            "name": segment["segment_name"] or "",
+            "description": segment.get("description") or "",
+            "geography": segment.get("geography") or "",
+            "companySize": segment.get("company_size") or "",
+            "wedge": segment.get("wedge") or "",
+        })
 
     workspaces = []
 
@@ -1611,6 +1622,75 @@ def get_workspaces(user):
     return workspaces
 
 
+def normalise_workspace_segments(raw_segments):
+    if not isinstance(raw_segments, list):
+        return []
+
+    import ast
+
+    segments = []
+
+    for item in raw_segments:
+        value = item
+
+        if isinstance(value, str):
+            raw_value = value.strip()
+
+            if not raw_value:
+                continue
+
+            if raw_value.startswith("{") and raw_value.endswith("}"):
+                try:
+                    parsed = ast.literal_eval(raw_value)
+
+                    if isinstance(parsed, dict):
+                        value = parsed
+                except (ValueError, SyntaxError):
+                    pass
+
+        if isinstance(value, dict):
+            name_value = value.get("name", "")
+
+            if isinstance(name_value, str):
+                raw_name = name_value.strip()
+
+                if raw_name.startswith("{") and raw_name.endswith("}"):
+                    try:
+                        parsed_name = ast.literal_eval(raw_name)
+
+                        if isinstance(parsed_name, dict):
+                            value = parsed_name
+                    except (ValueError, SyntaxError):
+                        pass
+
+            name = str(value.get("name", "")).strip()
+
+            if not name:
+                continue
+
+            segments.append({
+                "name": name,
+                "description": str(value.get("description", "")).strip(),
+                "geography": str(value.get("geography", "")).strip(),
+                "companySize": str(value.get("companySize", "")).strip(),
+                "wedge": str(value.get("wedge", "")).strip(),
+            })
+        else:
+            name = str(value).strip()
+
+            if not name:
+                continue
+
+            segments.append({
+                "name": name,
+                "description": "",
+                "geography": "",
+                "companySize": "",
+                "wedge": "",
+            })
+
+    return segments
+
 def create_workspace(user, payload):
     """Create a workspace and make it the user's active workspace."""
     workspace_name = str(payload.get("workspaceName", "")).strip()
@@ -1620,10 +1700,9 @@ def create_workspace(user, payload):
     primary_market = str(payload.get("primaryMarket", "")).strip()
     website = str(payload.get("website", "")).strip()
 
-    segments = payload.get("segments", [])
-    if not isinstance(segments, list):
-        segments = []
-    segments = [str(segment).strip() for segment in segments if str(segment).strip()]
+    segments = normalise_workspace_segments(
+        payload.get("segments", [])
+    )
 
     if not workspace_name:
         raise ValueError("Workspace name is required.")
@@ -1633,9 +1712,6 @@ def create_workspace(user, payload):
 
     if not business_name:
         raise ValueError("Business name is required.")
-
-    if len(segments) > 2:
-        raise ValueError("Add no more than two initial market segments.")
 
     now = int(time.time())
 
@@ -1678,16 +1754,33 @@ def create_workspace(user, payload):
             (row["workspace_id"], user["id"])
         )
 
-        for segment_name in segments:
+        for segment in segments:
             db.execute(
                 """
                 INSERT INTO market_segments (
-                    user_id, workspace_id, segment_name, description,
-                    geography, company_size, wedge, created_at, updated_at
+                    user_id,
+                    workspace_id,
+                    segment_name,
+                    description,
+                    geography,
+                    company_size,
+                    wedge,
+                    created_at,
+                    updated_at
                 )
-                VALUES (%s, %s, %s, '', '', '', '', %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                (user["id"], row["workspace_id"], segment_name, now, now)
+                (
+                    user["id"],
+                    row["workspace_id"],
+                    segment["name"],
+                    segment["description"],
+                    segment["geography"],
+                    segment["companySize"],
+                    segment["wedge"],
+                    now,
+                    now,
+                )
             )
 
     return workspace_to_public(row, row["workspace_id"])
@@ -1725,19 +1818,15 @@ def update_workspace(user, workspace_id, payload):
     primary_market = str(payload.get("primaryMarket", "")).strip()
     website = str(payload.get("website", "")).strip()
 
-    segments = payload.get("segments", [])
-    if not isinstance(segments, list):
-        segments = []
-    segments = [str(segment).strip() for segment in segments if str(segment).strip()]
+    segments = normalise_workspace_segments(
+        payload.get("segments", [])
+    )
 
     if not workspace_name:
         raise ValueError("Workspace name is required.")
 
     if not business_name:
         raise ValueError("Business name is required.")
-
-    if len(segments) > 2:
-        raise ValueError("Add no more than two initial market segments.")
 
     now = int(time.time())
 
@@ -1778,24 +1867,38 @@ def update_workspace(user, workspace_id, payload):
         if not row:
             raise ValueError("Workspace not found.")
 
-        # Initial market segments are fully replaced on every edit -- this
-        # form only ever holds up to two plain segment names, so there is
-        # no partial-update case to preserve.
         db.execute(
             "DELETE FROM market_segments WHERE workspace_id = %s",
             (workspace_id,)
         )
 
-        for segment_name in segments:
+        for segment in segments:
             db.execute(
                 """
                 INSERT INTO market_segments (
-                    user_id, workspace_id, segment_name, description,
-                    geography, company_size, wedge, created_at, updated_at
+                    user_id,
+                    workspace_id,
+                    segment_name,
+                    description,
+                    geography,
+                    company_size,
+                    wedge,
+                    created_at,
+                    updated_at
                 )
-                VALUES (%s, %s, %s, '', '', '', '', %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                (user["id"], workspace_id, segment_name, now, now)
+                (
+                    user["id"],
+                    workspace_id,
+                    segment["name"],
+                    segment["description"],
+                    segment["geography"],
+                    segment["companySize"],
+                    segment["wedge"],
+                    now,
+                    now,
+                )
             )
 
     return workspace_to_public(row)
@@ -2083,6 +2186,12 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
                 user = self.require_user()
                 if user:
                     workspace_id = int(self.path.split("/")[3])
+
+                    print(
+                        "[workspace update segments payload]",
+                        repr(payload.get("segments"))
+                    )
+
                     workspace = update_workspace(user, workspace_id, payload)
                     self.send_json(200, {"workspace": workspace})
 
