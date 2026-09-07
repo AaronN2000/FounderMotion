@@ -1179,7 +1179,7 @@ function render() {
     const hasAnswer = Boolean(state.outputs[processNumber - 1]);
     return `<li class="output-source ${hasAnswer ? 'ready' : ''}">Process ${processNumber}: ${escapeHtml(sourceProcess?.title || 'Untitled process')}<span>${hasAnswer ? 'available' : 'awaiting output'}</span></li>`;
   }).join('');
-  const outputsToUse = outputDependencies ? `<section class="outputs-to-use"><h4>Outputs from Previous Processes</h4><ul>${outputDependencies}</ul></section>` : '';
+  const outputsToUse = outputDependencies ? `<section class="outputs-to-use" data-step="${state.step}"><h4>Outputs from Previous Processes</h4><ul>${outputDependencies}</ul></section>` : '';
 
   const getInputIcon = (input, index) => {
     return `<span class="input-icon" aria-hidden="true"><span class="input-number">${String(index + 1).padStart(2, '0')}</span></span>`;
@@ -17274,6 +17274,20 @@ function syncAuthScreenUI() {
         inputsPanel.insertAdjacentElement('afterbegin', row);
       }
     }
+
+    // This function runs many times per process switch (a MutationObserver
+    // watching #inputList's subtree reschedules it on every DOM change it
+    // just made itself, plus the global click and resize listeners), so it
+    // must be idempotent. render() tags the current .outputs-to-use section
+    // with data-step so a stale one left over in `row` from a previous
+    // process (or from an earlier pass in this same click, once already
+    // moved into `row`) can be told apart from the current one purely by
+    // that tag -- comparing node identity against a `previousOutputs`
+    // lookup that is only non-null on the first pass is what caused a
+    // correctly-placed node to be deleted again on the second pass.
+    row.querySelectorAll('.outputs-to-use').forEach(node => {
+      if (node.dataset.step !== String(state.step)) node.remove();
+    });
 
     const previousOutputs = inputList.querySelector('.outputs-to-use');
 
