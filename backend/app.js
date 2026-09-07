@@ -583,10 +583,14 @@ async function restoreAccount() {
     }
 
     /*
-     * Process 7 uses Process 6 output and has four new inputs.
+     * Process 7 uses Process 3 output (confirmed dependency graph) and
+     * has four new inputs. This was previously hardcoded to [6], which
+     * disagreed with the confirmed dependency graph and with what
+     * server.py's PROCESS_OUTPUT_DEPENDENCIES already returns for
+     * process 7 -- fixed to match.
      */
     if (mapSteps[6]) {
-      mapSteps[6].outputSources = [6];
+      mapSteps[6].outputSources = [3];
 
       mapSteps[6].inputs = [
         'Trace Battlecard',
