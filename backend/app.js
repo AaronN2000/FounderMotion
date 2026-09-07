@@ -1174,11 +1174,22 @@ function render() {
   $('#stepPurpose').textContent =
     processPurpose.charAt(0).toUpperCase() + processPurpose.slice(1);
 
-  const outputDependencies = (step.outputSources || []).map(processNumber => {
+  // Cap the visible list at 3 -- the reference-row layout height-matches
+  // this box against the "Key Questions" card next to it, so a 4th+ item
+  // pushes past the box border instead of growing it (reported: dependency
+  // lists longer than 3 render broken, e.g. Process 12 with 4 sources).
+  // Anything beyond the first 3 collapses into a "+N more" line instead.
+  const MAX_VISIBLE_OUTPUT_SOURCES = 3;
+  const allOutputSources = step.outputSources || [];
+  const visibleOutputSources = allOutputSources.slice(0, MAX_VISIBLE_OUTPUT_SOURCES);
+  const hiddenOutputSourcesCount = allOutputSources.length - visibleOutputSources.length;
+  const outputDependencies = visibleOutputSources.map(processNumber => {
     const sourceProcess = mapSteps.find(process => process.number === processNumber);
     const hasAnswer = Boolean(state.outputs[processNumber - 1]);
     return `<li class="output-source ${hasAnswer ? 'ready' : ''}">Process ${processNumber}: ${escapeHtml(sourceProcess?.title || 'Untitled process')}<span>${hasAnswer ? 'available' : 'awaiting output'}</span></li>`;
-  }).join('');
+  }).join('') + (hiddenOutputSourcesCount > 0
+    ? `<li class="output-source output-source-more">+${hiddenOutputSourcesCount} more process${hiddenOutputSourcesCount > 1 ? 'es' : ''}</li>`
+    : '');
   const outputsToUse = outputDependencies ? `<section class="outputs-to-use" data-step="${state.step}"><h4>Outputs from Previous Processes</h4><ul>${outputDependencies}</ul></section>` : '';
 
   const getInputIcon = (input, index) => {
