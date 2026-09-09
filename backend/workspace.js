@@ -112,8 +112,14 @@ function renderSegments(segments) {
         const remainingSegments =
           currentSegments
             .filter((_, itemIndex) => itemIndex !== index)
-            .map(item => item.name)
-            .filter(Boolean);
+            .map(item => ({
+              name: item.name || '',
+              description: item.description || '',
+              geography: item.geography || '',
+              companySize: item.companySize || '',
+              wedge: item.wedge || ''
+            }))
+            .filter(item => item.name);
 
         const payload = {
           workspaceName:
@@ -157,10 +163,26 @@ function renderSegments(segments) {
 // openWorkspaceSetup/saveWorkspaceSetup below) rather than through a
 // standalone add/remove-segment dialog.
 
-function renderProgress(state, processCount) {
-  const outputs = Array.isArray(state.outputs) ? state.outputs : [];
-  const completed = outputs.filter(Boolean).length;
-  const current = Math.min((state.step || 0) + 1, processCount);
+function renderProgress(progress, processCount) {
+  const rows = Array.isArray(progress) ? progress : [];
+
+  const completed = rows.filter(
+    item => item.status === 'Completed'
+  ).length;
+
+  const inProgress = rows.find(
+    item => item.status === 'In Progress'
+  );
+
+  let current = 1;
+
+  if (inProgress) {
+    current = Number(inProgress.process_number) || 1;
+  } else if (completed >= processCount) {
+    current = processCount;
+  } else {
+    current = Math.min(completed + 1, processCount);
+  }
 
   $('#progressStat').textContent = `${completed} / ${processCount}`;
 
@@ -2796,9 +2818,11 @@ function openSegmentEditor() {
 
   container.innerHTML = '';
 
+  // Use the latest segment data loaded from /api/segments.
+  // activeWorkspace.segments may be stale or incomplete.
   const segments =
-    Array.isArray(activeWorkspace.segments)
-      ? activeWorkspace.segments
+    Array.isArray(currentSegments)
+      ? currentSegments
       : [];
 
   if (segments.length) {
@@ -2908,6 +2932,10 @@ async function loadWorkspace() {
     const state = saved.state || {};
     const processesResponse = await api('/api/processes');
     const processes = processesResponse.processes || [];
+
+    const progressResponse = await api('/api/process-progress');
+    const progress = progressResponse.progress || [];
+
     const segmentsResponse = await api('/api/segments');
     const segments = segmentsResponse.segments || [];
 
@@ -2942,7 +2970,7 @@ async function loadWorkspace() {
         `;
 
     renderSegments(segments);
-    renderProgress(state, processes.length);
+    renderProgress(progress, processes.length);
     renderHistory(state);
     await renderWorkspaceEvidence();
 

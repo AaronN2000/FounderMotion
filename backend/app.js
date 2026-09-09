@@ -1,6 +1,6 @@
 // Map definitions live together so new map points can be added without changing UI code.
 let mapSteps = [
-  { title: 'Market Positioning Analysis', category: 'Market strategy', purpose: 'Define FounderMotion market focus, competitive frame, wedge positioning and market-entry logic.', inputs: ['Target Market & Product-Market Fit Notes', 'Brand & Positioning Guidelines', 'Market & Competitor Research', 'Early Customer Feedback', 'Product Use Cases & Customer Needs'], questions: ['Which market should FounderMotion target first?', 'Which buyer feels the problem most urgently?', 'Which category should FounderMotion avoid being trapped in?', 'What alternatives does the buyer use today?', 'Which wedge leads in each priority market?'], outputs: 'Priority ICPs and segments; competitive frame of reference; positioning statement and differentiation themes; Trace / Essentials market-entry logic.', feeds: '2, 3, 6, 9, 15, 19, 22, 27, 28' },
+  { title: 'Market Positioning Analysis', category: 'Market strategy', purpose: 'Define the business market focus, competitive frame, wedge positioning and market-entry logic.', inputs: ['Target Market & Product-Market Fit Notes', 'Brand & Positioning Guidelines', 'Market & Competitor Research', 'Early Customer Feedback', 'Product Use Cases & Customer Needs'], questions: ['Which market should the business focus on first?', 'Which buyers need this solution the most?', 'Which market category should the business avoid?', 'What alternatives are buyers using now?', 'Which wedge is the best fit for each priority market?'], outputs: 'Priority ICPs and segments; competitive frame of reference; positioning statement and differentiation themes; Wedge market-entry logic.', feeds: '2, 3, 6, 9, 15, 19, 22, 27, 28' },
   { title: 'Ideal Customer Profile', category: 'Customer strategy', purpose: 'Turn the market-positioning decision into a clear, prioritised ideal-customer profile.', inputs: ['Previous market positioning output', 'Customer research', 'Sales and beta feedback'], questions: ['Which customer profile should be prioritised first?', 'What firmographic and behavioural signals define the best-fit buyer?', 'Which customer profiles should be deprioritised?'], outputs: 'Prioritised ICP, buying triggers and qualification criteria.', feeds: '3, 6, 9, 15, 19, 22, 27, 28' },
   { title: 'Buyer Problem & Urgency', category: 'Customer strategy', purpose: 'Clarify the priority buyer problem, urgency and language that should guide messaging.', inputs: ['Previous outputs', 'Buyer interviews and feedback', 'Current workarounds'], questions: ['What job is the buyer trying to complete?', 'What makes the problem urgent now?', 'What language does the buyer use to describe the pain?'], outputs: 'Priority problem statement, urgency signals and buyer-language themes.', feeds: '6, 9, 15, 19, 22, 27, 28' }
 ];
@@ -18,6 +18,7 @@ const toast = $('#toast');
 let state = defaultState();
 let selectedInput = '';
 let currentUser = null;
+let activeWorkspace = null;
 
 
 document.querySelector('#documentForm .primary-button').innerHTML = 'Add information <span>&rarr;</span>';
@@ -552,7 +553,7 @@ async function restoreAccount() {
      */
     if (mapSteps[3]) {
       mapSteps[3].inputs = [
-        'PMF Validation Gaps',
+        'Unanswered Questions About Product-Market Fit',
         'Current Entry Offer Definitions',
         'Customer Objections & Discovery Questions',
         'Current Beta Customer Target'
@@ -583,19 +584,19 @@ async function restoreAccount() {
     }
 
     /*
-     * Process 7 uses Process 3 output (confirmed dependency graph) and
-     * has four new inputs. This was previously hardcoded to [6], which
-     * disagreed with the confirmed dependency graph and with what
-     * server.py's PROCESS_OUTPUT_DEPENDENCIES already returns for
-     * process 7 -- fixed to match.
+     * Process 7 uses Process 3 output (confirmed dependency graph, also
+     * what server.py's PROCESS_OUTPUT_DEPENDENCIES returns for process 7)
+     * and has four new inputs. This keeps getting reverted to [6] whenever
+     * this file is rebased from an older snapshot -- if you're reading
+     * this after another handoff, check this line first.
      */
     if (mapSteps[6]) {
       mapSteps[6].outputSources = [3];
 
       mapSteps[6].inputs = [
-        'Trace Battlecard',
-        'Decision Defensibility Diagnostic Definition',
-        'Trace Buyer Use Cases',
+        'Primary Wedge Battlecard',
+        'Decision Defensibility Assessment Tool',
+        'Primary Wedge Buyer Use Cases',
         'Delivery & Product Constraints'
       ];
     }
@@ -606,8 +607,8 @@ async function restoreAccount() {
      */
     if (mapSteps[7]) {
       mapSteps[7].inputs = [
-        'Essentials Battlecard',
-        'Practical Risk Visibility Diagnostic Definition',
+        'Additional Wedge Battlecard',
+        'Practical Risk Visibility Assessment Tool',
         'Delivery & Support Assumptions'
       ];
     }
@@ -643,8 +644,8 @@ async function restoreAccount() {
       mapSteps[10].outputSources = [7, 8, 10];
 
       mapSteps[10].inputs = [
-        'MVP Product Definition',
-        'Diagnostic Definitions',
+        'Current Product Definition',
+        'Assessment Tool Definitions',
         'Buyer Proof Requirements'
       ];
     }
@@ -810,6 +811,11 @@ async function loadHeaderWorkspaceSwitcher() {
   try {
     const response = await api('/api/workspaces');
     const workspaces = Array.isArray(response.workspaces) ? response.workspaces : [];
+
+    activeWorkspace =
+      workspaces.find(workspace => workspace.isActive) ||
+      workspaces[0] ||
+      null;
 
     if (workspaces.length <= 1) {
       // Nothing to switch between -- keep the control out of the way.
@@ -1032,7 +1038,7 @@ function hasSavedProcessOutput(index) {
 
   /*
    * Older/saved generations may exist in Previous History
-   * even when process_answers / state.outputs is empty.
+   * even when persisted output state is empty.
    * Treat that saved generation as a real process output.
    */
   if (Array.isArray(state.history)) {
@@ -1134,23 +1140,49 @@ function render() {
   const currentPhase = state.step < 5 ? phases[0] : phases[1];
   const currentProcess = mapSteps[state.step];
 
+  const processShortLabels = {
+    1: 'Positioning',
+    2: 'Sector',
+    3: 'ICP',
+    4: 'VoC',
+    5: 'PMF',
+    6: 'Value Map',
+    7: 'Primary Offer',
+    8: 'Add. Offers',
+    9: 'Value Prop',
+    10: 'Roadmap',
+    11: 'Proof',
+    12: 'Pricing',
+    13: 'Commercial'
+  };
+
   const renderPhaseSteps = (start, end) => {
     return mapSteps.slice(start, end).map((process, offset) => {
       const index = start + offset;
-      const complete = hasSavedProcessOutput(index);
+      const progressRow = Array.isArray(state.processProgress)
+        ? state.processProgress.find(
+            item => Number(item.process_number ?? item.processNumber) === Number(process.number)
+          )
+        : null;
+
+      const complete = progressRow?.status === 'Completed';
+      const inProgress = progressRow?.status === 'In Progress';
       const current = index === state.step;
+      const shortLabel = `Process ${process.number}`;
 
       return `
         <button
-          class="fm-phase-step ${complete ? 'is-complete' : ''} ${current ? 'is-current' : ''}"
+          class="fm-phase-step ${complete ? 'is-complete' : ''} ${inProgress ? 'is-in-progress' : ''} ${current ? 'is-current' : ''}"
           data-process="${index}"
           type="button"
           ${index <= getHighestUnlockedProcessIndex() || current ? '' : 'disabled'}
           aria-label="Process ${process.number}: ${escapeHtml(process.title)}"
           title="${escapeHtml(process.title)}"
         >
-          <span class="fm-phase-step-mark">${complete ? '✓' : process.number}</span>
-          <span class="fm-phase-step-title">${escapeHtml(process.title)}</span>
+          <span class="fm-phase-step-mark">
+            ${process.number}${complete ? '<span class="fm-phase-step-check">✓</span>' : ''}
+          </span>
+          <span class="fm-phase-step-title">${escapeHtml(shortLabel)}</span>
         </button>
       `;
     }).join('');
@@ -1170,15 +1202,27 @@ function render() {
 
   $('#stepCategory').textContent = step.category;
   $('#stepTitle').textContent = step.title;
+
+  const processInputsHeading = $('#processInputsHeading');
+  if (processInputsHeading) {
+    processInputsHeading.textContent =
+      Number(step.number) === 1
+        ? 'Required inputs for this process'
+        : 'Optional inputs for this process';
+  }
   const processPurpose = companyText(step.purpose);
   $('#stepPurpose').textContent =
     processPurpose.charAt(0).toUpperCase() + processPurpose.slice(1);
 
   // Cap the visible list at 3 -- the reference-row layout height-matches
-  // this box against the "Key Questions" card next to it, so a 4th+ item
-  // pushes past the box border instead of growing it (reported: dependency
-  // lists longer than 3 render broken, e.g. Process 12 with 4 sources).
-  // Anything beyond the first 3 collapses into a "+N more" line instead.
+  // this box against the "Key Questions" card next to it (a flex/grid
+  // interaction spanning several media-query blocks in styles.css), so a
+  // 4th+ item still gets squeezed shorter than its own max-height/scroll
+  // rule allows and ends up clipped by the box's own border instead of
+  // scrolling inside it (reported: dependency lists longer than 3 render
+  // broken, e.g. Process 12 with 4-5 sources). Anything beyond the first
+  // 3 collapses into a "+N more" line instead, which sidesteps that
+  // layout fight entirely.
   const MAX_VISIBLE_OUTPUT_SOURCES = 3;
   const allOutputSources = step.outputSources || [];
   const visibleOutputSources = allOutputSources.slice(0, MAX_VISIBLE_OUTPUT_SOURCES);
@@ -1190,7 +1234,7 @@ function render() {
   }).join('') + (hiddenOutputSourcesCount > 0
     ? `<li class="output-source output-source-more">+${hiddenOutputSourcesCount} more process${hiddenOutputSourcesCount > 1 ? 'es' : ''}</li>`
     : '');
-  const outputsToUse = outputDependencies ? `<section class="outputs-to-use" data-step="${state.step}"><h4>Outputs from Previous Processes</h4><ul>${outputDependencies}</ul></section>` : '';
+  const outputsToUse = outputDependencies ? `<section class="outputs-to-use"><h4>Outputs used from previous processes</h4><ul>${outputDependencies}</ul></section>` : '';
 
   const getInputIcon = (input, index) => {
     return `<span class="input-icon" aria-hidden="true"><span class="input-number">${String(index + 1).padStart(2, '0')}</span></span>`;
@@ -1247,14 +1291,14 @@ function render() {
     ];
 
     const processSevenDescriptions = [
-      'A concise comparison of Trace against common alternatives, objections, and competing approaches',
+      'A concise comparison of the primary wedge against common alternatives, objections, and competing approaches',
       'The current definition, scope, and purpose of the diagnostic used to assess decision defensibility',
-      'The main buyer use cases for Trace, including governance, third-party decisions, and risk-related scenarios',
+      'The main buyer use cases for the primary wedge, including the most relevant customer scenarios',
       'Known delivery, technical, product, or operational constraints that may affect the offer'
     ];
 
     const processEightDescriptions = [
-      'A concise comparison of Essentials against common alternatives, objections, and competing approaches',
+      'A concise comparison of the additional wedge against common alternatives, objections, and competing approaches',
       'The current definition, scope, and purpose of the diagnostic used to assess practical risk visibility',
       'Key assumptions about delivery, implementation, support, and ongoing service requirements'
     ];
@@ -1321,7 +1365,7 @@ function render() {
         <div class="input-content">
           <div class="input-heading">
             <span class="input-label">${escapeHtml(displayInput)}</span>
-            <small>Required</small>
+            ${Number(step.number) === 1 ? '<small>Required</small>' : ''}
           </div>
 
           ${inputDescription
@@ -1403,7 +1447,7 @@ function render() {
         <div class="fm-question-modal-header">
           <div>
             <p class="fm-question-modal-eyebrow">
-              Questions Being Answered in This Process
+              What This Process Answers
             </p>
 
             <h2 id="fmQuestionModalTitle">
@@ -1525,7 +1569,9 @@ function render() {
 
   renderQuestionList();
 
-  $('#analysisOutput').innerHTML = output ? `<div class="generated-answer">${formatAnswer(output)}</div><div class="downstream"><strong>Outputs & downstream</strong><p>${escapeHtml(companyText(step.outputs))}</p><small>Feeds: ${escapeHtml(step.feeds)}</small></div>` : '';
+  $('#analysisOutput').innerHTML = output
+    ? `<div class="generated-answer">${formatAnswer(output)}</div>`
+    : '';
   $('#outputEmpty').hidden = Boolean(output);
   document.querySelectorAll('.previous-button').forEach(button => { button.hidden = state.step === 0; });
   document.querySelectorAll('.next-button').forEach(button => {
@@ -1765,7 +1811,15 @@ $('#runAnalysis').addEventListener('click', async () => {
       questions: currentStep().questions.map(companyText),
       outputs: companyText(currentStep().outputs)
     };
-    const response = await api('/api/analyze', { method: 'POST', body: JSON.stringify({ step: analysisStep, documents: state.documents, previousOutputs: requiredOutputs }) });
+    const response = await api('/api/analyze', {
+      method: 'POST',
+      body: JSON.stringify({
+        step: analysisStep,
+        documents: state.documents,
+        previousOutputs: requiredOutputs,
+        segments: Array.isArray(state.segments) ? state.segments : []
+      })
+    });
     if (!Array.isArray(state.history)) state.history = [];
 
     /*
@@ -2026,12 +2080,40 @@ $('#prevStep').addEventListener('click', () => moveStep(-1));
 $('#nextStep').addEventListener('click', () => moveStep(1));
 
 $('#generatePdf').addEventListener('click', () => {
-  const answer = state.outputs[state.step];
-  if (!answer) return showToast('Run the process before creating a PDF.');
   const step = currentStep();
-  const fileName = `${(currentUser?.companyName || 'FounderMotion').replace(/[^a-z0-9]+/gi, '-')}-process-${step.number || state.step + 1}.pdf`;
+
+  const directOutput =
+    Array.isArray(state.outputs)
+      ? state.outputs[state.step]
+      : null;
+
+  const latestHistoryOutput =
+    Array.isArray(state.history)
+      ? state.history
+          .filter(item => {
+            const processIndex =
+              Number.isInteger(item.processIndex)
+                ? item.processIndex
+                : Number(item.processNumber || 1) - 1;
+
+            return processIndex === state.step;
+          })
+          .sort((a, b) =>
+            new Date(b.createdAt || 0) -
+            new Date(a.createdAt || 0)
+          )[0]?.answer
+      : null;
+
+  const answer =
+    typeof directOutput === 'string' && directOutput.trim()
+      ? directOutput
+      : latestHistoryOutput || '';
+
+  if (!answer) return showToast('No output is available for this process.');
+  const businessName = activeWorkspace?.businessName || currentUser?.companyName || 'FounderMotion';
+  const fileName = `${businessName.replace(/[^a-z0-9]+/gi, '-')}-process-${step.number || state.step + 1}.pdf`;
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(createPdf([`${currentUser?.companyName || 'Company'} - Process ${step.number || state.step + 1}`, step.title, '', ...answer.split('\n')]));
+  link.href = URL.createObjectURL(createPdf([`${businessName} - Process ${step.number || state.step + 1}`, step.title, '', ...answer.split('\n')]));
   link.download = fileName;
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
@@ -2091,14 +2173,40 @@ function answerToCsvRows(answer) {
 }
 
 $('#generateCsv')?.addEventListener('click', () => {
-  const answer = state.outputs[state.step];
+  const directOutput =
+    Array.isArray(state.outputs)
+      ? state.outputs[state.step]
+      : null;
+
+  const latestHistoryOutput =
+    Array.isArray(state.history)
+      ? state.history
+          .filter(item => {
+            const processIndex =
+              Number.isInteger(item.processIndex)
+                ? item.processIndex
+                : Number(item.processNumber || 1) - 1;
+
+            return processIndex === state.step;
+          })
+          .sort((a, b) =>
+            new Date(b.createdAt || 0) -
+            new Date(a.createdAt || 0)
+          )[0]?.answer
+      : null;
+
+  const answer =
+    typeof directOutput === 'string' && directOutput.trim()
+      ? directOutput
+      : latestHistoryOutput || '';
   if (!answer) return showToast('Run the process before creating a CSV.');
   const step = currentStep();
   const rows = [['Section', 'Content'], ...answerToCsvRows(answer)];
   // Leading BOM so Excel opens the UTF-8 file with correct characters.
   const csvContent = '﻿' + rows.map(row => row.map(csvEscapeCell).join(',')).join('\r\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const fileName = `${(currentUser?.companyName || 'FounderMotion').replace(/[^a-z0-9]+/gi, '-')}-process-${step.number || state.step + 1}.csv`;
+  const businessName = activeWorkspace?.businessName || currentUser?.companyName || 'FounderMotion';
+  const fileName = `${businessName.replace(/[^a-z0-9]+/gi, '-')}-process-${step.number || state.step + 1}.csv`;
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = fileName;
@@ -2153,30 +2261,547 @@ document.addEventListener('keydown', event => {
   }
 });
 
-// Creates a compact, self-contained PDF so it downloads without a third-party browser service.
+// Creates a styled FounderMotion PDF report using jsPDF + AutoTable.
 function createPdf(lines) {
-  const wrap = value => String(value).replace(/[^\x20-\x7E\n]/g, ' ').replace(/\*\*(.*?)\*\*/g, '$1').split('\n').flatMap(line => {
-    const words = line.trim().split(/\s+/).filter(Boolean); const rows = []; let row = '';
-    words.forEach(word => { const next = row ? `${row} ${word}` : word; if (next.length > 88) { if (row) rows.push(row); row = word; } else row = next; });
-    if (row) rows.push(row); return rows.length ? rows : [''];
+  const jsPDF = window.jspdf?.jsPDF;
+
+  if (!jsPDF) {
+    throw new Error('PDF library is not available.');
+  }
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: 'a4'
   });
-  const allLines = lines.flatMap((value, index) => wrap(value).map(text => ({ text, bold: index < 2 || /^\*\*/.test(String(value)) || /^Recommended decision/i.test(text) })));
-  const pages = []; for (let index = 0; index < allLines.length; index += 48) pages.push(allLines.slice(index, index + 48));
-  const escapePdf = value => value.replace(/[\\()]/g, '\\$&');
-  const objects = ['<< /Type /Catalog /Pages 2 0 R >>', '', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'];
-  const pageIds = [];
-  pages.forEach((page, index) => {
-    const pageId = 5 + index * 2; const contentId = pageId + 1; pageIds.push(pageId);
-    const text = page.map((line, row) => `${row ? '0 -14 Td ' : ''}/${line.bold ? 'F2' : 'F1'} ${line.bold ? 12 : 11} Tf (${escapePdf(line.text)}) Tj`).join('\n');
-    const stream = `BT 48 744 Td ${text} ET`;
-    objects[pageId - 1] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`;
-    objects[contentId - 1] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
-  });
-  objects[1] = `<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`;
-  let pdf = '%PDF-1.4\n'; const offsets = [0];
-  objects.forEach((object, index) => { offsets[index + 1] = pdf.length; pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });
-  const start = pdf.length; pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map(offset => `${String(offset).padStart(10, '0')} 00000 n \n`).join('')}trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${start}\n%%EOF`;
-  return new Blob([pdf], { type: 'application/pdf' });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  const marginX = 52;
+  const contentWidth = pageWidth - (marginX * 2);
+  const bottomLimit = pageHeight - 58;
+
+  // FounderMotion visual palette.
+  const purple = [78, 48, 112];
+  const purpleSoft = [246, 242, 250];
+  const text = [42, 36, 48];
+  const muted = [112, 103, 121];
+  const border = [226, 219, 232];
+  const white = [255, 255, 255];
+
+  const rawLines = Array.isArray(lines)
+    ? lines.map(value => String(value ?? ''))
+    : [];
+
+  const reportTitle = rawLines[0] || 'FounderMotion Process Report';
+  const processTitle = rawLines[1] || '';
+
+  // The first two values are report metadata.
+  const answer = rawLines.slice(2).join('\n').trim();
+
+  let y = 0;
+
+  function cleanMarkdown(value) {
+    return String(value ?? '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/__(.*?)__/g, '$1')
+      .replace(/^#{1,6}\s*/g, '')
+      .replace(/[–—]/g, '-')
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .trim();
+  }
+
+  function addPage() {
+    doc.addPage();
+    drawPageHeader();
+    y = 78;
+  }
+
+  function ensureSpace(height = 40) {
+    if (y + height > bottomLimit) {
+      addPage();
+    }
+  }
+
+  function drawPageHeader() {
+    doc.setFillColor(...purple);
+    doc.rect(0, 0, pageWidth, 8, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...purple);
+    doc.text('FOUNDERMOTION', marginX, 34);
+
+    doc.setDrawColor(...border);
+    doc.setLineWidth(0.6);
+    doc.line(marginX, 46, pageWidth - marginX, 46);
+  }
+
+  function addParagraph(value, options = {}) {
+    const cleaned = cleanMarkdown(value);
+
+    if (!cleaned) {
+      y += options.emptySpace || 7;
+      return;
+    }
+
+    const fontSize = options.fontSize || 10.5;
+    const lineHeight = options.lineHeight || 15;
+    const indent = options.indent || 0;
+    const width = contentWidth - indent;
+
+    doc.setFont(
+      'helvetica',
+      options.bold ? 'bold' : 'normal'
+    );
+
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...(options.color || text));
+
+    const wrapped = doc.splitTextToSize(cleaned, width);
+
+    ensureSpace(wrapped.length * lineHeight + 4);
+
+    doc.text(
+      wrapped,
+      marginX + indent,
+      y,
+      { lineHeightFactor: lineHeight / fontSize }
+    );
+
+    y += wrapped.length * lineHeight + (options.after ?? 6);
+  }
+
+  function addQuestion(title) {
+    ensureSpace(58);
+
+    y += 5;
+
+    const cleaned = cleanMarkdown(title);
+
+    const match = cleaned.match(/^(\d+)\.\s*(.*)$/);
+    const number = match ? match[1] : '';
+    const question = match ? match[2] : cleaned;
+
+    if (number) {
+      doc.setFillColor(...purpleSoft);
+      doc.roundedRect(
+        marginX,
+        y - 13,
+        25,
+        25,
+        6,
+        6,
+        'F'
+      );
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...purple);
+      doc.text(
+        String(number).padStart(2, '0'),
+        marginX + 12.5,
+        y + 3,
+        { align: 'center' }
+      );
+    }
+
+    const questionX = number ? marginX + 38 : marginX;
+    const questionWidth =
+      contentWidth - (number ? 38 : 0);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...text);
+
+    const wrapped = doc.splitTextToSize(
+      question,
+      questionWidth
+    );
+
+    doc.text(
+      wrapped,
+      questionX,
+      y,
+      { lineHeightFactor: 1.25 }
+    );
+
+    y += Math.max(25, wrapped.length * 16) + 10;
+  }
+
+  function addBullet(value) {
+    const cleaned = cleanMarkdown(
+      value.replace(/^[-*]\s*/, '')
+    );
+
+    if (!cleaned) return;
+
+    const bulletIndent = 15;
+    const wrapped = doc.splitTextToSize(
+      cleaned,
+      contentWidth - 25
+    );
+
+    ensureSpace(wrapped.length * 15 + 3);
+
+    doc.setFillColor(...purple);
+    doc.circle(
+      marginX + 3,
+      y - 3,
+      1.8,
+      'F'
+    );
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.setTextColor(...text);
+
+    doc.text(
+      wrapped,
+      marginX + bulletIndent,
+      y,
+      { lineHeightFactor: 1.4 }
+    );
+
+    y += wrapped.length * 15 + 3;
+  }
+
+  function addTable(tableLines) {
+    const rows = tableLines
+      .filter(line => !/^\s*\|?\s*:?-{3,}/.test(line))
+      .map(line =>
+        line
+          .trim()
+          .replace(/^\|/, '')
+          .replace(/\|$/, '')
+          .split('|')
+          .map(cell => cleanMarkdown(cell))
+      )
+      .filter(row => row.some(Boolean));
+
+    if (rows.length < 2) {
+      tableLines.forEach(addParagraph);
+      return;
+    }
+
+    const head = [rows[0]];
+    const body = rows.slice(1);
+
+    ensureSpace(90);
+
+    doc.autoTable({
+      startY: y,
+      margin: {
+        left: marginX,
+        right: marginX
+      },
+
+      head,
+      body,
+
+      theme: 'grid',
+
+      styles: {
+        font: 'helvetica',
+        fontSize: 8.5,
+        textColor: text,
+        lineColor: border,
+        lineWidth: 0.5,
+        cellPadding: 6,
+        valign: 'top',
+        overflow: 'linebreak'
+      },
+
+      headStyles: {
+        fillColor: purpleSoft,
+        textColor: purple,
+        fontStyle: 'bold',
+        lineColor: border,
+        lineWidth: 0.5
+      },
+
+      alternateRowStyles: {
+        fillColor: [252, 251, 253]
+      },
+
+      didDrawPage: () => {
+        drawPageHeader();
+      }
+    });
+
+    y = doc.lastAutoTable.finalY + 16;
+  }
+
+  function addRecommendation(title, bodyLines) {
+    const body = bodyLines
+      .map(cleanMarkdown)
+      .filter(Boolean)
+      .join(' ');
+
+    const wrapped = doc.splitTextToSize(
+      body,
+      contentWidth - 28
+    );
+
+    const boxHeight =
+      44 + (wrapped.length * 15);
+
+    ensureSpace(boxHeight + 15);
+
+    doc.setFillColor(...purpleSoft);
+    doc.setDrawColor(...border);
+    doc.setLineWidth(0.6);
+
+    doc.roundedRect(
+      marginX,
+      y,
+      contentWidth,
+      boxHeight,
+      8,
+      8,
+      'FD'
+    );
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...purple);
+    doc.text(
+      cleanMarkdown(title).toUpperCase(),
+      marginX + 14,
+      y + 21
+    );
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.setTextColor(...text);
+
+    doc.text(
+      wrapped,
+      marginX + 14,
+      y + 42,
+      { lineHeightFactor: 1.4 }
+    );
+
+    y += boxHeight + 15;
+  }
+
+  // ---------------------------------------------------------
+  // COVER / REPORT HEADER
+  // ---------------------------------------------------------
+
+  drawPageHeader();
+
+  y = 86;
+
+  const processMatch =
+    reportTitle.match(/Process\s+(\d+)/i);
+
+  const processNumber =
+    processMatch ? processMatch[1] : '';
+
+  if (processNumber) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...purple);
+
+    doc.text(
+      `PROCESS ${String(processNumber).padStart(2, '0')}`,
+      marginX,
+      y
+    );
+
+    y += 25;
+  }
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor(...text);
+
+  const titleLines = doc.splitTextToSize(
+    cleanMarkdown(processTitle),
+    contentWidth
+  );
+
+  doc.text(
+    titleLines,
+    marginX,
+    y,
+    { lineHeightFactor: 1.15 }
+  );
+
+  y += titleLines.length * 25 + 12;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(...muted);
+
+  doc.text(
+    cleanMarkdown(reportTitle),
+    marginX,
+    y
+  );
+
+  y += 14;
+
+  const generatedDate = new Intl.DateTimeFormat(
+    'en-AU',
+    {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }
+  ).format(new Date());
+
+  doc.text(
+    `Generated ${generatedDate}`,
+    marginX,
+    y
+  );
+
+  y += 24;
+
+  doc.setDrawColor(...border);
+  doc.line(
+    marginX,
+    y,
+    pageWidth - marginX,
+    y
+  );
+
+  y += 28;
+
+  // ---------------------------------------------------------
+  // PARSE AI OUTPUT
+  // ---------------------------------------------------------
+
+  const sourceLines = answer
+    .replace(/\r/g, '')
+    .split('\n');
+
+  for (let i = 0; i < sourceLines.length; i++) {
+    const raw = sourceLines[i];
+    const trimmed = raw.trim();
+
+    if (!trimmed || trimmed === '---') {
+      y += 5;
+      continue;
+    }
+
+    // Markdown table.
+    if (
+      trimmed.startsWith('|') &&
+      i + 1 < sourceLines.length &&
+      /^\s*\|?\s*:?-{3,}/.test(sourceLines[i + 1])
+    ) {
+      const tableLines = [trimmed];
+      i++;
+
+      while (
+        i < sourceLines.length &&
+        sourceLines[i].trim().startsWith('|')
+      ) {
+        tableLines.push(sourceLines[i].trim());
+        i++;
+      }
+
+      i--;
+      addTable(tableLines);
+      continue;
+    }
+
+    // Recommended decision.
+    if (
+      /^(\*\*)?recommended decision/i.test(trimmed)
+    ) {
+      const recommendationLines = [];
+
+      for (
+        let j = i + 1;
+        j < sourceLines.length;
+        j++
+      ) {
+        const next = sourceLines[j].trim();
+
+        if (
+          /^(\*\*)?\d+\.\s+/.test(next)
+        ) {
+          break;
+        }
+
+        recommendationLines.push(next);
+        i = j;
+      }
+
+      addRecommendation(
+        'Recommended decision',
+        recommendationLines
+      );
+
+      continue;
+    }
+
+    // Numbered question heading.
+    if (
+      /^(\*\*)?\d+\.\s+/.test(trimmed)
+    ) {
+      addQuestion(trimmed);
+      continue;
+    }
+
+    // Bullet.
+    if (/^[-*]\s+/.test(trimmed)) {
+      addBullet(trimmed);
+      continue;
+    }
+
+    addParagraph(trimmed);
+  }
+
+  // ---------------------------------------------------------
+  // FOOTERS
+  // ---------------------------------------------------------
+
+  const totalPages =
+    doc.internal.getNumberOfPages();
+
+  for (
+    let page = 1;
+    page <= totalPages;
+    page++
+  ) {
+    doc.setPage(page);
+
+    doc.setDrawColor(...border);
+    doc.setLineWidth(0.5);
+
+    doc.line(
+      marginX,
+      pageHeight - 38,
+      pageWidth - marginX,
+      pageHeight - 38
+    );
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+
+    doc.text(
+      'FounderMotion',
+      marginX,
+      pageHeight - 20
+    );
+
+    doc.text(
+      `Page ${page} of ${totalPages}`,
+      pageWidth - marginX,
+      pageHeight - 20,
+      { align: 'right' }
+    );
+  }
+
+  return doc.output('blob');
 }
 
 
@@ -3099,9 +3724,25 @@ function invalidateProcessOneOutputs() {
 }
 function formatAnswer(answer) {
   const tables = [];
-  const escaped = escapeHtml(answer).replace(/^\|(.+)\|\n\|[-:| ]+\|\n((?:\|.+\|\n?)+)/gm, (_, header, rows) => {
-    const cells = line => line.split('|').slice(1, -1).map(cell => `<td>${cell.trim()}</td>`).join('');
-    const headerCells = header.split('|').map(cell => `<th>${cell.trim()}</th>`).join('');
+  const cleanedAnswer = String(answer || '')
+    .replace(/^\s*---+\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const escaped = escapeHtml(cleanedAnswer).replace(/^\|(.+)\|\n\|[-:| ]+\|\n((?:\|.+\|\n?)+)/gm, (_, header, rows) => {
+    const formatTableCell = cell =>
+      cell.trim().replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    const cells = line =>
+      line.split('|')
+        .slice(1, -1)
+        .map(cell => `<td>${formatTableCell(cell)}</td>`)
+        .join('');
+
+    const headerCells = header
+      .split('|')
+      .map(cell => `<th>${formatTableCell(cell)}</th>`)
+      .join('');
     const table = `<div class="answer-table-wrap"><table class="answer-table"><thead><tr>${headerCells}</tr></thead><tbody>${rows.trim().split('\n').map(row => `<tr>${cells(row)}</tr>`).join('')}</tbody></table></div>`;
     tables.push(table); return `@@TABLE${tables.length - 1}@@`;
   });
@@ -11818,89 +12459,62 @@ function syncAuthScreenUI() {
       mapSteps?.[processIndex]?.title ||
       `Process ${processIndex + 1}`;
 
-    view.innerHTML = `
-      <article class="history-item fm-current-result-item">
-        <div class="history-item-info">
-          <p class="history-item-title">
-            ${escapeHtml(currentTitle)}
-          </p>
+    const sourceOutput =
+      document.getElementById('analysisOutput');
 
-          <p class="history-item-meta">
-            Process ${processIndex + 1} · Current generated result
+    let currentOutputHtml = '';
+
+    if (
+      sourceOutput &&
+      sourceOutput.innerHTML.trim()
+    ) {
+      currentOutputHtml = sourceOutput.innerHTML;
+    } else {
+      currentOutputHtml = `
+        <div class="generated-answer">
+          ${data.questions.map(item => `
+            <h3>
+              ${escapeHtml(item.number)}.
+              ${escapeHtml(item.title)}
+            </h3>
+
+            <p>
+              ${escapeHtml(item.summary)}
+            </p>
+          `).join('')}
+
+          <h3>Recommended decision</h3>
+
+          <p>
+            ${escapeHtml(data.recommended)}
           </p>
         </div>
-
-        <button
-          class="history-view"
-          type="button"
-          data-current-result-view
-        >
-          View result →
-        </button>
-      </article>
-    `;
-
-    const viewButton =
-      view.querySelector('[data-current-result-view]');
-
-    if (viewButton) {
-      viewButton.onclick = () => {
-        const modal =
-          document.getElementById('outputModal');
-
-        const modalTitle =
-          document.getElementById('outputModalTitle');
-
-        const modalBody =
-          document.getElementById('outputModalBody');
-
-        const sourceOutput =
-          document.getElementById('analysisOutput');
-
-        if (!modal || !modalBody) return;
-
-        if (modalTitle) {
-          modalTitle.textContent = currentTitle;
-        }
-
-        if (
-          sourceOutput &&
-          sourceOutput.innerHTML.trim()
-        ) {
-          modalBody.innerHTML =
-            sourceOutput.innerHTML;
-        } else {
-          modalBody.innerHTML = `
-            <div class="generated-answer">
-              ${data.questions.map(item => `
-                <h3>
-                  ${escapeHtml(item.number)}.
-                  ${escapeHtml(item.title)}
-                </h3>
-
-                <p>
-                  ${escapeHtml(item.summary)}
-                </p>
-              `).join('')}
-
-              <h3>
-                Recommended decision
-              </h3>
-
-              <p>
-                ${escapeHtml(data.recommended)}
-              </p>
-            </div>
-          `;
-        }
-
-        modal.classList.add('open');
-        modal.setAttribute(
-          'aria-hidden',
-          'false'
-        );
-      };
+      `;
     }
+
+    view.innerHTML = `
+      <section class="fm-inline-current-output">
+        <div class="fm-inline-current-output-header">
+          <div>
+            <p class="fm-inline-output-eyebrow">
+              Current Output
+            </p>
+
+            <h3>
+              ${escapeHtml(currentTitle)}
+            </h3>
+
+            <p class="fm-inline-output-meta">
+              Process ${processIndex + 1} · Current generated result
+            </p>
+          </div>
+        </div>
+
+        <div class="fm-inline-current-output-body">
+          ${currentOutputHtml}
+        </div>
+      </section>
+    `;
 
     /*
      * NOTE: tile clicks are NOT wired here. A later block in this
@@ -14758,77 +15372,115 @@ function syncAuthScreenUI() {
 
 
 /* ---------------------------------------------------------
-   Move "Generate PDF" / "Generate CSV" onto the Outputs tab,
-   underneath the six generated results. "Run" (Generate this
-   process) stays on the Inputs tab where it already is.
+   CURRENT OUTPUT — HEADER EXPORT ACTIONS
+   Keep original PDF/CSV buttons in their original DOM so their
+   existing click handlers survive Current Output re-renders.
    --------------------------------------------------------- */
 (() => {
-  const STYLE_ID = 'fmExportButtonsOnOutputsStyle';
-  const WRAP_ID = 'fmExportButtonsWrap';
+  const ACTIONS_ID = 'fmCurrentOutputHeaderActions';
 
-  const style = document.createElement('style');
-  style.id = STYLE_ID;
-  style.textContent = `
-    /* Only "Run" (#runAnalysis) is left in the original actions row --
-       collapse it back to a single column so it doesn't leave two
-       empty ghost tracks where the export buttons used to sit. */
-    #processOutputActions {
-      grid-template-columns: minmax(0, 1fr) !important;
+  function installHeaderExportActions() {
+    const originalPdf = document.getElementById('generatePdf');
+    const originalCsv = document.getElementById('generateCsv');
+
+    if (!originalPdf || !originalCsv) return;
+
+    // Keep the real buttons alive, but hide them from the old location.
+    originalPdf.style.setProperty('display', 'none', 'important');
+    originalCsv.style.setProperty('display', 'none', 'important');
+
+    const header = document.querySelector(
+      '#fmCurrentResultCard .fm-inline-current-output-header'
+    );
+
+    if (!header) return;
+
+    let actions = document.getElementById(ACTIONS_ID);
+
+    // Current Output may be rebuilt with innerHTML.
+    // If the old visual controls disappeared, recreate them.
+    if (!actions) {
+      actions = document.createElement('div');
+      actions.id = ACTIONS_ID;
+      actions.className = 'fm-inline-output-actions';
+
+      actions.innerHTML = `
+        <button
+          type="button"
+          class="fm-current-export-button fm-current-export-pdf"
+          data-header-export="pdf"
+        >
+          Generate PDF
+        </button>
+
+        <button
+          type="button"
+          class="fm-current-export-button fm-current-export-csv"
+          data-header-export="csv"
+        >
+          Generate CSV
+        </button>
+      `;
+
+      actions
+        .querySelector('[data-header-export="pdf"]')
+        .addEventListener('click', () => {
+          originalPdf.click();
+        });
+
+      actions
+        .querySelector('[data-header-export="csv"]')
+        .addEventListener('click', () => {
+          originalCsv.click();
+        });
     }
 
-    #${WRAP_ID} {
-      display: none;
+    if (actions.parentElement !== header) {
+      header.appendChild(actions);
     }
 
-    #outputsPanel.fm-outputs-tab-active > #${WRAP_ID} {
-      display: flex !important;
-      grid-column: 1 / -1 !important;
+    const visualPdf =
+      actions.querySelector('[data-header-export="pdf"]');
 
-      justify-content: flex-end !important;
-      gap: 14px !important;
+    const visualCsv =
+      actions.querySelector('[data-header-export="csv"]');
 
-      width: 100% !important;
-      margin: 24px 0 0 !important;
-      box-sizing: border-box !important;
+    if (visualPdf) {
+      visualPdf.disabled = originalPdf.disabled;
     }
 
-    #${WRAP_ID} .fm-export-button {
-      width: auto !important;
-      min-width: 160px !important;
-      height: 48px !important;
-      padding: 0 22px !important;
+    if (visualCsv) {
+      visualCsv.disabled = originalCsv.disabled;
     }
-  `;
+  }
 
-  document.getElementById(STYLE_ID)?.remove();
-  document.head.appendChild(style);
-
-  function ensureMoved() {
+  function startHeaderExportActions() {
     const outputsPanel = document.getElementById('outputsPanel');
-    const pdfButton = document.getElementById('generatePdf');
-    const csvButton = document.getElementById('generateCsv');
 
-    if (!outputsPanel || !pdfButton || !csvButton) {
-      setTimeout(ensureMoved, 150);
+    if (!outputsPanel) {
+      setTimeout(startHeaderExportActions, 150);
       return;
     }
 
-    let wrap = document.getElementById(WRAP_ID);
+    installHeaderExportActions();
 
-    if (!wrap) {
-      wrap = document.createElement('div');
-      wrap.id = WRAP_ID;
-      outputsPanel.appendChild(wrap);
-    }
+    const observer = new MutationObserver(() => {
+      installHeaderExportActions();
+    });
 
-    if (pdfButton.parentElement !== wrap) wrap.appendChild(pdfButton);
-    if (csvButton.parentElement !== wrap) wrap.appendChild(csvButton);
+    observer.observe(outputsPanel, {
+      childList: true,
+      subtree: true
+    });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', ensureMoved);
+    document.addEventListener(
+      'DOMContentLoaded',
+      startHeaderExportActions
+    );
   } else {
-    ensureMoved();
+    startHeaderExportActions();
   }
 })();
 
@@ -17087,9 +17739,8 @@ function syncAuthScreenUI() {
       outputs.appendChild(history);
     }
 
-    if (exports && exports.parentElement !== outputs) {
-      outputs.appendChild(exports);
-    }
+    // Export buttons are managed by the Current Output header.
+    // Do not move them back underneath the Output panel.
 
     const generated =
       document.getElementById("fmSixTileOutput") ||
@@ -17110,14 +17761,6 @@ function syncAuthScreenUI() {
       }
     }
 
-    if (history && exports) {
-      const desiredExportPosition = history.nextElementSibling;
-
-      if (desiredExportPosition !== exports) {
-        outputs.insertBefore(exports, desiredExportPosition);
-      }
-    }
-
     setImportant(history, "width", "100%");
     setImportant(history, "max-width", "none");
     setImportant(history, "min-width", "0");
@@ -17130,9 +17773,8 @@ function syncAuthScreenUI() {
       setImportant(historyList, "min-height", "170px");
     }
 
-    setImportant(exports, "width", "100%");
-    setImportant(exports, "max-width", "none");
-    setImportant(exports, "grid-column", "auto");
+    // PDF / CSV are managed inside the Current Output header.
+    // Do not reposition or resize the export wrapper here.
 
     const emptyText = outputs.querySelector(
       ".fm-output-state p"
@@ -17286,23 +17928,15 @@ function syncAuthScreenUI() {
       }
     }
 
-    // This function runs many times per process switch (a MutationObserver
-    // watching #inputList's subtree reschedules it on every DOM change it
-    // just made itself, plus the global click and resize listeners), so it
-    // must be idempotent. render() tags the current .outputs-to-use section
-    // with data-step so a stale one left over in `row` from a previous
-    // process (or from an earlier pass in this same click, once already
-    // moved into `row`) can be told apart from the current one purely by
-    // that tag -- comparing node identity against a `previousOutputs`
-    // lookup that is only non-null on the first pass is what caused a
-    // correctly-placed node to be deleted again on the second pass.
-    row.querySelectorAll('.outputs-to-use').forEach(node => {
-      if (node.dataset.step !== String(state.step)) node.remove();
-    });
-
     const previousOutputs = inputList.querySelector('.outputs-to-use');
 
+    // Only replace the old dependency box when render() has created
+    // a fresh one for the currently selected process.
     if (previousOutputs) {
+      row.querySelectorAll(':scope > .outputs-to-use').forEach(existing => {
+        existing.remove();
+      });
+
       row.insertBefore(previousOutputs, row.firstChild);
 
       previousOutputs.style.setProperty('grid-column', '1 / 2', 'important');
@@ -17417,144 +18051,56 @@ function syncAuthScreenUI() {
   window.addEventListener('resize', applyTopReferenceLayout);
 })();
 
+/* CURRENT OUTPUT — SAFE EXPORT ACTIONS
+   Removed: real PDF/CSV buttons are now placed directly
+   inside .fm-inline-current-output-header.
+*/
+
 /* =========================================================
-   CURRENT OUTPUT — SAFE EXPORT ACTIONS
-   Visual-only controls. Existing output DOM order is untouched.
+   PREVIOUS OUTPUTS — SCROLL WHEN MANY DEPENDENCIES
+   Keep existing visual/font/layout unchanged
    ========================================================= */
-
 (() => {
-  const ACTIONS_ID = 'fmCurrentOutputActions';
+  const style = document.createElement('style');
+  style.id = 'fm-previous-outputs-scroll';
 
-  function installCurrentOutputActions() {
-    const outputsPanel = document.getElementById('outputsPanel');
+  style.textContent = `
+    /* Only processes with 4+ previous outputs */
+    .outputs-to-use:has(.output-source:nth-child(4)) ul {
+      max-height: 155px !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
 
-    if (!outputsPanel) return;
+      /* space between content and scrollbar */
+      padding-right: 8px !important;
 
-    const generated =
-      document.getElementById('fmCurrentResultCard') ||
-      document.getElementById('fmSixTileOutput') ||
-      outputsPanel.querySelector(':scope > .fm-real-output') ||
-      outputsPanel.querySelector(':scope > .fm-output-state');
+      /* keep existing width/layout */
+      width: 100% !important;
+      box-sizing: border-box !important;
 
-    const originalPdf = document.getElementById('generatePdf');
-    const originalCsv = document.getElementById('generateCsv');
-    const originalExportWrap =
-      document.getElementById('fmExportButtonsWrap');
-
-    if (!generated || !originalPdf || !originalCsv) return;
-
-    if (originalExportWrap) {
-      originalExportWrap.style.setProperty(
-        'display',
-        'none',
-        'important'
-      );
+      /* smoother scrolling */
+      overscroll-behavior: contain;
     }
 
-    let actions = document.getElementById(ACTIONS_ID);
-
-    if (!actions) {
-      actions = document.createElement('div');
-      actions.id = ACTIONS_ID;
-      actions.className = 'fm-current-output-actions';
-
-      actions.innerHTML = `
-        <div class="fm-current-output-actions-buttons">
-          <button
-            type="button"
-            class="fm-current-export-button fm-current-export-secondary"
-            data-current-export="pdf"
-          >
-            Generate PDF
-          </button>
-
-          <button
-            type="button"
-            class="fm-current-export-button fm-current-export-primary"
-            data-current-export="csv"
-          >
-            Generate CSV
-          </button>
-        </div>
-      `;
-
-      generated.appendChild(actions);
-
-      actions
-        .querySelector('[data-current-export="pdf"]')
-        ?.addEventListener('click', () => {
-          originalPdf.click();
-        });
-
-      actions
-        .querySelector('[data-current-export="csv"]')
-        ?.addEventListener('click', () => {
-          originalCsv.click();
-        });
+    /* Thin, subtle scrollbar */
+    .outputs-to-use:has(.output-source:nth-child(4)) ul::-webkit-scrollbar {
+      width: 5px;
     }
 
-    /*
-     * Keep the visual export actions inside the visible Current Result card.
-     * The app also contains a hidden legacy output element.
-     */
-    const currentResultCard =
-      document.getElementById('fmCurrentResultCard');
-
-    if (currentResultCard) {
-      let currentOutputHeading =
-        document.getElementById('fmCurrentOutputHeading');
-
-      if (!currentOutputHeading) {
-        currentOutputHeading = document.createElement('div');
-        currentOutputHeading.id = 'fmCurrentOutputHeading';
-        currentOutputHeading.textContent = 'Current Output';
-
-        currentResultCard.insertAdjacentElement(
-          'beforebegin',
-          currentOutputHeading
-        );
-      }
-
-      currentOutputHeading.className = 'fm-current-output-heading';
-
-      if (actions.parentElement !== currentResultCard) {
-        currentResultCard.appendChild(actions);
-      }
+    .outputs-to-use:has(.output-source:nth-child(4)) ul::-webkit-scrollbar-track {
+      background: transparent;
     }
 
-    const visualPdf =
-      actions.querySelector('[data-current-export="pdf"]');
-
-    const visualCsv =
-      actions.querySelector('[data-current-export="csv"]');
-
-    if (visualPdf) {
-      visualPdf.disabled = originalPdf.disabled;
+    .outputs-to-use:has(.output-source:nth-child(4)) ul::-webkit-scrollbar-thumb {
+      background: rgba(105, 82, 180, 0.25);
+      border-radius: 999px;
     }
 
-    if (visualCsv) {
-      visualCsv.disabled = originalCsv.disabled;
+    .outputs-to-use:has(.output-source:nth-child(4)) ul::-webkit-scrollbar-thumb:hover {
+      background: rgba(105, 82, 180, 0.45);
     }
-  }
+  `;
 
-  function start() {
-    installCurrentOutputActions();
-
-    const outputsPanel = document.getElementById('outputsPanel');
-
-    if (!outputsPanel) return;
-
-    new MutationObserver(() => {
-      requestAnimationFrame(installCurrentOutputActions);
-    }).observe(outputsPanel, {
-      childList: true,
-      subtree: true
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
-  } else {
-    start();
-  }
+  document.getElementById(style.id)?.remove();
+  document.head.appendChild(style);
 })();

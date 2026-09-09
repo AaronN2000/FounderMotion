@@ -247,8 +247,8 @@ def enable_row_level_security():
             db.rollback()
 
     tables_with_user_id = [
-        "sessions", "market_segments", "evidence_items",
-        "workspace", "map_states", "process_answers", "artefact_versions",
+        "sessions", "market_segments", "evidence",
+        "workspace", "map_states",
     ]
     for table in tables_with_user_id:
         run(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
@@ -276,6 +276,70 @@ def enable_row_level_security():
             SELECT workspace_id FROM workspace
             WHERE user_id = (SELECT id FROM users WHERE supabase_user_id = auth.uid()::text)
         ))
+    """)
+
+    # generated_output is scoped through workspace_id.
+    run("ALTER TABLE generated_output ENABLE ROW LEVEL SECURITY")
+    run("DROP POLICY IF EXISTS user_isolation ON generated_output")
+    run("""
+        CREATE POLICY user_isolation ON generated_output
+        FOR ALL
+        USING (
+            workspace_id IN (
+                SELECT workspace_id
+                FROM workspace
+                WHERE user_id = (
+                    SELECT id
+                    FROM users
+                    WHERE supabase_user_id = auth.uid()::text
+                )
+            )
+        )
+        WITH CHECK (
+            workspace_id IN (
+                SELECT workspace_id
+                FROM workspace
+                WHERE user_id = (
+                    SELECT id
+                    FROM users
+                    WHERE supabase_user_id = auth.uid()::text
+                )
+            )
+        )
+    """)
+
+    # generated_output_versions is scoped through its parent generated output.
+    run("ALTER TABLE generated_output_versions ENABLE ROW LEVEL SECURITY")
+    run("DROP POLICY IF EXISTS user_isolation ON generated_output_versions")
+    run("""
+        CREATE POLICY user_isolation ON generated_output_versions
+        FOR ALL
+        USING (
+            EXISTS (
+                SELECT 1
+                FROM generated_output go
+                JOIN workspace w
+                    ON w.workspace_id = go.workspace_id
+                JOIN users u
+                    ON u.id = w.user_id
+                WHERE go.generated_output_id =
+                      generated_output_versions.generated_output_id
+                  AND u.supabase_user_id = auth.uid()::text
+            )
+        )
+        WITH CHECK (
+            EXISTS (
+                SELECT 1
+                FROM generated_output go
+                JOIN workspace w
+                    ON w.workspace_id = go.workspace_id
+                JOIN users u
+                    ON u.id = w.user_id
+                WHERE go.generated_output_id =
+                      generated_output_versions.generated_output_id
+                  AND u.supabase_user_id = auth.uid()::text
+            )
+        )
     """)
 
     # process / question / input / process_input are the shared strategic
@@ -346,27 +410,6 @@ def initialise_database():
             ON market_segments(user_id)
         """)
 
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS evidence_items (
-                evidence_id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                evidence_type VARCHAR(60) NOT NULL,
-                title VARCHAR(200) NOT NULL,
-                content TEXT NOT NULL,
-                source VARCHAR(200),
-                created_at BIGINT NOT NULL,
-                updated_at BIGINT NOT NULL,
-                CONSTRAINT fk_evidence_items_user
-                    FOREIGN KEY (user_id)
-                    REFERENCES users(id)
-                    ON DELETE CASCADE
-            )
-        """)
-
-        db.execute("""
-            CREATE INDEX IF NOT EXISTS idx_evidence_items_user
-            ON evidence_items(user_id)
-        """)
 
         db.execute("""
             CREATE TABLE IF NOT EXISTS workspace (
@@ -506,43 +549,39 @@ def initialise_database():
             END $$;
         """)
 
+        # evidence replaces the old per-account "evidence_items" table --
+        # it is now scoped to a single workspace (like market_segments
+        # above) and stores an evidence_name instead of a bare title, with
+        # created_at/updated_at as real timestamps instead of BIGINT epoch
+        # values. This CREATE TABLE was missing from this codebase drop
+        # even though get_evidence()/create_evidence()/delete_evidence()
+        # below already query it -- without it, every request to
+        # /api/evidence (and therefore the evidence upload panel on every
+        # process page) fails with "relation \"evidence\" does not exist".
         db.execute("""
-            ALTER TABLE evidence_items
-            ADD COLUMN IF NOT EXISTS workspace_id INTEGER
-        """)
-
-        db.execute("""
-            UPDATE evidence_items e
-            SET workspace_id = (
-                SELECT w.workspace_id
-                FROM workspace w
-                WHERE w.user_id = e.user_id
-                ORDER BY w.workspace_id
-                LIMIT 1
+            CREATE TABLE IF NOT EXISTS evidence (
+                evidence_id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL
+                    REFERENCES users(id) ON DELETE CASCADE,
+                workspace_id INTEGER NOT NULL
+                    REFERENCES workspace(workspace_id) ON DELETE CASCADE,
+                evidence_type VARCHAR(100) NOT NULL,
+                evidence_name VARCHAR(200) NOT NULL,
+                content TEXT NOT NULL,
+                source VARCHAR(200),
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
-            WHERE workspace_id IS NULL
         """)
 
         db.execute("""
-            CREATE INDEX IF NOT EXISTS idx_evidence_items_workspace
-            ON evidence_items(workspace_id)
+            CREATE INDEX IF NOT EXISTS idx_evidence_workspace
+            ON evidence(workspace_id)
         """)
 
         db.execute("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1
-                    FROM pg_constraint
-                    WHERE conname = 'fk_evidence_items_workspace'
-                ) THEN
-                    ALTER TABLE evidence_items
-                    ADD CONSTRAINT fk_evidence_items_workspace
-                    FOREIGN KEY (workspace_id)
-                    REFERENCES workspace(workspace_id)
-                    ON DELETE CASCADE;
-                END IF;
-            END $$;
+            CREATE INDEX IF NOT EXISTS idx_evidence_user
+            ON evidence(user_id)
         """)
 
         db.execute("""
@@ -616,6 +655,54 @@ def initialise_database():
             ON process_progress(workspace_id)
         """)
 
+        # generated_output / generated_output_versions replace the old
+        # "process_answers" (one row per user+process) and
+        # "artefact_versions" (full history) tables -- restructured to be
+        # workspace-scoped and to carry a title/approval_status alongside
+        # the version history. These CREATE TABLE statements were missing
+        # from this codebase drop even though the /api/state GET/PUT
+        # handlers below already read and write both tables -- without
+        # them, loading or saving a process's AI-generated output fails
+        # with "relation \"generated_output\" does not exist" (this is
+        # also what /api/state runs on every process page load, so the
+        # whole process view would break, not just saving).
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS generated_output (
+                generated_output_id SERIAL PRIMARY KEY,
+                workspace_id INTEGER NOT NULL
+                    REFERENCES workspace(workspace_id) ON DELETE CASCADE,
+                process_id INTEGER NOT NULL
+                    REFERENCES process(process_id) ON DELETE CASCADE,
+                title TEXT,
+                content TEXT,
+                version_number INTEGER NOT NULL DEFAULT 1,
+                approval_status VARCHAR(50) NOT NULL DEFAULT 'Draft',
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (workspace_id, process_id)
+            )
+        """)
+
+        db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_generated_output_workspace
+            ON generated_output(workspace_id)
+        """)
+
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS generated_output_versions (
+                version_id SERIAL PRIMARY KEY,
+                generated_output_id INTEGER NOT NULL
+                    REFERENCES generated_output(generated_output_id) ON DELETE CASCADE,
+                content TEXT,
+                version_number INTEGER NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_generated_output_versions_lookup
+            ON generated_output_versions(generated_output_id, version_number DESC)
+        """)
+
         db.execute("""
             CREATE TABLE IF NOT EXISTS map_states (
                 user_id INTEGER PRIMARY KEY
@@ -623,33 +710,6 @@ def initialise_database():
                 state_json TEXT NOT NULL,
                 updated_at BIGINT NOT NULL
             )
-        """)
-
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS process_answers (
-                user_id INTEGER NOT NULL
-                    REFERENCES users(id) ON DELETE CASCADE,
-                process_number INTEGER NOT NULL,
-                answer TEXT,
-                updated_at BIGINT NOT NULL,
-                PRIMARY KEY (user_id, process_number)
-            )
-        """)
-
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS artefact_versions (
-                version_id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL
-                    REFERENCES users(id) ON DELETE CASCADE,
-                process_number INTEGER NOT NULL,
-                content TEXT NOT NULL,
-                created_at BIGINT NOT NULL
-            )
-        """)
-
-        db.execute("""
-            CREATE INDEX IF NOT EXISTS idx_artefact_versions_lookup
-            ON artefact_versions(user_id, process_number, created_at DESC)
         """)
 
         # Saved map state (current step, uploaded documents, previous-search
@@ -699,84 +759,6 @@ def initialise_database():
             END $$;
         """)
 
-        db.execute("""
-            ALTER TABLE process_answers
-            ADD COLUMN IF NOT EXISTS workspace_id INTEGER
-        """)
-
-        db.execute("""
-            UPDATE process_answers pa
-            SET workspace_id = (
-                SELECT w.workspace_id
-                FROM workspace w
-                WHERE w.user_id = pa.user_id
-                ORDER BY w.workspace_id
-                LIMIT 1
-            )
-            WHERE workspace_id IS NULL
-        """)
-
-        db.execute("""
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_process_answers_workspace_process
-            ON process_answers(workspace_id, process_number)
-        """)
-
-        db.execute("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1
-                    FROM pg_constraint
-                    WHERE conname = 'fk_process_answers_workspace'
-                ) THEN
-                    ALTER TABLE process_answers
-                    ADD CONSTRAINT fk_process_answers_workspace
-                    FOREIGN KEY (workspace_id)
-                    REFERENCES workspace(workspace_id)
-                    ON DELETE CASCADE;
-                END IF;
-            END $$;
-        """)
-
-        db.execute("""
-            ALTER TABLE artefact_versions
-            ADD COLUMN IF NOT EXISTS workspace_id INTEGER
-        """)
-
-        db.execute("""
-            UPDATE artefact_versions av
-            SET workspace_id = (
-                SELECT w.workspace_id
-                FROM workspace w
-                WHERE w.user_id = av.user_id
-                ORDER BY w.workspace_id
-                LIMIT 1
-            )
-            WHERE workspace_id IS NULL
-        """)
-
-        db.execute("""
-            CREATE INDEX IF NOT EXISTS idx_artefact_versions_workspace_lookup
-            ON artefact_versions(workspace_id, process_number, created_at DESC)
-        """)
-
-        db.execute("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1
-                    FROM pg_constraint
-                    WHERE conname = 'fk_artefact_versions_workspace'
-                ) THEN
-                    ALTER TABLE artefact_versions
-                    ADD CONSTRAINT fk_artefact_versions_workspace
-                    FOREIGN KEY (workspace_id)
-                    REFERENCES workspace(workspace_id)
-                    ON DELETE CASCADE;
-                END IF;
-            END $$;
-        """)
-
         seed_process_catalogue(db)
         seed_process_output_dependencies(db)
 
@@ -791,7 +773,7 @@ def seed_process_catalogue(db):
     names = [
         "Market Positioning Analysis", "Sector Challenges / Why Now / Why", "ICP & Buyer Persona Pack",
         "Voice of Customer / Beta Learning Plan", "PMF Metrics Dashboard", "Wedge Value Mapping",
-        "Offer Architecture — Trace", "Offer Architecture — Essentials", "Value Proposition Canvases — Trace and Essentials",
+        "Offer Architecture — Primary Wedge", "Offer Architecture — Additional Wedges", "Value Proposition Canvases — Wedges",
         "Product Roadmap & Feature Prioritisation Matrix", "Product Proof Architecture", "Pricing Diagnostic",
         "Price List / Commercial Model"
     ]
@@ -806,26 +788,100 @@ def seed_process_catalogue(db):
     generic_inputs = ["Previous process outputs", "Customer and market evidence", "Relevant internal documentation"]
 
     process_1_questions = [
-        "Which market should FounderMotion target first?",
-        "Which buyer feels the problem most urgently?",
-        "Which category should FounderMotion avoid being trapped in?",
-        "What alternatives does the buyer use today?",
-        "Which wedge leads in each priority market?",
+        "Which market should the business focus on first?",
+        "Which buyers need this solution the most?",
+        "Which market category should the business avoid?",
+        "What alternatives are buyers using now?",
+        "Which wedge is the best fit for each priority market?",
     ]
+
     questions_by_number = {
-        2: ["What is changing in each sector?", "Why does the problem matter now?", "Is the dominant strain scrutiny, or growth and complexity?", "Which sectors fit Trace first and which fit Essentials first?", "What trigger creates a buying conversation?"],
-        3: ["Who is the ideal first buyer?", "What account conditions indicate readiness?", "Who is economic buyer, functional owner and influencer?", "What triggers action and what blocks purchase?", "How does the buyer define success?"],
-        4: ["What problem is painful enough to act on?", "Which use case is most urgent?", "What language do buyers use?", "What would they pay for and when?", "What feature or proof is required for a pilot?"],
-        5: ["Which segment converts best?", "Which use case produces urgency?", "What objections repeat?", "Are diagnostics converting to pilots?", "What features, proof points or prices are blocking progress?"],
-        6: ["What exact problem does Trace solve?", "What exact problem does Essentials solve?", "Which use cases belong to each wedge?", "What outcome matters most to each buyer?", "Which sector / use-case combinations should be prioritised first?"],
-        7: ["What can the buyer buy first?", "What is diagnostic vs pilot vs implementation?", "Is it product, service or combined?", "Which use cases are in and out of scope?", "What does success prove?"],
-        8: ["What practical problem does Essentials solve first?", "What is the minimum viable setup?", "What support is needed to start?", "What is in / out of scope?", "How does the offer stay simple but valuable?"],
-        9: ["What job is the buyer hiring each wedge to do?", "What pain is urgent enough to act on?", "What gain would make the buyer feel progress?", "What alternatives are used today?", "Which messages should be tested?"],
-        10: ["Which capabilities are essential for beta?", "Which features support the first landable use case?", "What is must-have, should-have or later?", "What dependencies exist?", "How should the roadmap be communicated?"],
-        11: ["What does Trace capture and prove?", "What does Essentials capture and prove?", "What outputs does the buyer receive?", "What evidence supports the claim?", "What proof is needed for a pilot to succeed?"],
-        12: ["What is the value metric?", "How should Trace price (decision class, workflow, user, entity or scope)?", "How should Essentials price (org size, users, module or support tier)?", "What should diagnostics, pilots and implementations cost?", "What price creates commitment without blocking early adoption?"],
-        13: ["What can sales quote?", "What is fixed fee, subscription or custom scope?", "What is included and excluded?", "What discounting is allowed?", "What requires approval?"],
+        2: [
+            "What is changing in each sector?",
+            "Why is this problem important now?",
+            "What are the main challenges in each sector?",
+            "Which sectors are the best fit for each wedge?",
+            "What makes buyers start looking for a solution?",
+        ],
+        3: [
+            "Who is the ideal first customer?",
+            "What signs show that a customer is ready to buy?",
+            "Who makes the buying decision, who uses the solution, and who influences the decision?",
+            "What makes the buyer take action, and what may stop them from buying?",
+            "What does success look like for the buyer?",
+        ],
+        4: [
+            "Which customer problems are serious enough to take action on?",
+            "Which use cases are most urgent for customers?",
+            "How do customers describe their problems and needs?",
+            "What are customers willing to pay for, and when?",
+            "What features or evidence do customers need before trying a pilot?",
+        ],
+        5: [
+            "Which customer segments are showing the most interest?",
+            "Which use cases create the strongest need to act?",
+            "What concerns or objections come up most often?",
+            "How many interested customers are moving to a pilot?",
+            "What features, evidence, or pricing issues are stopping customers from moving forward?",
+        ],
+        6: [
+            "What problem does each wedge solve?",
+            "How does each wedge solve that problem?",
+            "Which use cases fit each wedge?",
+            "What result matters most to the buyer?",
+            "Which sectors and use cases should be prioritised first?",
+        ],
+        7: [
+            "What should the first offer include?",
+            "What can be offered as a diagnostic, pilot, or full implementation?",
+            "Should the offer be a product, a service, or both?",
+            "What is included and excluded from the offer?",
+            "What results would show that the offer is successful?",
+        ],
+        8: [
+            "What problem does each additional wedge solve?",
+            "What is the simplest version that can be offered?",
+            "What support does the customer need to get started?",
+            "What is included and excluded from each offer?",
+            "How can each offer stay simple while still providing value?",
+        ],
+        9: [
+            "What does the buyer need each wedge to help them achieve?",
+            "Which customer problems are urgent enough to take action on?",
+            "What results would make the buyer feel they are making progress?",
+            "What alternatives are buyers using now?",
+            "Which messages should be tested with buyers?",
+        ],
+        10: [
+            "Which features are essential for the beta version?",
+            "Which features are needed for the first priority use cases?",
+            "Which features are needed now, next, or later?",
+            "Which features depend on other work being completed first?",
+            "How should the product roadmap be presented to the team and stakeholders?",
+        ],
+        11: [
+            "What should each wedge demonstrate?",
+            "How does each wedge show value to the buyer?",
+            "What results or outputs will the buyer receive?",
+            "What evidence shows that the solution works?",
+            "What evidence is needed to show that a pilot was successful?",
+        ],
+        12: [
+            "What should the price be based on?",
+            "What factors should determine the price of each wedge?",
+            "Which pricing model works best for each wedge?",
+            "How much should diagnostics, pilots, and full implementations cost?",
+            "What price encourages customers to commit without making early adoption too difficult?",
+        ],
+        13: [
+            "What products or services can the sales team offer?",
+            "Which offers should use a fixed fee, subscription, or custom price?",
+            "What is included and excluded from each price?",
+            "When can discounts be offered?",
+            "Which pricing or discount decisions need approval?",
+        ],
     }
+
 
     input_id_by_name = {}
 
@@ -842,7 +898,7 @@ def seed_process_catalogue(db):
 
     for number, name in enumerate(names, 1):
         purpose = (
-            "Define FounderMotion market focus, competitive frame, wedge positioning and market-entry logic."
+            "Define the business market focus, competitive frame, wedge positioning and market-entry logic."
             if number == 1 else f"Develop the strategic decisions and evidence for {name}."
         )
         process_row = db.execute(
@@ -935,82 +991,20 @@ def seed_process_output_dependencies(db):
             )
 
 
-def seed_sample_evidence(user_id, workspace_id, company_name):
-    """Seed fictional CarCompany evidence once per workspace."""
-    if company_name != "CarCompany":
-        return
-
-    with database_connection() as db:
-        existing = db.execute(
-            "SELECT 1 FROM evidence_items WHERE workspace_id = %s LIMIT 1",
-            (workspace_id,)
-        ).fetchone()
-
-        if existing:
-            return
-
-        now = int(time.time())
-
-        sample_items = [
-            (
-                "Interview Note",
-                "Risk information is fragmented",
-                "Risk information is scattered across spreadsheets, emails and separate documents, making it difficult to prepare for investor reviews.",
-                "Founder interview"
-            ),
-            (
-                "Objection",
-                "Avoid enterprise GRC complexity",
-                "I don't want another complicated enterprise GRC platform.",
-                "Customer interview"
-            ),
-            (
-                "Pricing Signal",
-                "Willingness to pay for simplicity",
-                "We would pay for a simple risk-visibility workflow if it was easy to adopt.",
-                "Pricing discussion"
-            ),
-            (
-                "Proof Point",
-                "Repeated evidence-management problem",
-                "Five interviewed Australian technology companies reported similar problems with fragmented risk and governance evidence.",
-                "Customer research"
-            ),
-        ]
-
-        for evidence_type, title, content, source in sample_items:
-            db.execute("""
-                INSERT INTO evidence_items
-                    (user_id, workspace_id, evidence_type, title, content, source, created_at, updated_at)
-                VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                user_id,
-                workspace_id,
-                evidence_type,
-                title,
-                content,
-                source,
-                now,
-                now
-            ))
-
-
 def get_evidence(user):
     workspace = ensure_user_workspace(user)
-    seed_sample_evidence(user["id"], workspace["workspace_id"], "CarCompany")
 
     with database_connection() as db:
         rows = db.execute("""
             SELECT
                 evidence_id AS id,
                 evidence_type AS type,
-                title,
+                evidence_name AS title,
                 content,
                 source,
-                created_at AS "createdAt",
-                updated_at AS "updatedAt"
-            FROM evidence_items
+                TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS "createdAt",
+                TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS "updatedAt"
+            FROM evidence
             WHERE workspace_id = %s
             ORDER BY created_at DESC, evidence_id DESC
         """, (workspace["workspace_id"],)).fetchall()
@@ -1041,31 +1035,34 @@ def create_evidence(user, payload):
     if len(title) > 200:
         raise ValueError("Evidence title is too long.")
 
-    now = int(time.time())
-
     with database_connection() as db:
         row = db.execute("""
-            INSERT INTO evidence_items
-                (user_id, workspace_id, evidence_type, title, content, source, created_at, updated_at)
+            INSERT INTO evidence
+                (
+                    user_id,
+                    workspace_id,
+                    evidence_type,
+                    evidence_name,
+                    content,
+                    source
+                )
             VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s)
+                (%s, %s, %s, %s, %s, %s)
             RETURNING
                 evidence_id AS id,
                 evidence_type AS type,
-                title,
+                evidence_name AS title,
                 content,
                 source,
-                created_at AS "createdAt",
-                updated_at AS "updatedAt"
+                TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS "createdAt",
+                TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS "updatedAt"
         """, (
             user["id"],
             workspace["workspace_id"],
             evidence_type,
             title,
             content,
-            source,
-            now,
-            now
+            source
         )).fetchone()
 
     return row
@@ -1076,10 +1073,9 @@ def delete_evidence(user, evidence_id):
 
     with database_connection() as db:
         db.execute("""
-            DELETE FROM evidence_items
+            DELETE FROM evidence
             WHERE evidence_id = %s AND workspace_id = %s
         """, (evidence_id, workspace["workspace_id"]))
-
 
 def ensure_user_workspace(user):
     """Return the user's active workspace, creating/selecting one when required."""
@@ -1475,9 +1471,24 @@ def create_decision_brief(payload):
     if not sources:
         raise ValueError("Please add documentation before generating an output.")
     previous = "\n\n".join(payload.get("previousOutputs", [])) or "None yet."
+
+    segments = payload.get("segments", [])
+    if not isinstance(segments, list):
+        segments = []
+
+    segment_context = "\n".join(
+        f"{number}. {segment.get('name', 'Unnamed segment')}"
+        f" | Description: {segment.get('description', '') or 'Not provided'}"
+        f" | Geography: {segment.get('geography', '') or 'Not provided'}"
+        f" | Company size: {segment.get('companySize', '') or 'Not provided'}"
+        f" | Wedge: {segment.get('wedge', '') or 'Not provided'}"
+        for number, segment in enumerate(segments, 1)
+        if isinstance(segment, dict)
+    ) or "No market segments have been defined."
+
     body = {"model": "gpt-5.6-sol", "input": [
         {"role": "developer", "content": "You are a strategic market-positioning analyst. Answer every numbered question using the substantive content of the supplied evidence. Do not require documents to mention a particular company or brand name: evidence may still be relevant when it describes the business, market, customers, products, or operations without naming the company. Do not invent facts. Identify any important evidence gaps briefly, then still give the best practical answer and recommendation possible from the available evidence. Clearly label conclusions that are informed assumptions rather than established facts. Ignore sources that are clearly unrelated. Make the response presentation-ready Markdown: begin every answer with its full question in bold on its own line, followed by a concise answer beneath it; use short paragraphs or bullets; and use a Markdown table only where it makes a comparison easier to understand. End with a bold Recommended decision heading and a short recommendation."},
-        {"role": "user", "content": f"Purpose: {step.get('purpose', '')}\n\nQuestions:\n{questions}\n\nDocumentation:\n{sources}\n\nPrevious outputs:\n{previous}"}
+        {"role": "user", "content": f"Purpose: {step.get('purpose', '')}\n\nMarket segments defined by the user:\n{segment_context}\n\nQuestions:\n{questions}\n\nDocumentation:\n{sources}\n\nPrevious outputs:\n{previous}\n\nUse the user-defined market segments as the market-segmentation context for this analysis. Do not invent additional market segments unless the supplied evidence clearly requires identifying a gap, and label any such suggestion as a recommendation rather than an existing segment. Support any number of user-defined segments or wedges; do not assume there are exactly two."}
     ]}
     request = urllib.request.Request("https://api.openai.com/v1/responses", data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}, method="POST")
     try:
@@ -1487,50 +1498,6 @@ def create_decision_brief(payload):
     except urllib.error.HTTPError as error:
         detail = error.read().decode(errors="replace")[:500]
         raise ValueError(f"AI service returned {error.code}: {detail}") from error
-
-
-def save_artefact_version(user, process_number, content):
-    """Store a new AI-generated document version, keeping only the latest 3 per phase in the current workspace."""
-    workspace = ensure_user_workspace(user)
-
-    with database_connection() as db:
-        db.execute("""
-            INSERT INTO artefact_versions (user_id, workspace_id, process_number, content, created_at)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (user["id"], workspace["workspace_id"], process_number, content, int(time.time())))
-
-        db.execute("""
-            DELETE FROM artefact_versions
-            WHERE version_id IN (
-                SELECT version_id FROM artefact_versions
-                WHERE workspace_id = %s AND process_number = %s
-                ORDER BY created_at DESC, version_id DESC
-                OFFSET 3
-            )
-        """, (workspace["workspace_id"], process_number))
-
-
-def get_artefact_versions(user, process_number):
-    """Return the latest saved document versions for one phase in the current workspace, newest first."""
-    workspace = ensure_user_workspace(user)
-
-    with database_connection() as db:
-        rows = db.execute("""
-            SELECT version_id, content, created_at
-            FROM artefact_versions
-            WHERE workspace_id = %s AND process_number = %s
-            ORDER BY created_at DESC, version_id DESC
-            LIMIT 3
-        """, (workspace["workspace_id"], process_number)).fetchall()
-
-    return [
-        {
-            "id": row["version_id"],
-            "content": row["content"],
-            "createdAt": row["created_at"],
-        }
-        for row in rows
-    ]
 
 
 def workspace_to_public(row, active_workspace_id=None):
@@ -1907,7 +1874,7 @@ def update_workspace(user, workspace_id, payload):
 def delete_workspace(user, workspace_id):
     """Delete one of the user's workspaces and everything scoped to it.
 
-    process_progress, market_segments and evidence_items all reference
+    process_progress, market_segments and evidence all reference
     workspace_id with ON DELETE CASCADE, so deleting the workspace row
     takes its data with it. Deleting the account's only remaining
     workspace is refused -- there must always be somewhere for process
@@ -2128,13 +2095,6 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
                 user = self.require_user()
                 if user:
                     answer = create_decision_brief(payload) or "No answer was returned."
-                    process_number = payload.get("step", {}).get("number")
-                    if process_number:
-                        try:
-                            save_artefact_version(user, int(process_number), answer)
-                        except Exception:
-                            import traceback
-                            traceback.print_exc()
                     self.send_json(200, {"answer": answer})
 
             elif self.path == "/api/segments":
@@ -2248,28 +2208,21 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
                 )
             return
 
-        if self.path.startswith("/api/artefact-versions"):
-            user = self.require_user()
-            if user:
-                query = urllib.parse.urlsplit(self.path).query
-                params = urllib.parse.parse_qs(query)
-                try:
-                    process_number = int(params.get("processNumber", ["0"])[0])
-                except ValueError:
-                    process_number = 0
-                if not 1 <= process_number <= 13:
-                    self.send_json(400, {"error": "Invalid process number."})
-                    return
-                self.send_json(200, {"versions": get_artefact_versions(user, process_number)})
-            return
-
         if self.path == "/api/state":
             user = self.require_user()
             if user:
                 workspace = ensure_user_workspace(user)
                 with database_connection() as db:
                     row = db.execute("SELECT state_json FROM map_states WHERE workspace_id = %s", (workspace["workspace_id"],)).fetchone()
-                    answers = db.execute("SELECT process_number, answer FROM process_answers WHERE workspace_id = %s", (workspace["workspace_id"],)).fetchall()
+                    answers = db.execute("""
+                        SELECT
+                            p.process_number,
+                            go.content AS answer
+                        FROM generated_output go
+                        JOIN process p
+                            ON p.process_id = go.process_id
+                        WHERE go.workspace_id = %s
+                    """, (workspace["workspace_id"],)).fetchall()
                 state = json.loads(row["state_json"]) if row else {"step": 0, "documents": []}
                 state["outputs"] = (state.get("outputs", []) + [""] * 13)[:13]
                 for answer in answers:
@@ -2312,13 +2265,175 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
                         "INSERT INTO map_states (user_id, workspace_id, state_json, updated_at) VALUES (%s, %s, %s, %s) ON CONFLICT(workspace_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at",
                         (user["id"], workspace["workspace_id"], json.dumps(state_for_storage), int(time.time()))
                     )
-                    db.execute("DELETE FROM process_answers WHERE workspace_id = %s", (workspace["workspace_id"],))
                     for index, answer in enumerate(payload.get("outputs", []), 1):
-                        if answer:
-                            db.execute(
-                                "INSERT INTO process_answers (user_id, workspace_id, process_number, answer, updated_at) VALUES (%s, %s, %s, %s, %s) ON CONFLICT(workspace_id, process_number) DO UPDATE SET answer = excluded.answer, updated_at = excluded.updated_at",
-                                (user["id"], workspace["workspace_id"], index, answer, int(time.time()))
+                        process_row = db.execute(
+                            "SELECT process_id, process_name FROM process WHERE process_number = %s",
+                            (index,)
+                        ).fetchone()
+
+                        if not process_row:
+                            continue
+
+                        current_output = db.execute(
+                            """
+                            SELECT
+                                generated_output_id,
+                                content,
+                                version_number
+                            FROM generated_output
+                            WHERE workspace_id = %s
+                              AND process_id = %s
+                            """,
+                            (
+                                workspace["workspace_id"],
+                                process_row["process_id"]
                             )
+                        ).fetchone()
+
+                        cleaned_answer = (
+                            str(answer).strip()
+                            if answer is not None
+                            else ""
+                        )
+
+                        # A blank output means there is currently no valid
+                        # generated result for this process. Keep the parent
+                        # row so its saved version history is preserved.
+                        if not cleaned_answer:
+                            if (
+                                current_output
+                                and current_output["content"] is not None
+                            ):
+                                db.execute(
+                                    """
+                                    UPDATE generated_output
+                                    SET content = NULL
+                                    WHERE generated_output_id = %s
+                                    """,
+                                    (
+                                        current_output[
+                                            "generated_output_id"
+                                        ],
+                                    )
+                                )
+                            continue
+
+                        # Creating the first output also creates version 1.
+                        if not current_output:
+                            created_output = db.execute(
+                                """
+                                INSERT INTO generated_output (
+                                    workspace_id,
+                                    process_id,
+                                    title,
+                                    content,
+                                    version_number,
+                                    approval_status,
+                                    created_at
+                                )
+                                VALUES (
+                                    %s, %s, %s, %s,
+                                    1, 'Draft', CURRENT_TIMESTAMP
+                                )
+                                RETURNING
+                                    generated_output_id,
+                                    version_number,
+                                    created_at
+                                """,
+                                (
+                                    workspace["workspace_id"],
+                                    process_row["process_id"],
+                                    process_row["process_name"],
+                                    cleaned_answer
+                                )
+                            ).fetchone()
+
+                            db.execute(
+                                """
+                                INSERT INTO generated_output_versions (
+                                    generated_output_id,
+                                    content,
+                                    created_at,
+                                    version_number
+                                )
+                                VALUES (%s, %s, %s, %s)
+                                """,
+                                (
+                                    created_output[
+                                        "generated_output_id"
+                                    ],
+                                    cleaned_answer,
+                                    created_output["created_at"],
+                                    created_output["version_number"]
+                                )
+                            )
+                            continue
+
+                        # Normal saves and navigation send the same output
+                        # repeatedly. Only a genuinely changed result creates
+                        # a new saved version.
+                        if current_output["content"] == cleaned_answer:
+                            continue
+
+                        next_version_row = db.execute(
+                            """
+                            SELECT
+                                COALESCE(MAX(version_number), 0) + 1
+                                    AS next_version
+                            FROM generated_output_versions
+                            WHERE generated_output_id = %s
+                            """,
+                            (
+                                current_output[
+                                    "generated_output_id"
+                                ],
+                            )
+                        ).fetchone()
+
+                        next_version = int(
+                            next_version_row["next_version"]
+                        )
+
+                        version_row = db.execute(
+                            """
+                            INSERT INTO generated_output_versions (
+                                generated_output_id,
+                                content,
+                                created_at,
+                                version_number
+                            )
+                            VALUES (
+                                %s, %s, CURRENT_TIMESTAMP, %s
+                            )
+                            RETURNING created_at
+                            """,
+                            (
+                                current_output[
+                                    "generated_output_id"
+                                ],
+                                cleaned_answer,
+                                next_version
+                            )
+                        ).fetchone()
+
+                        db.execute(
+                            """
+                            UPDATE generated_output
+                            SET
+                                content = %s,
+                                version_number = %s,
+                                created_at = %s
+                            WHERE generated_output_id = %s
+                            """,
+                            (
+                                cleaned_answer,
+                                next_version,
+                                version_row["created_at"],
+                                current_output[
+                                    "generated_output_id"
+                                ]
+                            )
+                        )
                 self.send_json(200, {"saved": True})
             elif self.path == "/api/company":
                 name = str(payload.get("companyName", "")).strip()

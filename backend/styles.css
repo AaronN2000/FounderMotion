@@ -11768,13 +11768,43 @@ body *:has(> #progressDots) > #progressDots {
 }
 
 .fm-phase-step-title {
+  display: none;
+}
+
+.fm-phase-step.is-current .fm-phase-step-title {
+  display: block;
   position: absolute;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 100px;
+  color: var(--purple);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
   white-space: nowrap;
-  border: 0;
+}
+
+.fm-phase-step-check {
+  position: absolute;
+  top: -4px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--purple);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.fm-phase-step-mark {
+  position: relative;
 }
 
 .fm-phase-card-message {
@@ -13338,7 +13368,8 @@ body *:has(> #progressDots) > #progressDots {
   }
 
   .fm-process-reference-row > .outputs-to-use ul {
-    flex: 1 1 auto !important;
+    flex: 0 1 auto !important;
+    min-height: min-content !important;
   }
 
   .fm-process-reference-row > .question-card {
@@ -15986,3 +16017,873 @@ body.fm-workspace-detail-mode .workspace-stats {
 .workspace-summary-item:nth-child(3) {
   justify-self: end;
 }
+
+
+.fm-phase-steps {
+  padding-bottom: 20px;
+}
+
+/* =========================================================
+   INLINE CURRENT OUTPUT
+   Output tab — current generated result
+   ========================================================= */
+
+#fmCurrentResultCard {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+#fmCurrentResultCard .fm-inline-current-output {
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e7e0ee;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid #eee8f3;
+}
+
+#fmCurrentResultCard .fm-inline-output-eyebrow {
+  margin: 0 0 6px;
+  color: var(--purple);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-header h3 {
+  margin: 0;
+  color: #292231;
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+#fmCurrentResultCard .fm-inline-output-meta {
+  margin: 6px 0 0;
+  color: #817989;
+  font-size: 12.5px;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body {
+  width: 100%;
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 26px;
+  background: #fff;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body .generated-answer {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body h3:first-child {
+  margin-top: 0;
+}
+
+
+/* =========================================================
+   CURRENT OUTPUT — MINIMAL PREMIUM FINAL
+   ========================================================= */
+
+#outputsPanel.fm-outputs-tab-active #fmCurrentResultCard {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+#fmCurrentResultCard .fm-inline-current-output {
+  width: 100% !important;
+  background: #fff !important;
+  border: 1px solid #e5dced !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 30px rgba(55, 35, 75, .035) !important;
+}
+
+/* ---------- Header ---------- */
+
+#fmCurrentResultCard .fm-inline-current-output-header {
+  min-height: 112px !important;
+  padding: 25px 30px 23px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 24px !important;
+  box-sizing: border-box !important;
+  border-bottom: 1px solid #eee8f2 !important;
+  background: #fff !important;
+  text-align: left !important;
+}
+
+#fmCurrentResultCard .fm-inline-output-eyebrow {
+  margin: 0 0 8px !important;
+  color: #6726c8 !important;
+  font-size: 10.5px !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-header h3 {
+  margin: 0 !important;
+  color: #241d2c !important;
+  font-size: 24px !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+  text-align: left !important;
+}
+
+#fmCurrentResultCard .fm-inline-output-meta {
+  margin: 7px 0 0 !important;
+  color: #8a8290 !important;
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+}
+
+/* ---------- Scrollable document ---------- */
+
+#fmCurrentResultCard .fm-inline-current-output-body {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 560px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 32px 38px 42px !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+  text-align: left !important;
+  scroll-behavior: smooth;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body > * {
+  max-width: 980px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body,
+#fmCurrentResultCard .fm-inline-current-output-body * {
+  text-align: left !important;
+}
+
+/* ---------- Generated report ---------- */
+
+#fmCurrentResultCard .generated-answer {
+  width: 100% !important;
+  max-width: 980px !important;
+  margin: 0 auto !important;
+  color: #443b4c !important;
+  font-size: 14px !important;
+  line-height: 1.75 !important;
+}
+
+#fmCurrentResultCard .generated-answer .answer-question {
+  margin: 34px 0 18px !important;
+  padding: 13px 16px !important;
+  border: 0 !important;
+  border-left: 3px solid #6b2bd1 !important;
+  border-radius: 0 8px 8px 0 !important;
+  background: #faf8fc !important;
+  color: #2f174d !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  font-weight: 700 !important;
+}
+
+#fmCurrentResultCard .generated-answer .answer-question:first-child {
+  margin-top: 0 !important;
+}
+
+#fmCurrentResultCard .generated-answer .answer-section {
+  margin: 28px 0 10px !important;
+  color: #6b2bd1 !important;
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+  font-weight: 800 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+#fmCurrentResultCard .generated-answer p {
+  margin: 0 0 15px !important;
+  color: #4b4352 !important;
+  font-size: 14px !important;
+  line-height: 1.75 !important;
+}
+
+#fmCurrentResultCard .generated-answer ul,
+#fmCurrentResultCard .generated-answer ol {
+  margin: 10px 0 20px 20px !important;
+  padding: 0 !important;
+}
+
+#fmCurrentResultCard .generated-answer li {
+  margin: 7px 0 !important;
+  padding-left: 4px !important;
+  color: #4b4352 !important;
+  line-height: 1.65 !important;
+}
+
+#fmCurrentResultCard .generated-answer strong {
+  color: #302738 !important;
+  font-weight: 700 !important;
+}
+
+/* ---------- Tables ---------- */
+
+#fmCurrentResultCard .answer-table-wrap {
+  margin: 20px 0 26px !important;
+  overflow-x: auto !important;
+  border: 1px solid #ebe5ef !important;
+  border-radius: 10px !important;
+}
+
+#fmCurrentResultCard .answer-table {
+  margin: 0 !important;
+  border: 0 !important;
+}
+
+#fmCurrentResultCard .answer-table th {
+  background: #faf8fc !important;
+}
+
+/* ---------- Scrollbar ---------- */
+
+#fmCurrentResultCard .fm-inline-current-output-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body::-webkit-scrollbar-thumb {
+  background: #ddd3e6;
+  border-radius: 999px;
+  border: 2px solid #fff;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body::-webkit-scrollbar-thumb:hover {
+  background: #cbbbd9;
+}
+
+
+/* =========================================================
+   OUTPUT EXPORT ACTIONS — COMPACT
+   ========================================================= */
+
+#outputsPanel.fm-outputs-tab-active #fmExportButtonsWrap {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  margin: 14px 0 0 !important;
+}
+
+#outputsPanel.fm-outputs-tab-active #fmExportButtonsWrap .fm-export-button {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 38px !important;
+  padding: 0 18px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+
+/* =========================================================
+   CURRENT OUTPUT — FINAL CLEAN PREMIUM LAYOUT
+   ========================================================= */
+
+/* Main card */
+#outputsPanel.fm-outputs-tab-active #fmCurrentResultCard {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+#fmCurrentResultCard .fm-inline-current-output {
+  width: 100% !important;
+  background: #fff !important;
+  border: 1px solid #e6deec !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 6px 24px rgba(47, 28, 68, .035) !important;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+#fmCurrentResultCard .fm-inline-current-output-header {
+  padding: 25px 30px 23px !important;
+  min-height: 112px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 24px !important;
+
+  border-bottom: 1px solid #eee8f2 !important;
+  background: #fff !important;
+
+  text-align: left !important;
+  box-sizing: border-box !important;
+}
+
+#fmCurrentResultCard .fm-inline-output-eyebrow {
+  margin: 0 0 8px !important;
+
+  color: #6525c7 !important;
+
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+
+  letter-spacing: .11em !important;
+  text-transform: uppercase !important;
+
+  text-align: left !important;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-header h3 {
+  margin: 0 !important;
+
+  color: #231c2b !important;
+
+  font-size: 25px !important;
+  font-weight: 750 !important;
+  line-height: 1.18 !important;
+
+  text-align: left !important;
+}
+
+#fmCurrentResultCard .fm-inline-output-meta {
+  margin: 7px 0 0 !important;
+
+  color: #88808e !important;
+
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+
+  text-align: left !important;
+}
+
+/* =========================================================
+   OUTPUT DOCUMENT
+   ========================================================= */
+
+#fmCurrentResultCard .fm-inline-current-output-body {
+  width: 100% !important;
+
+  max-height: 560px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  padding: 32px 42px 44px !important;
+
+  background: #fff !important;
+  box-sizing: border-box !important;
+
+  text-align: left !important;
+}
+
+/*
+   Do NOT squeeze the generated result into a narrow centred
+   document column. Let it use the available Output width.
+*/
+#fmCurrentResultCard .fm-inline-current-output-body > * {
+  width: 100% !important;
+  max-width: none !important;
+
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body,
+#fmCurrentResultCard .fm-inline-current-output-body * {
+  text-align: left !important;
+}
+
+/* =========================================================
+   GENERATED ANSWER
+   ========================================================= */
+
+#fmCurrentResultCard .generated-answer {
+  width: 100% !important;
+  max-width: none !important;
+
+  margin: 0 !important;
+
+  color: #463e4d !important;
+
+  font-size: 15px !important;
+  line-height: 1.72 !important;
+
+  text-align: left !important;
+}
+
+/* QUESTION — larger than answer */
+#fmCurrentResultCard .generated-answer .answer-question {
+  width: 100% !important;
+
+  margin: 34px 0 24px !important;
+  padding: 16px 20px !important;
+
+  box-sizing: border-box !important;
+
+  border: 0 !important;
+  border-left: 3px solid #6b2bd1 !important;
+  border-radius: 0 9px 9px 0 !important;
+
+  background: #faf8fc !important;
+
+  color: #291541 !important;
+
+  font-size: 18px !important;
+  font-weight: 750 !important;
+  line-height: 1.4 !important;
+
+  text-align: left !important;
+}
+
+#fmCurrentResultCard .generated-answer .answer-question:first-child {
+  margin-top: 0 !important;
+}
+
+/* Normal answer — slightly smaller */
+#fmCurrentResultCard .generated-answer p {
+  margin: 0 0 17px !important;
+
+  color: #48404f !important;
+
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  line-height: 1.72 !important;
+
+  text-align: left !important;
+}
+
+/* Section headings such as Evidence */
+#fmCurrentResultCard .generated-answer .answer-section {
+  margin: 28px 0 11px !important;
+
+  color: #6726c8 !important;
+
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+
+  letter-spacing: .075em !important;
+  text-transform: uppercase !important;
+
+  text-align: left !important;
+}
+
+/* Lists */
+#fmCurrentResultCard .generated-answer ul,
+#fmCurrentResultCard .generated-answer ol {
+  margin: 8px 0 22px 22px !important;
+  padding: 0 !important;
+
+  text-align: left !important;
+}
+
+#fmCurrentResultCard .generated-answer li {
+  margin: 6px 0 !important;
+  padding-left: 3px !important;
+
+  color: #48404f !important;
+
+  font-size: 15px !important;
+  line-height: 1.65 !important;
+
+  text-align: left !important;
+}
+
+#fmCurrentResultCard .generated-answer strong {
+  color: #302737 !important;
+  font-weight: 700 !important;
+}
+
+/* Tables */
+#fmCurrentResultCard .answer-table-wrap {
+  width: 100% !important;
+
+  margin: 20px 0 26px !important;
+
+  overflow-x: auto !important;
+
+  border: 1px solid #e9e3ed !important;
+  border-radius: 10px !important;
+}
+
+#fmCurrentResultCard .answer-table {
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+#fmCurrentResultCard .answer-table th,
+#fmCurrentResultCard .answer-table td {
+  text-align: left !important;
+}
+
+/* Scrollbar */
+#fmCurrentResultCard .fm-inline-current-output-body::-webkit-scrollbar {
+  width: 7px !important;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-body::-webkit-scrollbar-thumb {
+  background: #d9cde4 !important;
+  border-radius: 999px !important;
+}
+
+
+/* =========================================================
+   CURRENT OUTPUT — HEADER EXPORT ACTIONS
+   ========================================================= */
+
+#fmCurrentResultCard .fm-inline-output-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-shrink: 0 !important;
+  gap: 10px !important;
+
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#fmCurrentResultCard .fm-inline-output-actions .fm-export-button,
+#fmCurrentResultCard .fm-inline-output-actions #generatePdf,
+#fmCurrentResultCard .fm-inline-output-actions #generateCsv {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 38px !important;
+
+  margin: 0 !important;
+  padding: 0 16px !important;
+
+  border-radius: 8px !important;
+
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+
+  white-space: nowrap !important;
+}
+
+/* PDF = subtle outline */
+#fmCurrentResultCard .fm-inline-output-actions #generatePdf {
+  background: #fff !important;
+  color: #6325c5 !important;
+  border: 1px solid #d9c9e8 !important;
+  box-shadow: none !important;
+}
+
+/* CSV = primary action */
+#fmCurrentResultCard .fm-inline-output-actions #generateCsv {
+  background: #6525c7 !important;
+  color: #fff !important;
+  border: 1px solid #6525c7 !important;
+  box-shadow: none !important;
+}
+
+#fmCurrentResultCard .fm-inline-output-actions #generatePdf:hover {
+  background: #faf7fd !important;
+}
+
+#fmCurrentResultCard .fm-inline-output-actions #generateCsv:hover {
+  background: #5720ae !important;
+  border-color: #5720ae !important;
+}
+
+@media (max-width: 760px) {
+  #fmCurrentResultCard .fm-inline-current-output-header {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  #fmCurrentResultCard .fm-inline-output-actions {
+    justify-content: flex-start !important;
+  }
+}
+
+
+/* CURRENT OUTPUT — HEADER EXPORT BUTTONS */
+
+#fmCurrentOutputHeaderActions {
+  margin-left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  width: auto !important;
+  flex: 0 0 auto !important;
+}
+
+#fmCurrentOutputHeaderActions .fm-current-export-button {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 38px !important;
+  margin: 0 !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+#fmCurrentOutputHeaderActions .fm-current-export-pdf {
+  color: #6525c7 !important;
+  background: #fff !important;
+  border: 1px solid #d7c5e9 !important;
+}
+
+#fmCurrentOutputHeaderActions .fm-current-export-csv {
+  color: #fff !important;
+  background: #6525c7 !important;
+  border: 1px solid #6525c7 !important;
+}
+
+#fmCurrentOutputHeaderActions .fm-current-export-button:disabled {
+  opacity: .45 !important;
+  cursor: not-allowed !important;
+}
+
+
+/* =========================================================
+   CURRENT OUTPUT — COMPACT DOCUMENT LAYOUT
+   ========================================================= */
+
+#fmCurrentResultCard .fm-inline-current-output {
+  border-radius: 16px !important;
+}
+
+/* Header */
+#fmCurrentResultCard .fm-inline-current-output-header {
+  min-height: 0 !important;
+  padding: 22px 28px !important;
+  gap: 20px !important;
+}
+
+#fmCurrentResultCard .fm-inline-current-output-header h3 {
+  font-size: 24px !important;
+  line-height: 1.2 !important;
+}
+
+#fmCurrentResultCard .fm-inline-output-meta {
+  margin-top: 5px !important;
+  font-size: 13px !important;
+}
+
+/* Main scroll area */
+#fmCurrentResultCard .fm-inline-current-output-body {
+  max-height: 620px !important;
+  padding: 24px 30px 32px !important;
+  overflow-y: auto !important;
+}
+
+/* Generated document */
+#fmCurrentResultCard .generated-answer {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+
+  font-size: 16px !important;
+  line-height: 1.62 !important;
+}
+
+/* Questions */
+#fmCurrentResultCard .generated-answer .answer-question {
+  width: 100% !important;
+
+  margin: 30px 0 14px !important;
+  padding: 13px 17px !important;
+
+  border-left: 3px solid #6b2bd1 !important;
+  border-radius: 0 8px 8px 0 !important;
+
+  background: #faf8fc !important;
+
+  color: #291541 !important;
+
+  font-size: 19px !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+
+  box-sizing: border-box !important;
+}
+
+#fmCurrentResultCard .generated-answer .answer-question:first-child {
+  margin-top: 0 !important;
+}
+
+/* Normal answer text */
+#fmCurrentResultCard .generated-answer p {
+  margin: 0 0 14px !important;
+
+  color: #453d4b !important;
+
+  font-size: 16px !important;
+  line-height: 1.62 !important;
+}
+
+/* Small internal headings */
+#fmCurrentResultCard .generated-answer .answer-section {
+  margin: 20px 0 9px !important;
+
+  color: #6525c7 !important;
+
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+
+  letter-spacing: .055em !important;
+}
+
+/* Lists */
+#fmCurrentResultCard .generated-answer ul,
+#fmCurrentResultCard .generated-answer ol {
+  margin: 7px 0 16px 21px !important;
+  padding: 0 !important;
+}
+
+#fmCurrentResultCard .generated-answer li {
+  margin: 4px 0 !important;
+
+  color: #453d4b !important;
+
+  font-size: 16px !important;
+  line-height: 1.58 !important;
+}
+
+/* Tables */
+#fmCurrentResultCard .answer-table-wrap {
+  width: 100% !important;
+
+  margin: 12px 0 20px !important;
+
+  border: 1px solid #e4dce9 !important;
+  border-radius: 9px !important;
+
+  overflow-x: auto !important;
+}
+
+#fmCurrentResultCard .answer-table {
+  width: 100% !important;
+
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+
+  font-size: 14.5px !important;
+}
+
+#fmCurrentResultCard .answer-table th {
+  padding: 10px 12px !important;
+
+  background: #faf8fc !important;
+
+  color: #4d2089 !important;
+
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+
+  vertical-align: top !important;
+}
+
+#fmCurrentResultCard .answer-table td {
+  padding: 10px 12px !important;
+
+  color: #443c49 !important;
+
+  font-size: 14.5px !important;
+  line-height: 1.48 !important;
+
+  vertical-align: top !important;
+}
+
+#fmCurrentResultCard .answer-table td strong {
+  color: #2d2432 !important;
+  font-weight: 700 !important;
+}
+
+/* Remove accidental large gaps produced by rendered markdown */
+#fmCurrentResultCard .generated-answer > br {
+  display: none !important;
+}
+
+#fmCurrentResultCard .generated-answer .answer-question + br,
+#fmCurrentResultCard .generated-answer .answer-section + br,
+#fmCurrentResultCard .answer-table-wrap + br {
+  display: none !important;
+}
+
+/* Export buttons */
+#fmCurrentOutputHeaderActions {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+#fmCurrentOutputHeaderActions .fm-current-export-button {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 40px !important;
+
+  padding: 0 17px !important;
+
+  border-radius: 9px !important;
+
+  font-size: 12.5px !important;
+  font-weight: 750 !important;
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+  #fmCurrentResultCard .fm-inline-current-output-header {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  #fmCurrentResultCard .fm-inline-current-output-body {
+    padding: 20px !important;
+  }
+}
+
