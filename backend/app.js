@@ -1168,7 +1168,13 @@ function render() {
       const complete = progressRow?.status === 'Completed';
       const inProgress = progressRow?.status === 'In Progress';
       const current = index === state.step;
-      const shortLabel = `Process ${process.number}`;
+      // processShortLabels (defined above) gives each of the 13 fixed
+      // processes a short, always-legible keyword for the label under its
+      // dot; anything not in that map (shouldn't happen for the real 13,
+      // but keeps this safe if the catalogue ever grows) falls back to a
+      // truncated version of the full title instead of showing nothing.
+      const shortLabel = processShortLabels[process.number]
+        || (process.title.length > 18 ? `${process.title.slice(0, 17)}…` : process.title);
 
       return `
         <button
@@ -1214,26 +1220,17 @@ function render() {
   $('#stepPurpose').textContent =
     processPurpose.charAt(0).toUpperCase() + processPurpose.slice(1);
 
-  // Cap the visible list at 3 -- the reference-row layout height-matches
-  // this box against the "Key Questions" card next to it (a flex/grid
-  // interaction spanning several media-query blocks in styles.css), so a
-  // 4th+ item still gets squeezed shorter than its own max-height/scroll
-  // rule allows and ends up clipped by the box's own border instead of
-  // scrolling inside it (reported: dependency lists longer than 3 render
-  // broken, e.g. Process 12 with 4-5 sources). Anything beyond the first
-  // 3 collapses into a "+N more" line instead, which sidesteps that
-  // layout fight entirely.
-  const MAX_VISIBLE_OUTPUT_SOURCES = 3;
-  const allOutputSources = step.outputSources || [];
-  const visibleOutputSources = allOutputSources.slice(0, MAX_VISIBLE_OUTPUT_SOURCES);
-  const hiddenOutputSourcesCount = allOutputSources.length - visibleOutputSources.length;
-  const outputDependencies = visibleOutputSources.map(processNumber => {
+  // Show every dependency (no truncation) -- 4+ items scroll inside the
+  // box instead, via the ".outputs-to-use:has(.output-source:nth-child(4))"
+  // rule in styles.css. That rule only renders correctly once the box is
+  // allowed to actually fill the available height (see the ul flex rule
+  // change in the reference-row layout in styles.css); with that fixed,
+  // scrolling is the intended design here instead of a "+N more" cutoff.
+  const outputDependencies = (step.outputSources || []).map(processNumber => {
     const sourceProcess = mapSteps.find(process => process.number === processNumber);
     const hasAnswer = Boolean(state.outputs[processNumber - 1]);
     return `<li class="output-source ${hasAnswer ? 'ready' : ''}">Process ${processNumber}: ${escapeHtml(sourceProcess?.title || 'Untitled process')}<span>${hasAnswer ? 'available' : 'awaiting output'}</span></li>`;
-  }).join('') + (hiddenOutputSourcesCount > 0
-    ? `<li class="output-source output-source-more">+${hiddenOutputSourcesCount} more process${hiddenOutputSourcesCount > 1 ? 'es' : ''}</li>`
-    : '');
+  }).join('');
   const outputsToUse = outputDependencies ? `<section class="outputs-to-use"><h4>Outputs used from previous processes</h4><ul>${outputDependencies}</ul></section>` : '';
 
   const getInputIcon = (input, index) => {
