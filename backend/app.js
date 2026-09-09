@@ -1148,7 +1148,7 @@ function render() {
     5: 'PMF',
     6: 'Value Map',
     7: 'Primary Offer',
-    8: 'Add. Offers',
+    8: 'Extra Offers',
     9: 'Value Prop',
     10: 'Roadmap',
     11: 'Proof',
