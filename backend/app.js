@@ -2032,7 +2032,7 @@ $('#runAnalysis').addEventListener('click', async () => {
         : `Processes ${firstNumber}–${lastNumber}`;
 
     const confirmed = await showConfirmDialog(
-      `Regenerating this process will reset ${rangeLabel}. Their current outputs will be archived to history and their progress will revert to Not Started, so they will need to be regenerated.`,
+      `Regenerating this process will reset ${rangeLabel}. (Their current outputs will be saved to history.)`,
       {
         eyebrow: 'Heads up',
         title: 'Reset later processes?',
