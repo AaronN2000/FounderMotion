@@ -2256,10 +2256,43 @@ class FounderMotionHandler(BaseHTTPRequestHandler):
             if self.path == "/api/state":
                 workspace = ensure_user_workspace(user)
                 with database_connection() as db:
+                    # The client already keeps up to 3 saved records PER
+                    # PROCESS before sending this payload. Cap it the same
+                    # way here -- NOT to the first 3 records overall, which
+                    # would silently wipe out every other process's saved
+                    # history as soon as any one process was saved again.
+                    raw_history = payload.get("history", [])
+                    per_process_counts = {}
+                    capped_history = []
+
+                    if isinstance(raw_history, list):
+                        for item in raw_history:
+                            if not isinstance(item, dict):
+                                continue
+
+                            process_index = item.get("processIndex")
+                            process_number = item.get("processNumber")
+
+                            if process_number is None:
+                                process_number = (
+                                    int(process_index) + 1
+                                    if isinstance(process_index, (int, float))
+                                    else 1
+                                )
+
+                            process_number = int(process_number)
+                            count = per_process_counts.get(process_number, 0)
+
+                            if count >= 3:
+                                continue
+
+                            per_process_counts[process_number] = count + 1
+                            capped_history.append(item)
+
                     state_for_storage = {
                         "step": payload.get("step", 0),
                         "documents": payload.get("documents", []),
-                        "history": payload.get("history", [])[:3]
+                        "history": capped_history
                     }
                     db.execute(
                         "INSERT INTO map_states (user_id, workspace_id, state_json, updated_at) VALUES (%s, %s, %s, %s) ON CONFLICT(workspace_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at",
