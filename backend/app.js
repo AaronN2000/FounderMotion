@@ -1238,26 +1238,15 @@ function hasSavedProcessOutput(index) {
   }
 
   /*
-   * Older/saved generations may exist in Previous History
-   * even when persisted output state is empty.
-   * Treat that saved generation as a real process output.
+   * A Previous History record on its own is NOT proof the process is
+   * still done -- regenerating an earlier process deliberately archives
+   * a later process's output to history while resetting it to Not
+   * Started, and that archived record is meant to stay there. So the
+   * only other signal that still counts as "done" here is the
+   * authoritative Process Progress status (also reset to Not Started
+   * by that same flow), not raw history contents.
    */
-  if (Array.isArray(state.history)) {
-    return state.history.some(item => {
-      const processIndex =
-        Number.isInteger(item.processIndex)
-          ? item.processIndex
-          : Number(item.processNumber || 1) - 1;
-
-      return (
-        processIndex === index &&
-        typeof item.answer === 'string' &&
-        item.answer.trim()
-      );
-    });
-  }
-
-  return false;
+  return getProcessProgressStatus(index + 1) === 'Completed';
 }
 
 
