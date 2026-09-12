@@ -1282,28 +1282,19 @@ function render() {
   const currentProcessNumber =
     step?.number || state.step + 1;
 
-  const latestHistoryOutput =
-    Array.isArray(state.history)
-      ? state.history
-          .filter(item => {
-            const processIndex =
-              Number.isInteger(item.processIndex)
-                ? item.processIndex
-                : Number(item.processNumber || 1) - 1;
-
-            return processIndex === state.step;
-          })
-          .sort((a, b) =>
-            new Date(b.createdAt || 0) -
-            new Date(a.createdAt || 0)
-          )[0]?.answer
-      : null;
-
+  /*
+   * Previous history must NOT stand in for the current output here.
+   * A process can have history entries but no current output -- e.g.
+   * right after regenerating an earlier process resets every later
+   * process and archives its old answer to history -- and this output
+   * box should show the empty state in that case, not the archived
+   * (stale) answer.
+   */
   const output =
     typeof directOutput === 'string' &&
     directOutput.trim()
       ? directOutput
-      : latestHistoryOutput || '';
+      : '';
 
   const phaseNumber = state.step < 5 ? 1 : 2;
   renderDecisionGates();
@@ -2366,27 +2357,14 @@ $('#generatePdf').addEventListener('click', () => {
       ? state.outputs[state.step]
       : null;
 
-  const latestHistoryOutput =
-    Array.isArray(state.history)
-      ? state.history
-          .filter(item => {
-            const processIndex =
-              Number.isInteger(item.processIndex)
-                ? item.processIndex
-                : Number(item.processNumber || 1) - 1;
-
-            return processIndex === state.step;
-          })
-          .sort((a, b) =>
-            new Date(b.createdAt || 0) -
-            new Date(a.createdAt || 0)
-          )[0]?.answer
-      : null;
-
+  // Previous history must NOT stand in for the current output -- a
+  // process can have history entries but no current output right after
+  // regenerating an earlier process reset it, and that means there is
+  // genuinely nothing current to export yet.
   const answer =
     typeof directOutput === 'string' && directOutput.trim()
       ? directOutput
-      : latestHistoryOutput || '';
+      : '';
 
   if (!answer) return showToast('No output is available for this process.');
   const businessName = activeWorkspace?.businessName || currentUser?.companyName || 'FounderMotion';
@@ -2457,27 +2435,14 @@ $('#generateCsv')?.addEventListener('click', () => {
       ? state.outputs[state.step]
       : null;
 
-  const latestHistoryOutput =
-    Array.isArray(state.history)
-      ? state.history
-          .filter(item => {
-            const processIndex =
-              Number.isInteger(item.processIndex)
-                ? item.processIndex
-                : Number(item.processNumber || 1) - 1;
-
-            return processIndex === state.step;
-          })
-          .sort((a, b) =>
-            new Date(b.createdAt || 0) -
-            new Date(a.createdAt || 0)
-          )[0]?.answer
-      : null;
-
+  // Previous history must NOT stand in for the current output -- a
+  // process can have history entries but no current output right after
+  // regenerating an earlier process reset it, and that means there is
+  // genuinely nothing current to export yet.
   const answer =
     typeof directOutput === 'string' && directOutput.trim()
       ? directOutput
-      : latestHistoryOutput || '';
+      : '';
   if (!answer) return showToast('Run the process before creating a CSV.');
   const step = currentStep();
   const rows = [['Section', 'Content'], ...answerToCsvRows(answer)];
@@ -12478,6 +12443,14 @@ function syncAuthScreenUI() {
      * Tab/layout changes may temporarily rebuild or clear
      * #analysisOutput, so restore the current process output
      * before deciding that no generated result exists.
+     *
+     * IMPORTANT: this must NOT fall back to Previous history when the
+     * current output is empty. A process can legitimately have history
+     * entries but no current output -- e.g. right after regenerating an
+     * earlier process resets every later process's output and archives
+     * its old answer to history. Falling back to history here would
+     * make the box display that archived (stale) answer as if it were
+     * still the live result.
      */
     if (!source) {
       const directOutput =
@@ -12485,29 +12458,11 @@ function syncAuthScreenUI() {
           ? state.outputs[state.step]
           : null;
 
-      const latestHistoryOutput =
-        Array.isArray(state.history)
-          ? state.history
-              .filter(item => {
-                const processIndex =
-                  Number.isInteger(item.processIndex)
-                    ? item.processIndex
-                    : Number(item.processNumber || 1) - 1;
-
-                return processIndex === state.step;
-              })
-              .sort(
-                (a, b) =>
-                  new Date(b.createdAt || 0) -
-                  new Date(a.createdAt || 0)
-              )[0]?.answer
-          : null;
-
       const savedOutput =
         typeof directOutput === 'string' &&
         directOutput.trim()
           ? directOutput
-          : latestHistoryOutput || '';
+          : '';
 
       if (
         analysisOutput &&
