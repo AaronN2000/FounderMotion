@@ -11654,6 +11654,13 @@ body *:has(> #progressDots) > #progressDots {
   color: #6b6272;
   font-size: 13px;
   line-height: 1.55;
+  /* Reserve space for up to 3 lines so the process dots below always line
+     up between the Phase 1 and Phase 2 cards, even though their
+     description text is different lengths and wraps to a different
+     number of lines at narrower (non-fullscreen) widths. Without this,
+     whichever card's description happens to wrap onto a 3rd line pushes
+     its dot row down relative to the other card's. */
+  min-height: calc(1.55em * 3);
 }
 
 .fm-phase-card-progress { margin-bottom: 20px; }
