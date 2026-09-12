@@ -2101,13 +2101,39 @@ $('#runAnalysis').addEventListener('click', async () => {
 
     /*
      * Wipe every later-numbered process's current output so it must be
-     * regenerated. Their prior content is not lost -- /api/state already
-     * versions every generated_output change into generated_output_versions
-     * before it is overwritten/cleared, so it remains available as history.
+     * regenerated. Save whatever it currently holds to Previous history
+     * first (archiveOutputForProcess), the same way a normal regeneration
+     * saves its old answer before replacing it -- otherwise the content
+     * is simply gone from the UI, since Previous history is a client/
+     * map_states-tracked list, separate from generated_output_versions.
      */
     for (const i of downstreamIndexes) {
+      archiveOutputForProcess(i);
       state.outputs[i] = '';
     }
+
+    // Keep up to 3 history records PER PROCESS across every process that
+    // was just touched above (the newly-generated one and every archived
+    // downstream one), not just the first 3 records overall.
+    state.history = state.history.filter((item, index, array) => {
+      const processIndex =
+        Number.isInteger(item.processIndex)
+          ? item.processIndex
+          : Number(item.processNumber || 1) - 1;
+
+      const sameProcess = array
+        .filter(other => {
+          const otherProcess =
+            Number.isInteger(other.processIndex)
+              ? other.processIndex
+              : Number(other.processNumber || 1) - 1;
+
+          return otherProcess === processIndex;
+        })
+        .indexOf(item);
+
+      return sameProcess < 3;
+    });
 
     const hasNextProcess =
       completedProcessIndex < mapSteps.length - 1;
@@ -3924,19 +3950,29 @@ function createPdf(lines) {
 
 
 function companyText(text) { return String(text).replace(/foundermotion/gi, currentUser?.companyName || 'FounderMotion'); }
-function archiveCurrentOutput() {
-  const answer = state.outputs?.[state.step];
+
+/*
+ * Archives whatever output a given process currently has into Previous
+ * history, then leaves it in place (the caller decides whether/how to
+ * clear the live output afterward). Generalised from the old
+ * archiveCurrentOutput() (which only ever archived state.step) so the
+ * same "save it to history before it's gone" logic can also be used on
+ * OTHER processes -- e.g. when regenerating an earlier process resets
+ * every later-numbered one.
+ */
+function archiveOutputForProcess(index) {
+  const answer = state.outputs?.[index];
 
   if (!answer) return;
 
   if (!Array.isArray(state.history)) state.history = [];
 
-  const processIndex = state.step;
+  const process = mapSteps[index];
 
   state.history.unshift({
-    title: currentStep().title,
-    processIndex,
-    processNumber: currentStep().number || processIndex + 1,
+    title: process?.title || `Process ${index + 1}`,
+    processIndex: index,
+    processNumber: process?.number || index + 1,
     answer,
     createdAt: new Date().toISOString()
   });
@@ -3949,7 +3985,7 @@ function archiveCurrentOutput() {
           ? item.processIndex
           : Number(item.processNumber || 1) - 1;
 
-      return itemProcess === processIndex;
+      return itemProcess === index;
     });
 
   if (sameProcessHistory.length > 3) {
@@ -3959,6 +3995,10 @@ function archiveCurrentOutput() {
       !recordsToRemove.includes(item)
     );
   }
+}
+
+function archiveCurrentOutput() {
+  archiveOutputForProcess(state.step);
 }
 
 function invalidateProcessOneOutputs() {
