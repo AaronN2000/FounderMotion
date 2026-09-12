@@ -1797,6 +1797,46 @@ async function saveProgress(notify) {
 $('#runAnalysis').addEventListener('click', async () => {
   if (!currentUser) return showToast('Log in or sign up to generate an AI decision brief.');
   if (!state.documents.length) return showToast('Add information before generating an output.');
+
+  /*
+   * Regenerating any process invalidates every LATER-numbered process,
+   * purely by position (not by the dependency graph) -- e.g. redoing
+   * Process 3 resets Processes 4-13, even though only some of them
+   * actually depend on Process 3's output. If any of those later
+   * processes already have an output or progress, warn the user before
+   * wiping them, since they will need to be regenerated from scratch.
+   */
+  const regeneratingProcessIndex = Number(state.step) || 0;
+  const downstreamIndexes = [];
+  for (let i = regeneratingProcessIndex + 1; i < mapSteps.length; i++) {
+    downstreamIndexes.push(i);
+  }
+
+  const hasDownstreamProgress = downstreamIndexes.some(i => {
+    const downstreamNumber = mapSteps[i]?.number || i + 1;
+    return (
+      Boolean(state.outputs && state.outputs[i]) ||
+      getProcessProgressStatus(downstreamNumber) !== 'Not Started'
+    );
+  });
+
+  if (hasDownstreamProgress) {
+    const firstNumber = mapSteps[downstreamIndexes[0]]?.number || downstreamIndexes[0] + 1;
+    const lastNumber =
+      mapSteps[downstreamIndexes[downstreamIndexes.length - 1]]?.number ||
+      downstreamIndexes[downstreamIndexes.length - 1] + 1;
+    const rangeLabel =
+      firstNumber === lastNumber
+        ? `Process ${firstNumber}`
+        : `Processes ${firstNumber}–${lastNumber}`;
+
+    const confirmed = confirm(
+      `Regenerating this process will reset ${rangeLabel}. Their current outputs will be archived to history and their progress will revert to Not Started, so they will need to be regenerated. Continue?`
+    );
+
+    if (!confirmed) return;
+  }
+
   const button = $('#runAnalysis'); button.disabled = true; button.textContent = 'Generating decision brief…';
   try {
     const requiredOutputs = (currentStep().outputSources || []).map(processNumber => state.outputs[processNumber - 1]).filter(Boolean);
@@ -1863,6 +1903,16 @@ $('#runAnalysis').addEventListener('click', async () => {
     // Store the generated output against the process that produced it.
     state.outputs[completedProcessIndex] = response.answer;
 
+    /*
+     * Wipe every later-numbered process's current output so it must be
+     * regenerated. Their prior content is not lost -- /api/state already
+     * versions every generated_output change into generated_output_versions
+     * before it is overwritten/cleared, so it remains available as history.
+     */
+    for (const i of downstreamIndexes) {
+      state.outputs[i] = '';
+    }
+
     const hasNextProcess =
       completedProcessIndex < mapSteps.length - 1;
 
@@ -1897,6 +1947,16 @@ $('#runAnalysis').addEventListener('click', async () => {
       completedProcessNumber,
       'Completed'
     );
+
+    // Revert every later-numbered process's Process Progress status back
+    // to Not Started, matching its output having just been cleared above.
+    for (const i of downstreamIndexes) {
+      const downstreamNumber = mapSteps[i]?.number || i + 1;
+
+      if (getProcessProgressStatus(downstreamNumber) !== 'Not Started') {
+        await updateProcessProgress(downstreamNumber, 'Not Started');
+      }
+    }
 
     // Move the local application to the persisted process.
     state = {
