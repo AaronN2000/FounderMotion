@@ -71,6 +71,28 @@ document.body.insertAdjacentHTML('beforeend', `
   </div>
 `);
 
+document.body.insertAdjacentHTML('beforeend', `
+  <div class="confirm-modal" id="confirmModal" aria-hidden="true">
+    <div class="confirm-modal-backdrop" id="confirmModalBackdrop"></div>
+
+    <section class="confirm-modal-card"
+             role="alertdialog"
+             aria-modal="true"
+             aria-labelledby="confirmModalTitle"
+             aria-describedby="confirmModalMessage">
+
+      <p class="eyebrow" id="confirmModalEyebrow">Please confirm</p>
+      <h2 id="confirmModalTitle">Are you sure?</h2>
+      <p class="confirm-modal-message" id="confirmModalMessage"></p>
+
+      <div class="confirm-modal-actions">
+        <button class="confirm-modal-cancel" id="confirmModalCancel" type="button">Cancel</button>
+        <button class="confirm-modal-confirm" id="confirmModalConfirm" type="button">Continue</button>
+      </div>
+    </section>
+  </div>
+`);
+
 const historyStyle = document.createElement('style');
 historyStyle.textContent = `
 .previous-searches {
@@ -365,6 +387,185 @@ outputModalStyle.textContent = `
 `;
 
 document.head.appendChild(outputModalStyle);
+
+const confirmModalStyle = document.createElement('style');
+confirmModalStyle.id = 'confirmModalStyle';
+
+confirmModalStyle.textContent = `
+  /* Modal layer -- fixed + flex centering keeps this dialog dead-center on
+     screen at any viewport height, unlike a native confirm() popup (which
+     browsers anchor near the top of the window). */
+  .confirm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .confirm-modal.open {
+    display: flex;
+  }
+
+  .confirm-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(31, 20, 42, .38);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+  }
+
+  .confirm-modal-card {
+    position: relative;
+    z-index: 1;
+
+    width: min(460px, 100%);
+    box-sizing: border-box;
+
+    padding: 30px 32px 28px;
+
+    border: 1px solid rgba(44, 25, 70, .12);
+    border-radius: 22px;
+
+    background: #fff;
+
+    box-shadow: 0 30px 90px rgba(34, 20, 50, .24);
+
+    text-align: left;
+  }
+
+  .confirm-modal-card .eyebrow {
+    color: var(--purple, #351568);
+  }
+
+  .confirm-modal-card h2 {
+    margin: 3px 0 14px;
+
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 24px;
+    line-height: 1.2;
+
+    color: #29232e;
+  }
+
+  .confirm-modal-message {
+    margin: 0 0 26px;
+
+    color: var(--muted, #6b6272);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .confirm-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .confirm-modal-cancel,
+  .confirm-modal-confirm {
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .confirm-modal-cancel {
+    background: #f1edf5;
+    color: #4a3f50;
+  }
+
+  .confirm-modal-cancel:hover {
+    background: #e6dfee;
+  }
+
+  .confirm-modal-confirm {
+    background: var(--purple, #351568);
+    color: #fff;
+  }
+
+  .confirm-modal-confirm:hover {
+    background: var(--purple-deep, #260d50);
+  }
+
+  body.confirm-modal-open {
+    overflow: hidden;
+  }
+
+  @media (max-width: 520px) {
+    .confirm-modal {
+      padding: 16px;
+    }
+
+    .confirm-modal-card {
+      padding: 24px 20px 22px;
+      border-radius: 18px;
+    }
+  }
+`;
+
+document.head.appendChild(confirmModalStyle);
+
+/*
+ * Site-styled replacement for window.confirm(): resolves true/false, but
+ * renders as a centered card matching the rest of the app's modals instead
+ * of the browser's native (oddly-positioned) confirm popup.
+ */
+function showConfirmDialog(message, options = {}) {
+  const modal = $('#confirmModal');
+  const titleEl = $('#confirmModalTitle');
+  const eyebrowEl = $('#confirmModalEyebrow');
+  const messageEl = $('#confirmModalMessage');
+  const cancelButton = $('#confirmModalCancel');
+  const confirmButton = $('#confirmModalConfirm');
+
+  if (!modal || !titleEl || !messageEl || !cancelButton || !confirmButton) {
+    // Fall back to the native dialog if the custom markup is ever missing.
+    return Promise.resolve(confirm(message));
+  }
+
+  eyebrowEl.textContent = options.eyebrow || 'Please confirm';
+  titleEl.textContent = options.title || 'Are you sure?';
+  messageEl.textContent = message;
+  cancelButton.textContent = options.cancelLabel || 'Cancel';
+  confirmButton.textContent = options.confirmLabel || 'Continue';
+
+  return new Promise(resolve => {
+    const cleanup = result => {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('confirm-modal-open');
+
+      cancelButton.removeEventListener('click', onCancel);
+      confirmButton.removeEventListener('click', onConfirm);
+      $('#confirmModalBackdrop')?.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKeydown);
+
+      resolve(result);
+    };
+
+    const onCancel = () => cleanup(false);
+    const onConfirm = () => cleanup(true);
+    const onKeydown = event => {
+      if (event.key === 'Escape') cleanup(false);
+    };
+
+    cancelButton.addEventListener('click', onCancel);
+    confirmButton.addEventListener('click', onConfirm);
+    $('#confirmModalBackdrop')?.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKeydown);
+
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('confirm-modal-open');
+
+    requestAnimationFrame(() => confirmButton.focus());
+  });
+}
 
 
 function renderHistory() {
@@ -1830,8 +2031,14 @@ $('#runAnalysis').addEventListener('click', async () => {
         ? `Process ${firstNumber}`
         : `Processes ${firstNumber}–${lastNumber}`;
 
-    const confirmed = confirm(
-      `Regenerating this process will reset ${rangeLabel}. Their current outputs will be archived to history and their progress will revert to Not Started, so they will need to be regenerated. Continue?`
+    const confirmed = await showConfirmDialog(
+      `Regenerating this process will reset ${rangeLabel}. Their current outputs will be archived to history and their progress will revert to Not Started, so they will need to be regenerated.`,
+      {
+        eyebrow: 'Heads up',
+        title: 'Reset later processes?',
+        confirmLabel: 'Reset and continue',
+        cancelLabel: 'Cancel'
+      }
     );
 
     if (!confirmed) return;
