@@ -41,13 +41,18 @@ document.body.insertAdjacentHTML('beforeend', `
     <div class="history-modal-backdrop" data-close-history></div>
     <section class="history-modal-card" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
       <button class="history-modal-close" id="closeHistoryModal" type="button" aria-label="Close">×</button>
-      <p class="eyebrow">Previous search</p>
-      <h2 id="historyModalTitle">Decision brief</h2>
-      <p class="history-modal-date" id="historyModalDate"></p>
 
-      <div class="history-modal-export-row">
-        <button type="button" id="historyModalPdf" class="history-modal-export-button history-modal-export-pdf">Generate PDF</button>
-        <button type="button" id="historyModalCsv" class="history-modal-export-button history-modal-export-csv">Generate CSV</button>
+      <div class="history-modal-header">
+        <div class="history-modal-heading">
+          <p class="eyebrow">Previous search</p>
+          <h2 id="historyModalTitle">Decision brief</h2>
+          <p class="history-modal-date" id="historyModalDate"></p>
+        </div>
+
+        <div class="history-modal-header-actions">
+          <button type="button" id="historyModalPdf" class="history-modal-export-button-sm history-modal-export-pdf">Generate PDF</button>
+          <button type="button" id="historyModalCsv" class="history-modal-export-button-sm history-modal-export-csv">Generate CSV</button>
+        </div>
       </div>
 
       <div id="historyModalBody"></div>
@@ -221,30 +226,51 @@ historyStyle.textContent = `
 }
 
 .history-modal-date {
-  margin: 0 0 20px;
+  margin: 0;
   font-size: 13px;
   opacity: .55;
 }
 
-/* Export row: mirrors the Current output header's PDF/CSV buttons so a
-   past ("Previous history") result can be downloaded the same way the
-   live current output can. */
-.history-modal-export-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0 0 24px;
+/* Header row: title/date on the left, small PDF/CSV export buttons
+   sitting beside it on the right -- same idea as the Current output
+   header, just sized down to fit this modal's card. */
+.history-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  /* Leave clearance so the actions never sit under the × close button
+     (positioned absolute, top:16px right:18px, 36px square). */
+  padding-right: 44px;
+  margin-bottom: 22px;
 }
 
-.history-modal-export-button {
+.history-modal-heading {
+  min-width: 0;
+}
+
+.history-modal-heading h2 {
+  margin: 3px 0 6px;
+}
+
+.history-modal-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  /* Aligns the buttons with the title line rather than the eyebrow. */
+  margin-top: 22px;
+}
+
+.history-modal-export-button-sm {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 50px;
-  border-radius: 10px;
-  font-size: 14px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -270,6 +296,22 @@ historyStyle.textContent = `
 
 .history-modal-card .generated-answer {
   margin-top: 0;
+}
+
+@media (max-width: 560px) {
+  .history-modal-header {
+    flex-direction: column;
+    padding-right: 0;
+  }
+
+  .history-modal-header-actions {
+    margin-top: 4px;
+    align-self: stretch;
+  }
+
+  .history-modal-export-button-sm {
+    flex: 1 1 0;
+  }
 }
 
 @media (max-width: 700px) {
