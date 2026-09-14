@@ -44,6 +44,12 @@ document.body.insertAdjacentHTML('beforeend', `
       <p class="eyebrow">Previous search</p>
       <h2 id="historyModalTitle">Decision brief</h2>
       <p class="history-modal-date" id="historyModalDate"></p>
+
+      <div class="history-modal-export-row">
+        <button type="button" id="historyModalPdf" class="history-modal-export-button history-modal-export-pdf">Generate PDF</button>
+        <button type="button" id="historyModalCsv" class="history-modal-export-button history-modal-export-csv">Generate CSV</button>
+      </div>
+
       <div id="historyModalBody"></div>
     </section>
   </div>
@@ -215,13 +221,55 @@ historyStyle.textContent = `
 }
 
 .history-modal-date {
-  margin: 0 0 24px;
+  margin: 0 0 20px;
   font-size: 13px;
   opacity: .55;
 }
 
+/* Export row: mirrors the Current output header's PDF/CSV buttons so a
+   past ("Previous history") result can be downloaded the same way the
+   live current output can. */
+.history-modal-export-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.history-modal-export-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.history-modal-export-pdf {
+  border: 1.5px solid #6b27c8;
+  background: #ffffff;
+  color: #5f21b9;
+}
+
+.history-modal-export-pdf:hover {
+  background: #f7f1fd;
+}
+
+.history-modal-export-csv {
+  border: 1.5px solid #6421bf;
+  background: #6421bf;
+  color: #ffffff;
+}
+
+.history-modal-export-csv:hover {
+  background: #55199e;
+}
+
 .history-modal-card .generated-answer {
-  margin-top: 20px;
+  margin-top: 0;
 }
 
 @media (max-width: 700px) {
@@ -568,6 +616,11 @@ function showConfirmDialog(message, options = {}) {
 }
 
 
+// Tracks whichever Previous history record is currently open in the
+// "View result" modal, so its Generate PDF/CSV buttons export that
+// specific archived answer.
+let activeHistoryItem = null;
+
 function renderHistory() {
   const processIndex = state.step;
 
@@ -664,6 +717,10 @@ function renderHistory() {
 
         if (!item) return;
 
+        // Remembered so the modal's Generate PDF/CSV buttons export
+        // THIS archived result, not whatever the live current output is.
+        activeHistoryItem = item;
+
         $('#historyModalTitle').textContent =
           item.title || 'Decision brief';
 
@@ -691,6 +748,30 @@ function closeHistoryModal() {
 
 $('#closeHistoryModal').addEventListener('click', closeHistoryModal);
 $('#historyModal').querySelector('[data-close-history]').addEventListener('click', closeHistoryModal);
+
+$('#historyModalPdf').addEventListener('click', () => {
+  if (!activeHistoryItem) return;
+
+  const processNumber =
+    activeHistoryItem.processNumber ||
+    Number(activeHistoryItem.processIndex || 0) + 1;
+
+  generatePdfForAnswer(
+    processNumber,
+    activeHistoryItem.title || `Process ${processNumber}`,
+    activeHistoryItem.answer || ''
+  );
+});
+
+$('#historyModalCsv').addEventListener('click', () => {
+  if (!activeHistoryItem) return;
+
+  const processNumber =
+    activeHistoryItem.processNumber ||
+    Number(activeHistoryItem.processIndex || 0) + 1;
+
+  generateCsvForAnswer(processNumber, activeHistoryItem.answer || '');
+});
 
 
 async function api(url, options = {}) {
@@ -2349,6 +2430,23 @@ async function moveStep(direction) {
 $('#prevStep').addEventListener('click', () => moveStep(-1));
 $('#nextStep').addEventListener('click', () => moveStep(1));
 
+/*
+ * Shared PDF export logic, factored out so both the live "Current
+ * output" export button AND the Previous history "View result" modal
+ * (which exports a specific archived answer, not necessarily today's
+ * current output) can generate a PDF the same way.
+ */
+function generatePdfForAnswer(processNumber, title, answer, emptyMessage) {
+  if (!answer) return showToast(emptyMessage || 'No output is available for this process.');
+  const businessName = activeWorkspace?.businessName || currentUser?.companyName || 'FounderMotion';
+  const fileName = `${businessName.replace(/[^a-z0-9]+/gi, '-')}-process-${processNumber}.pdf`;
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(createPdf([`${businessName} - Process ${processNumber}`, title, '', ...answer.split('\n')]));
+  link.download = fileName;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
 $('#generatePdf').addEventListener('click', () => {
   const step = currentStep();
 
@@ -2366,14 +2464,7 @@ $('#generatePdf').addEventListener('click', () => {
       ? directOutput
       : '';
 
-  if (!answer) return showToast('No output is available for this process.');
-  const businessName = activeWorkspace?.businessName || currentUser?.companyName || 'FounderMotion';
-  const fileName = `${businessName.replace(/[^a-z0-9]+/gi, '-')}-process-${step.number || state.step + 1}.pdf`;
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(createPdf([`${businessName} - Process ${step.number || state.step + 1}`, step.title, '', ...answer.split('\n')]));
-  link.download = fileName;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  generatePdfForAnswer(step.number || state.step + 1, step.title, answer);
 });
 
 /* =========================================================
@@ -2429,6 +2520,26 @@ function answerToCsvRows(answer) {
   return rows;
 }
 
+/*
+ * Shared CSV export logic -- same reasoning as generatePdfForAnswer()
+ * above: used by both the live "Current output" export button and the
+ * Previous history "View result" modal.
+ */
+function generateCsvForAnswer(processNumber, answer, emptyMessage) {
+  if (!answer) return showToast(emptyMessage || 'Run the process before creating a CSV.');
+  const rows = [['Section', 'Content'], ...answerToCsvRows(answer)];
+  // Leading BOM so Excel opens the UTF-8 file with correct characters.
+  const csvContent = '﻿' + rows.map(row => row.map(csvEscapeCell).join(',')).join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const businessName = activeWorkspace?.businessName || currentUser?.companyName || 'FounderMotion';
+  const fileName = `${businessName.replace(/[^a-z0-9]+/gi, '-')}-process-${processNumber}.csv`;
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
 $('#generateCsv')?.addEventListener('click', () => {
   const directOutput =
     Array.isArray(state.outputs)
@@ -2443,19 +2554,8 @@ $('#generateCsv')?.addEventListener('click', () => {
     typeof directOutput === 'string' && directOutput.trim()
       ? directOutput
       : '';
-  if (!answer) return showToast('Run the process before creating a CSV.');
   const step = currentStep();
-  const rows = [['Section', 'Content'], ...answerToCsvRows(answer)];
-  // Leading BOM so Excel opens the UTF-8 file with correct characters.
-  const csvContent = '﻿' + rows.map(row => row.map(csvEscapeCell).join(',')).join('\r\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const businessName = activeWorkspace?.businessName || currentUser?.companyName || 'FounderMotion';
-  const fileName = `${businessName.replace(/[^a-z0-9]+/gi, '-')}-process-${step.number || state.step + 1}.csv`;
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = fileName;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  generateCsvForAnswer(step.number || state.step + 1, answer);
 });
 
 /* =========================================================
