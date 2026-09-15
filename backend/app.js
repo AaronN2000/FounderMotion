@@ -20,6 +20,120 @@ let selectedInput = '';
 let currentUser = null;
 let activeWorkspace = null;
 
+/*
+ * #documentDialog is shared by two distinct flows -- "+ Add information"
+ * (type text directly) and "+ Upload Evidence" (attach a file) -- each
+ * with its own heading, fields and required-file/description-optional
+ * validation. evidenceDialogMode tracks which one is currently open so
+ * the shared dialog can show the right copy/fields; pendingEvidenceFiles
+ * holds files picked/dropped in Upload Evidence mode until the "Upload
+ * Evidence" button actually submits them (instead of uploading the
+ * instant a file is chosen, which left the description field pointless).
+ */
+let evidenceDialogMode = 'add-info';
+let pendingEvidenceFiles = [];
+
+/*
+ * Several existing rules (.drop-zone, .dialog label, .file-help) set
+ * `display` directly with the same or higher specificity than the
+ * browser's default [hidden]{display:none} rule, so toggling the
+ * `hidden` property/attribute alone silently does nothing here. Forcing
+ * an inline !important display always wins regardless of that.
+ */
+function setElementVisible(el, visible, displayWhenVisible) {
+  if (!el) return;
+
+  if (visible) {
+    el.style.removeProperty('display');
+    if (displayWhenVisible) el.style.setProperty('display', displayWhenVisible);
+  } else {
+    el.style.setProperty('display', 'none', 'important');
+  }
+}
+
+function applyEvidenceDialogMode(mode, heading) {
+  evidenceDialogMode = mode;
+  pendingEvidenceFiles = [];
+
+  const isUpload = mode === 'upload-evidence';
+
+  const eyebrow = $('#documentDialogEyebrow');
+  const lede = $('#documentDialogLede');
+  const dropZone = $('#dropZone');
+  const fileHelp = $('#documentFileHelp');
+  const fileChosenName = $('#fileChosenName');
+  const nameLabel = $('#documentNameLabel');
+  const nameInput = $('#documentName');
+  const textLabel = $('#documentTextLabel');
+  const textInput = $('#documentText');
+  const submitButton = $('#documentSubmitButton');
+
+  if (eyebrow) eyebrow.textContent = isUpload ? 'Upload Evidence' : 'Add Information';
+
+  $('#documentDialogTitle').textContent = isUpload
+    ? `Upload Evidence — ${heading}`
+    : heading;
+
+  if (lede) {
+    lede.textContent = isUpload
+      ? 'Attach a supporting file for this required input.'
+      : 'Add information directly for this required input.';
+  }
+
+  setElementVisible(dropZone, isUpload, 'flex');
+  setElementVisible(fileHelp, isUpload);
+  setElementVisible(fileChosenName, false);
+
+  if (fileChosenName) fileChosenName.textContent = '';
+
+  if ($('#fileInput')) $('#fileInput').value = '';
+
+  if (isUpload) {
+    setElementVisible(nameLabel, false);
+    if (nameInput) {
+      nameInput.required = false;
+      nameInput.value = '';
+    }
+
+    if (textLabel && textLabel.firstChild) {
+      textLabel.firstChild.textContent = 'Description (optional)';
+    }
+
+    if (textInput) {
+      textInput.required = false;
+      textInput.rows = 4;
+      textInput.placeholder = 'Add a short description of this evidence…';
+      textInput.value = '';
+    }
+
+    if (submitButton) submitButton.innerHTML = 'Upload Evidence <span>&rarr;</span>';
+  } else {
+    setElementVisible(nameLabel, true);
+    if (nameLabel) {
+      if (nameLabel.firstChild) nameLabel.firstChild.textContent = 'Information title';
+    }
+
+    if (nameInput) {
+      nameInput.required = true;
+      nameInput.placeholder = 'e.g. Customer interview insight';
+      nameInput.value = '';
+    }
+
+    if (textLabel && textLabel.firstChild) {
+      textLabel.firstChild.textContent = 'Information';
+    }
+
+    if (textInput) {
+      textInput.required = true;
+      textInput.rows = 7;
+      textInput.placeholder = 'Write or paste information here…';
+      textInput.value = '';
+    }
+
+    if (submitButton) submitButton.innerHTML = 'Add Information <span>&rarr;</span>';
+  }
+}
+
 
 document.querySelector('#documentForm .primary-button').innerHTML = 'Add information <span>&rarr;</span>';
 document.querySelector('.output-panel h2').insertAdjacentHTML('afterend', '<button class="expand-output-button" id="expandOutput" type="button">Expand output</button>');
@@ -1714,12 +1828,7 @@ function render() {
       const inputIndex = Number(button.dataset.uploadEvidence);
       selectedInput = step.inputs[inputIndex];
 
-      $('#documentDialogTitle').textContent =
-        `Upload Evidence — ${selectedInput}`;
-
-      $('#documentName').value = '';
-      $('#documentText').value = '';
-      $('#fileInput').value = '';
+      applyEvidenceDialogMode('upload-evidence', selectedInput);
 
       $('#documentDialog').showModal();
     });
@@ -1889,8 +1998,7 @@ function render() {
 function openDocumentation(input) {
   if (!currentUser) return showToast('Log in or sign up to add and save information.');
   selectedInput = input;
-  $('#documentDialogTitle').textContent = input;
-  $('#documentName').value = '';
+  applyEvidenceDialogMode('add-info', input);
   $('#documentDialog').showModal();
 }
 
@@ -1913,6 +2021,59 @@ function createProcessEvidenceRecord(name, text) {
 $('#documentForm').addEventListener('submit', async event => {
   event.preventDefault();
 
+  if (evidenceDialogMode === 'upload-evidence') {
+    const description = $('#documentText').value.trim();
+
+    if (!pendingEvidenceFiles.length && !description) {
+      showToast('Attach a file or add a description.');
+      return;
+    }
+
+    if (!Array.isArray(state.documents)) {
+      state.documents = [];
+    }
+
+    const documentCountBefore = state.documents.length;
+
+    try {
+      let failures = 0;
+
+      if (pendingEvidenceFiles.length) {
+        failures = await uploadEvidenceFiles(pendingEvidenceFiles, description);
+      } else {
+        // No file attached -- a description alone still counts as evidence.
+        invalidateProcessOneOutputs();
+        state.documents.push(
+          createProcessEvidenceRecord('Uploaded evidence', description)
+        );
+      }
+
+      await saveProgress(false);
+
+      pendingEvidenceFiles = [];
+      $('#fileInput').value = '';
+      event.target.reset();
+      $('#documentDialog').close();
+
+      render();
+
+      showToast(
+        failures
+          ? `Added with ${failures} file(s) skipped (too large or unreadable).`
+          : 'Evidence saved.'
+      );
+    } catch (error) {
+      // Roll back whatever this submit optimistically pushed.
+      state.documents.length = documentCountBefore;
+
+      console.error('Evidence upload failed:', error);
+      showToast('Evidence could not be saved.');
+    }
+
+    return;
+  }
+
+  // 'add-info' mode.
   const documentName = $('#documentName').value.trim();
   const documentText = $('#documentText').value.trim();
 
@@ -1978,12 +2139,13 @@ $('#documentForm').addEventListener('submit', async event => {
   }
 });
 $('.close').addEventListener('click', () => $('#documentDialog').close());
+$('#documentDialog').addEventListener('close', () => { pendingEvidenceFiles = []; });
 $('#chooseFile').addEventListener('click', () => $('#fileInput').click());
 $('#dropZone').addEventListener('click', event => { if (!event.target.closest('#chooseFile')) $('#fileInput').click(); });
-$('#fileInput').addEventListener('change', () => addFiles($('#fileInput').files));
+$('#fileInput').addEventListener('change', () => stageEvidenceFiles($('#fileInput').files));
 ['dragenter', 'dragover'].forEach(type => $('#dropZone').addEventListener(type, event => { event.preventDefault(); $('#dropZone').classList.add('dragging'); }));
 ['dragleave', 'drop'].forEach(type => $('#dropZone').addEventListener(type, event => { event.preventDefault(); $('#dropZone').classList.remove('dragging'); }));
-$('#dropZone').addEventListener('drop', event => addFiles(event.dataTransfer.files));
+$('#dropZone').addEventListener('drop', event => stageEvidenceFiles(event.dataTransfer.files));
 
 const MAX_UPLOAD_BYTES = 12_000_000;
 
@@ -1996,7 +2158,37 @@ function fileToBase64(file) {
   });
 }
 
-async function addFiles(files) {
+/*
+ * Upload Evidence mode no longer uploads the instant a file is chosen --
+ * that made the description field pointless, since the dialog closed
+ * before you could type one. Instead the picked/dropped file(s) are
+ * staged here (shown as a chosen-file line) and only actually uploaded
+ * when the "Upload Evidence" button is submitted, together with
+ * whatever description was typed.
+ */
+function stageEvidenceFiles(files) {
+  pendingEvidenceFiles = files ? [...files] : [];
+
+  const nameEl = $('#fileChosenName');
+  if (!nameEl) return;
+
+  if (!pendingEvidenceFiles.length) {
+    nameEl.hidden = true;
+    nameEl.textContent = '';
+    return;
+  }
+
+  nameEl.hidden = false;
+  nameEl.textContent =
+    pendingEvidenceFiles.length === 1
+      ? `Selected: ${pendingEvidenceFiles[0].name}`
+      : `Selected: ${pendingEvidenceFiles.length} files`;
+}
+
+// Uploads each staged file and records it as evidence, appending the
+// shared description (if any) to each file's extracted text. Returns
+// how many files failed (too large or unreadable).
+async function uploadEvidenceFiles(files, description) {
   invalidateProcessOneOutputs();
   let failures = 0;
 
@@ -2013,16 +2205,19 @@ async function addFiles(files) {
         body: JSON.stringify({ name: file.name, dataBase64 })
       });
 
+      const text = description
+        ? [uploaded.text, description].filter(Boolean).join('\n\n')
+        : uploaded.text;
+
       state.documents.push(
-        createProcessEvidenceRecord(uploaded.name, uploaded.text)
+        createProcessEvidenceRecord(uploaded.name, text)
       );
     } catch (error) {
       failures++;
     }
   }
 
-  $('#fileInput').value = ''; $('#documentDialog').close(); render(); await saveProgress(false);
-  showToast(failures ? `Added with ${failures} file(s) skipped (too large or unreadable).` : 'Information added.');
+  return failures;
 }
 
 async function saveProgress(notify) {
